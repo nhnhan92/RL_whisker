@@ -1,0 +1,7 @@
+gym
+psutil
+pygame
+glfw
+pyopengl
+imageio
+

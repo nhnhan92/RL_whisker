@@ -1,0 +1,112 @@
+
+--- NEW SESSION: 20/02/2024 09:18:50 ---
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.velocity = 2.61608 151.637 -8.26942 -0.107555 -0.0279854 -0.0582069
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.force = 4.0976 -8.4353 -2.40089 12.3479 27.5288 21.9629
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.free_velocity = 2.61694 151.694 -8.26942 -0.107922 -0.027992 -0.0582126
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.constraint = 0 1 0 -0.00363129 -0.999986 0.0038391 2.01379 -0.00726646 0.0120608  
+1 1 0 0.00383829 -0.00385303 -0.999985 -1.49999 0.00112175 -0.00576183  
+2 1 0 -0.999986 0.0036165 -0.00385223 -0.0130703 -2.00803 1.50771  
+
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.showObject = 0
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.showIndices = 1
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.showIndicesScale = 0.57
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.showColor = 0.752941 0.109804 0.156863 1
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.constraint_dx = -8.57425e-06 -0.000572863 1.69702e-09 3.66896e-06 6.56399e-08 5.67559e-08
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.lambda = -0.00018744 -0.00951963 -0.000153493 0.0188843 -0.000377396 0.000345308
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.solution = 1.94151 -2.62753 1.37135 0.108748 0.0113296 0.0593327
+/Simulation/Sphere/sphere_mo.constraint = 0 1 0 0.00363129 0.999986 -0.0038391  
+1 1 0 -0.00383829 0.00385303 0.999985  
+2 1 0 0.999986 -0.0036165 0.00385223  
+
+/Simulation/Sphere/sphere_mo.showColor = 1 1 1 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.position = 7.34788e-15 -1.35 -46 0 0 0 1 7.34788e-15 -1.35 -46 -0.15507 0 0 0.987903
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.force = 0 0 0 0 0 0 7179.03 -60963 -103816 -3.11484e+06 -46122.6 -287544
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 -8255.94 58012.7 109545 3.25608e+06 28558.6 316319
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.rest_position = 7.34788e-15 -1.35 -60 0 0 0 1 7.34788e-15 -1.35 -60 0 0 0 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.position = 7.34788e-15 -1.35 -46 0 0 0 1 7.34788e-15 -1.35 -46 -0.15507 0 0 0.987903
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.velocity = 0 0 0 0 0 0 0 0 0 -6.03084 0 0
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.force = 0 0 0 0 0 0 7361.25 -68319.1 -94870.9 -2.973e+06 -75136.9 -313284
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 -7418.7 72410.9 105081 3.2297e+06 80913 301267
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.rest_position = 7.34788e-15 -1.35 -60 0 0 0 1 7.34788e-15 -1.35 -60 0 0 0 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.free_velocity = 0 0 0 0 0 0 0 0 0 -6.03084 0 0
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.free_position = 7.34788e-15 -1.35 -46 0 0 0 1 7.34788e-15 -1.35 -46 -0.184784 0 0 0.982779
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 -8.61631e-10 0 0
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.force = 0 0 0 0 0 0 7361.25 -68319.1 -94870.9 -2.973e+06 -75136.9 -313284
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 -7418.7 72410.9 105081 3.2297e+06 80913 301267
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.free_position = 0 0 0 0 0 0 1 0 0 0 0 0 0 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.force = 0 0 0 0 0 0 7361.25 -68319.1 -94870.9 -2.973e+06 -75136.9 -313284
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 -7418.7 72410.9 105081 3.2297e+06 80913 301267
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.free_position = 0 0 0 0 0 0 1 0 0 0 0 0 0 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.force = 0 0 0 0 0 0 7361.25 -68319.1 -94870.9 -2.973e+06 -75136.9 -313284
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 -7418.7 72410.9 105081 3.2297e+06 80913 301267
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.free_position = 0 0 0 0 0 0 1 0 0 0 0 0 0 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.rest_position = 7.34788e-15 -1.35 -60 0 0 0 1 7.34788e-15 -1.35 -60 0 0 0 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/RigidifiedParticules/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.position = 7.34788e-15 -1.35 -60 0 0 0 1 -51.9615 -1.35 30 0 0.866025 0 0.5 51.9615 -1.35 30 0 0.866025 0 -0.5 0 30 0 0 0 0 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.derivX = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.velocity = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.externalForce = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.force = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.derivX = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.velocity = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.force = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.externalForce = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/FreeCenter/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.derivX = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.velocity = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.externalForce = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.force = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.derivX = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.velocity = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.externalForce = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.force = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/ActuatedArm0/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.derivX = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.velocity = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.externalForce = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.force = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.showColor = 1 1 1 1
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.lambda = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/Modelling/Tripod/RigidifiedStructure/RigidParts/dofs.constraint_dx = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+--- NEW SESSION: 20/02/2024 17:03:56 ---
+/Modelling/Tripod/ActuatedArm1/ServoMotor/Articulation/ServoWheel/dofs.position = -41.3527 -1.35 23.875 0 0.866025 0 0.5 -41.3527 -1.35 23.875 -0.063325 0.859052 0.109682 0.495974
+/Modelling/Tripod/ActuatedArm1/ServoMotor/Articulation/ServoWheel/dofs.force = 0 0 0 0 0 0 -94390.8 -60524.5 51144.1 1.45499e+06 24478.6 2.67622e+06
+/Modelling/Tripod/ActuatedArm1/ServoMotor/Articulation/ServoWheel/dofs.dforce(V_DERIV) = 0 0 0 0 0 0 91124.8 52238.6 -50182.4 -1.44104e+06 -20327.3 -2.6103e+06
+/Modelling/Tripod/ActuatedArm1/ServoMotor/Articulation/ServoWheel/dofs.showColor = 1 1 1 1
