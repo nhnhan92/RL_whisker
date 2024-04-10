@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Specific environment for the gripper.
-"""
+
 
 __authors__ = ("emenager", "ekhairallah")
 __contact__ = "etienne.menager@ens-rennes.fr"
@@ -36,7 +35,7 @@ class WhiskerEnv(AbstractEnv):
                       "timer_limit": 250,
                       "timeout": 50,
                       "display_size": (1200, 800),
-                      "render": 1,
+                      "render": 0,
                       "save_data": False,
                       "save_image": False,
                       "save_path": path + "/Results" + "/Whisker",

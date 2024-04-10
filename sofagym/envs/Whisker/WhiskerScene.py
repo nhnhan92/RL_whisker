@@ -191,7 +191,7 @@ def createScene(root, config={"source": [-600.0, -25, 200],
     # plane(root,visu=visu,translation=[x_translate, 0, z_translate], rotation=[0,init_angle,0], sphere_r=None)
 
     # Add Controller and reward + goal for RL
-    root.addObject(WhiskerController(node=root, name='whisker_controller',body_length=body_length))  # Controller
+    # root.addObject(WhiskerController(node=root, name='whisker_controller',body_length=body_length))  # Controller
 
     ref_point = [0, 0, 100]
     ref = whisker_model.Whisker.MechanicalModel.addChild("Ref_point")

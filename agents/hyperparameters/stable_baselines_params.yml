@@ -15,7 +15,7 @@ PPO:
   init_kwargs:
     policy: 'MlpPolicy'
     learning_rate: 0.0003
-    n_steps: 100
+    n_steps: 10
     batch_size: 64
     n_epochs: 10
     gamma: 0.99

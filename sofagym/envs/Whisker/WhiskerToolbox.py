@@ -27,24 +27,24 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute()))
 
 SofaRuntime.importPlugin("Sofa.Component")
 fieldnames = ["time","xx", "yy", "zz", "yz", "xz", "xy"]
-with open('strain_data_rl/strain_data.csv', 'w') as csv_file:
-    csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-    csv_writer.writeheader()
+# with open('strain_data_rl/strain_data.csv', 'w') as csv_file:
+#     csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+#     csv_writer.writeheader()
 
-with open('strain_data_rl/strain_data.csv', 'a') as csv_file:
-    csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+# with open('strain_data_rl/strain_data.csv', 'a') as csv_file:
+#     csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
-    info = {
-        "time": 0,
-        "xx": 0,
-        "yy": 0,
-        "zz": 0,
-        "yz": 0,
-        "xz": 0,
-        "xy": 0
-    }
-    csv_writer.writerow(info)
-contact_list = [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+#     info = {
+#         "time": 0,
+#         "xx": 0,
+#         "yy": 0,
+#         "zz": 0,
+#         "yz": 0,
+#         "xz": 0,
+#         "xy": 0
+#     }
+#     csv_writer.writerow(info)
+# contact_list = [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
 
 class rewardShaper(Sofa.Core.Controller):
     """Compute the reward.
@@ -99,7 +99,7 @@ class rewardShaper(Sofa.Core.Controller):
         self.fem = self.whisker.getObject("FEM")
         self.whisker_topo = self.whisker.getObject("loader")
         self.measured_ele = self.fem.strainmeasuringelements.value
-        
+        self.current_strain = []
     # def onKeypressedEvent(self, e):
     #     c = e['key']
 
@@ -125,11 +125,11 @@ class rewardShaper(Sofa.Core.Controller):
         ele = 1785
         
         self.strain = self.fem.totalstrain.value
-        # print("before =", self.current_strain[self.count])
-        self.current_strain[self.count]= self.strain[1][4]
-        # print("after =", self.current_strain[self.count])
-        current_cost = np.sqrt(np.mean((self.current_strain - self.strain_baseline)**2))
-        # print("current_cost = ", current_cost)
+        self.current_strain.append(self.strain[1][4])
+        current_cost = 0.1
+        # self.current_strain[self.count]= self.strain[1][4]
+        # current_cost = np.sqrt(np.mean((self.current_strain - self.strain_baseline)**2))
+
         if not self.cost:
             self.cost = current_cost
             return 0, self.cost
@@ -141,30 +141,30 @@ class rewardShaper(Sofa.Core.Controller):
         angle = 60
         self.factor += self.dt/2
         rot_angle = self.factor * (angle*m.pi/180)
-        if rot_angle < (angle*m.pi/180)*2:   
-            if self.count_scene>0.01:         
-                for ele in range(len(self.measured_ele)):
-                    with open("strain_data_rl/strain_" + str(self.measured_ele[ele])+".csv", 'a') as csv_file:
-                        csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
+        # if rot_angle < (angle*m.pi/180)*2:   
+        #     if self.count_scene>0.01:         
+        #         for ele in range(len(self.measured_ele)):
+        #             with open("strain_data_rl/strain_" + str(self.measured_ele[ele])+".csv", 'a') as csv_file:
+        #                 csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
 
-                        info = {
-                            "Sim_step": round(self.count_scene,2),
-                            "lamda_xx": self.strain[ele][0],
-                            "lamda_yy": self.strain[ele][1],
-                            "lamda_zz": self.strain[ele][2],
-                            "lamda_yz": self.strain[ele][3],
-                            "lamda_xz": self.strain[ele][4],
-                            "lamda_xy": self.strain[ele][5]
-                        }
-                        csv_writer.writerow(info)
-                with open("strain_data_rl/reward_cost_record.csv", 'a') as csv_file:
-                    csv_writer = csv.DictWriter(csv_file, fieldnames=self.header)
-                    info = {
-                            "Sim_step": round(self.count_scene,2),
-                            "cost": self.cost,
-                            "reward": reward
-                        }
-                    csv_writer.writerow(info)   
+        #                 info = {
+        #                     "Sim_step": round(self.count_scene,2),
+        #                     "lamda_xx": self.strain[ele][0],
+        #                     "lamda_yy": self.strain[ele][1],
+        #                     "lamda_zz": self.strain[ele][2],
+        #                     "lamda_yz": self.strain[ele][3],
+        #                     "lamda_xz": self.strain[ele][4],
+        #                     "lamda_xy": self.strain[ele][5]
+        #                 }
+        #                 csv_writer.writerow(info)
+        #         with open("strain_data_rl/reward_cost_record.csv", 'a') as csv_file:
+        #             csv_writer = csv.DictWriter(csv_file, fieldnames=self.header)
+        #             info = {
+        #                     "Sim_step": round(self.count_scene,2),
+        #                     "cost": self.cost,
+        #                     "reward": reward
+        #                 }
+        #             csv_writer.writerow(info)   
 
 
         return reward, self.cost
@@ -188,56 +188,56 @@ class rewardShaper(Sofa.Core.Controller):
         self.count_scene = 0
         self.factor = 0
         ele = 1785
-        self.groundtruth_data = pd.read_csv("strain_groundtruth/strain_" + str(ele)+".csv")
-        self.strain_baseline = self.groundtruth_data['lamda_xz']
-        ele_err = 1392
-        self.error_data = pd.read_csv("strain_groundtruth/strain_" + str(ele_err)+".csv")
-        self.strain_error = self.error_data['lamda_xz']
+        # self.groundtruth_data = pd.read_csv("strain_groundtruth/strain_" + str(ele)+".csv")
+        # self.strain_baseline = self.groundtruth_data['lamda_xz']
+        # ele_err = 1392
+        # self.error_data = pd.read_csv("strain_groundtruth/strain_" + str(ele_err)+".csv")
+        # self.strain_error = self.error_data['lamda_xz']
 
-        self.cost = np.sqrt(np.mean((self.strain_error[1:] - self.strain_baseline[1:])**2))
-        self.current_strain = self.strain_error
-        # print('initial cost = ', self.cost)
-        for ele in self.measured_ele:
-            filePath_node = "strain_data_rl/strain_" + str(ele)+".csv"
-            try:
-                os.remove(filePath_node)
-            except:
-                print("Error while deleting file ", filePath_node)
-            self.strain_header = ["Sim_step", "lamda_xx", "lamda_yy", "lamda_zz","lamda_yz", "lamda_xz", "lamda_xy"]
-            with open(filePath_node, "w", newline="") as csv_file:
-                csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
-                csv_writer.writeheader()
-            with open(filePath_node, 'a') as csv_file:
-                csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
+        # self.cost = np.sqrt(np.mean((self.strain_error[1:] - self.strain_baseline[1:])**2))
+        # self.current_strain = self.strain_error
+        # # print('initial cost = ', self.cost)
+        # for ele in self.measured_ele:
+        #     filePath_node = "strain_data_rl/strain_" + str(ele)+".csv"
+        #     try:
+        #         os.remove(filePath_node)
+        #     except:
+        #         print("Error while deleting file ", filePath_node)
+        #     self.strain_header = ["Sim_step", "lamda_xx", "lamda_yy", "lamda_zz","lamda_yz", "lamda_xz", "lamda_xy"]
+        #     with open(filePath_node, "w", newline="") as csv_file:
+        #         csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
+        #         csv_writer.writeheader()
+        #     with open(filePath_node, 'a') as csv_file:
+        #         csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
 
-                info = {
-                    "Sim_step": 0,
-                    "lamda_xx": 0,
-                    "lamda_yy": 0,
-                    "lamda_zz": 0,
-                    "lamda_yz": 0,
-                    "lamda_xz": 0,
-                    "lamda_xy": 0
-                }
-                csv_writer.writerow(info)
+        #         info = {
+        #             "Sim_step": 0,
+        #             "lamda_xx": 0,
+        #             "lamda_yy": 0,
+        #             "lamda_zz": 0,
+        #             "lamda_yz": 0,
+        #             "lamda_xz": 0,
+        #             "lamda_xy": 0
+        #         }
+        #         csv_writer.writerow(info)
 
-        filePath_node = "strain_data_rl/reward_cost_record.csv"
-        try:
-            os.remove(filePath_node)
-        except:
-            print("Error while deleting file ", filePath_node)
-        self.header = ["Sim_step", "cost", "reward"]
-        with open(filePath_node, "w", newline="") as csv_file:
-            csv_writer = csv.DictWriter(csv_file, fieldnames=self.header)
-            csv_writer.writeheader()
-        with open(filePath_node, 'a') as csv_file:
-            csv_writer = csv.DictWriter(csv_file, fieldnames=self.header)
-            info = {
-                "Sim_step": 0,
-                "cost": 0,
-                "reward": 0
-            }
-            csv_writer.writerow(info)
+        # filePath_node = "strain_data_rl/reward_cost_record.csv"
+        # try:
+        #     os.remove(filePath_node)
+        # except:
+        #     print("Error while deleting file ", filePath_node)
+        # self.header = ["Sim_step", "cost", "reward"]
+        # with open(filePath_node, "w", newline="") as csv_file:
+        #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.header)
+        #     csv_writer.writeheader()
+        # with open(filePath_node, 'a') as csv_file:
+        #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.header)
+        #     info = {
+        #         "Sim_step": 0,
+        #         "cost": 0,
+        #         "reward": 0
+        #     }
+        #     csv_writer.writerow(info)
 
 def getReward(root):
     """Compute the reward using Reward.getReward().

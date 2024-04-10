@@ -165,10 +165,9 @@ class AbstractEnv(gym.Env):
 
         self.timer = 0
         self.timeout = self.config["timeout"]
-
         # Start the server which distributes the calculations to its clients
         start_server(self.config)
-
+        
         if 'save_data' in self.config and self.config['save_data']:
             save_path_results = self.config['save_path']+"/data"
             os.makedirs(save_path_results, exist_ok=True)

@@ -24,7 +24,7 @@ def fiber_construction(Ks = 1e3, Kd = 5):
                 fiber_right_dof.append([]) 
             else:
                 fiber_left_dof.append([])
-            file_path = os.getcwd()+"/fiber" + str(j+1) + "right" +"_info.csv"
+            file_path = os.path.dirname(os.path.abspath(__file__))+"/fiber" + str(j+1) + "right" +"_info.csv"
 
             # Open the CSV file
             with open(file_path, 'r') as file:
