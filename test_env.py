@@ -112,7 +112,7 @@ if __name__ == '__main__':
         memoryUse = py.memory_info()[0]/2.**30
         print("[INFO]   >>> Memory usage:", memoryUse)
         print("[INFO]   >>> Object size:", sys.getsizeof(env))
-
+        env.design_changer(90)
         env.reset()
 
 

@@ -65,7 +65,11 @@ class WhiskerEnv(AbstractEnv):
 
     def step(self, action):
         return super().step(action)
-
+    
+    def design_changer(self,body_length):
+        self.config['body'] = body_length
+        print('check')
+        pass
     def reset(self):
         """Reset simulation.
 
@@ -79,7 +83,6 @@ class WhiskerEnv(AbstractEnv):
 
         self.config.update({'goalPos': self.goal})
         obs = start_scene(self.config, self.nb_actions)
-
         return (np.array(obs['observation']))
 
     def get_available_actions(self):
