@@ -333,7 +333,7 @@ class applyAction(Sofa.Core.Controller):
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value
         new_angleIn = current_angleIn + incr
-        print("increment of action =", incr)
+        # print("increment of action =", incr)
         if new_angleIn < round(60*m.pi/180,4):
             self.whisker_node.Articulation_system.angleIn.value = new_angleIn 
         else:
@@ -420,7 +420,7 @@ def startCmd_Whisker(rootNode, whisker,incr, duration):
             params={"whisker": whisker,
                     "incr": incr},
             duration=duration, mode="once"))
-    print('start action')
+    # print('start action')
 def translateWhisker(whisker, direction):
     """Function to translate finger.
 

@@ -1,6 +1,7 @@
 import os
 from typing import Optional
-
+import torch
+import numpy as np
 import gym
 from colorama import Fore
 from stable_baselines3.common.utils import set_random_seed
@@ -34,8 +35,9 @@ def make_env(env_id: str, rank: int = 0, seed: int = 0, max_episode_steps: Optio
             env_config = {"seed": env_seed}
         else:
             env_config['seed'] = env_seed
-
+        
         env = gym.make(env_id, config=env_config)
+
         env.seed(env_seed)
         env.reset()
 

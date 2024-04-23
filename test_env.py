@@ -18,9 +18,12 @@ import time
 import gym
 import argparse
 from colorama import Fore
-
+import torch
+# from distribution import update_gibbs_distribution_for_categories
 import sofagym
 from sofagym.envs import *
+import matplotlib.pyplot as plt
+
 RANDOM = False
 
 import psutil
@@ -77,6 +80,8 @@ if __name__ == '__main__':
     env.render()
     done = False
 
+
+
     print("Start ...")
     for i in range(episodes):
         print("\n--------------------------------")
@@ -86,6 +91,7 @@ if __name__ == '__main__':
         tot_reward = 0
         tot_rtf = 0
         done = False
+        
         while not done and idx < steps:
             idx += 1
 
@@ -112,7 +118,7 @@ if __name__ == '__main__':
         memoryUse = py.memory_info()[0]/2.**30
         print("[INFO]   >>> Memory usage:", memoryUse)
         print("[INFO]   >>> Object size:", sys.getsizeof(env))
-        env.design_changer(90)
+        
         env.reset()
 
 
