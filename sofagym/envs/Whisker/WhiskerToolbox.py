@@ -420,7 +420,7 @@ def startCmd_Whisker(rootNode, whisker,incr, duration):
             params={"whisker": whisker,
                     "incr": incr},
             duration=duration, mode="once"))
-    # print('start action')
+    print('start action')
 def translateWhisker(whisker, direction):
     """Function to translate finger.
 
@@ -633,7 +633,7 @@ def setPos(root, pos):
      ref_pos,
      deformable_pos,
      rigid_pos,
-    #  fiber1_right_pos,
+    # fiber1_right_pos,
     # fiber1_left_pos,
     # fiber2_right_pos,
     # fiber2_left_pos,

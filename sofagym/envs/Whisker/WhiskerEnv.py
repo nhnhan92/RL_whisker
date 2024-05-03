@@ -9,7 +9,7 @@ __date__ = "Oct 7 2020"
 
 import os
 import numpy as np
-import torch
+
 from sofagym.AbstractEnv import AbstractEnv
 from sofagym.rpc_server import start_scene
 
@@ -47,7 +47,6 @@ class WhiskerEnv(AbstractEnv):
                       "dt": 0.01
                       }
 
-    
     def __init__(self, config=None):
         super().__init__(config)
         nb_actions = -1
@@ -61,15 +60,17 @@ class WhiskerEnv(AbstractEnv):
         high_coordinates = np.array([1]*dim_state)
         self.observation_space = spaces.Box(low_coordinates, high_coordinates,
                                             dtype='float32')
-        
+        self.body_length_categories = np.array([80,90,100])
     
 
     def step(self, action):
         return super().step(action)
-    
-    def design_changer(self,body_length):
-        self.config['body'] = body_length
-        pass
+
+    def design_changer(self, body_length_id):
+        print("********************************************************")
+        body_length_id = int(body_length_id.item())
+        self.config['body'] = self.body_length_categories[body_length_id]
+
     def reset(self):
         """Reset simulation.
 
@@ -80,15 +81,10 @@ class WhiskerEnv(AbstractEnv):
 
         """
         super().reset()
-        categories = np.array([80,90,100]) # Categories from 1 to 10
-        initial_logits = torch.ones(3,dtype=torch.float)
-        initial_beta = 1.0  # Initial inverse temperature
-        
+
         self.config.update({'goalPos': self.goal})
-        sample = update_gibbs_distribution_for_categories(categories, initial_logits, initial_beta,update_beta=0)
-        print("SAMPLE = ", categories[sample.item()])
-        self.design_changer(categories[sample.item()])
         obs = start_scene(self.config, self.nb_actions)
+
         return (np.array(obs['observation']))
 
     def get_available_actions(self):
@@ -104,28 +100,3 @@ class WhiskerEnv(AbstractEnv):
         """
         return list(range(int(self.nb_actions)))
 
-class CustomCategoricalDistribution:
-    def __init__(self, logits):
-        self.dist = torch.distributions.Categorical(logits=logits)
-
-    def sample(self):
-        return self.dist.sample()
-    
-    
-def gibbs_distribution_for_categories(categories, logits, beta):
-    custom_dist = CustomCategoricalDistribution(logits * beta)
-    return custom_dist
-
-
-# Function to update Gibbs distribution for categories over time and sample
-def update_gibbs_distribution_for_categories(categories, initial_logits, initial_beta, update_beta):
-    updated_logits = initial_logits + torch.tensor(np.random.rand(initial_logits.shape[0]))  # Update logits with random values
-    updated_beta = initial_beta + update_beta
-    
-    current_distribution = gibbs_distribution_for_categories(categories, updated_logits, updated_beta)  # Calculate current distribution
-    
-    # Sample from the current distribution
-    sample = current_distribution.sample()
-    print(f"Sample at step: Category {categories[sample]}")
-
-    return sample
