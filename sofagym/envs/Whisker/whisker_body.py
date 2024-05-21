@@ -2,7 +2,8 @@ import Sofa
 import os
 import csv
 import math as m
-
+from mesh import whisker_body, whisker_chamber, whisker_mesh_manager
+from 
 YoungsModulus = 150
 PoissonRatio = 0.4
 
@@ -62,7 +63,19 @@ def Whisker(visu, simu, name="Whisker",
 
     parent = Sofa.Core.Node(name)
     model = parent.addChild("MechanicalModel")
-
+    ### body mesh creator
+    whisker_body.mesh_genarator(body_bot_radius = 12,
+                                cone_angle = 85.5,
+                                body_height = body_length,
+                                no_chamber = no_chamber,
+                                chamber_bot_radius = 10,
+                                chamber_height = 24,
+                                mesh_size = 4)
+    whisker_chamber.mesh_genarator(no_chamber = no_chamber,
+                                    chamber_bot_radius = 10,
+                                    cone_angle = 85.5,
+                                    chamber_height = 24,
+                                    mesh_size = 4)
     model.addObject('MeshVTKLoader', name='loader', filename=MeshesPath+str(body_length)+'/whisker_'+str(no_chamber)+'chamber_'+str(body_length)+'_vtk.vtk', 
                     scale3d=[1, 1, 1], translation=translation, rotation=rotation,createSubelements=1)
     model.addObject('TetrahedronSetTopologyContainer', name = "container", position="@loader.position", tetrahedra="@loader.tetrahedra")
