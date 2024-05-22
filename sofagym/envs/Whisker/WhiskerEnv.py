@@ -12,10 +12,13 @@ import numpy as np
 import torch
 from sofagym.AbstractEnv import AbstractEnv
 from sofagym.rpc_server import start_scene
-from distribution import update_gibbs_distribution_for_categories
+from .distribution import update_gibbs_distribution_for_categories
 from gym import spaces
-from design_space.design_space import whiskerdesignspace
+import sys
+import pathlib
+from .design_space.design_space import whiskerdesignspace
 
+# sys.path.insert(1, str(pathlib.Path(__file__).parent.absolute()))
 class WhiskerEnv(AbstractEnv):
     """Sub-class of AbstractEnv, dedicated to the gripper scene.
 
@@ -70,7 +73,7 @@ class WhiskerEnv(AbstractEnv):
     
     def design_changer(self,design_params):
         self.config['body'] = design_params[0]
-        self.config['no_chamber'] = design_params [1]
+        self.config['no_chamber'] = design_params[1]
         
     def reset(self):
         """Reset simulation.
@@ -87,7 +90,7 @@ class WhiskerEnv(AbstractEnv):
         initial_beta = 1.0  # Initial inverse temperature
         
         self.config.update({'goalPos': self.goal})
-        sample = update_gibbs_distribution_for_categories(design_space, initial_logits, initial_beta,update_beta=0)
+        sample = update_gibbs_distribution_for_categories(design_space, initial_logits, initial_beta)
         print("SAMPLE = ", design_space[sample.item()])
         self.design_changer(design_space[sample.item()])
         obs = start_scene(self.config, self.nb_actions)

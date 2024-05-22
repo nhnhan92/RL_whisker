@@ -22,15 +22,3 @@ class whiskerdesignspace():
 
         return design
             
-if __name__ == '__main__':
-    design_space = gym.spaces.Discrete(n=9)
-    opt = DiscreteDesignOptimizer(design_space, 0, 100)
-    for t in range(100):
-        designs = torch.stack([opt.sample() for _ in range(100)])
-        rewards = 10 * torch.from_numpy(np.random.rand(100)).float()
-        opt.update(designs, rewards, t)
-        opt.log(t)
-        if t % 10 == 0:
-            state = opt.state_dict()
-            opt = DiscreteDesignOptimizer(design_space, 0, 100)
-            opt.load_state_dict(state)

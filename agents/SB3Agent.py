@@ -249,7 +249,6 @@ class SB3Agent(SofaBaseAgent):
         """
         self.init_dirs()
         self.load_params()
-        print('CHECKaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
         self.env = self.env_wrap(self.n_envs, normalize=True)
 
         if not self.model_timestep:

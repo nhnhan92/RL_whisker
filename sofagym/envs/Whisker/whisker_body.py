@@ -2,7 +2,8 @@ import Sofa
 import os
 import csv
 import math as m
-from mesh import whisker_body, whisker_chamber, whisker_mesh_manager
+from mesh.whisker_body import mesh_generator as body_mesh
+from mesh.whisker_chamber import mesh_generator as chamber_mesh
 
 YoungsModulus = 150
 PoissonRatio = 0.4
@@ -63,14 +64,14 @@ def Whisker(visu, simu, name="Whisker",
     parent = Sofa.Core.Node(name)
     model = parent.addChild("MechanicalModel")
     ### body mesh creator
-    whisker_body.mesh_genarator(body_bot_radius = 12,
+    body_mesh(body_bot_radius = 12,
                                 cone_angle = 85.5,
                                 body_height = body_length,
                                 no_chamber = no_chamber,
                                 chamber_bot_radius = 10,
                                 chamber_height = 24,
                                 mesh_size = 4)
-    whisker_chamber.mesh_genarator(no_chamber = no_chamber,
+    chamber_mesh(no_chamber = no_chamber,
                                     chamber_bot_radius = 10,
                                     cone_angle = 85.5,
                                     chamber_height = 24,

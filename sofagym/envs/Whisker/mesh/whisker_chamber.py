@@ -1,21 +1,22 @@
 import gmsh
 import math as m
 import os
-from whisker_mesh_manager import chamber_mesh
+from .whisker_mesh_manager import chamber_mesh
 
 # Element size for creating mechanical model
 mesh_size = 4
 
-gmsh.initialize()
-gmsh.option.setNumber("General.Terminal", 0)
 
-gmsh.model.add("whisker_chamber")
-gmsh.logger.start()
-def mesh_genarator(no_chamber = 2,
+def mesh_generator(no_chamber = 2,
                     chamber_bot_radius = 10,
                     cone_angle = 85.5,
                     chamber_height = 24,
                     mesh_size = mesh_size):
+    gmsh.initialize()
+    gmsh.option.setNumber("General.Terminal", 0)
+
+    gmsh.model.add("whisker_chamber")
+    gmsh.logger.start()
     ### Chambers
     chamber_mesh.chamber(no_chamber = no_chamber,
                         chamber_bot_radius = chamber_bot_radius,
@@ -33,14 +34,14 @@ def mesh_genarator(no_chamber = 2,
     gmsh.model.mesh.generate(2)
 
     ### Exporting files
-    gmsh.write("/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/mesh/chamber_stk.stl")
+    gmsh.write("/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/mesh/chamber_stl.stl")
 
     # gmsh.fltk.run()
     gmsh.finalize()
 
-if __name__ == '__main__':
-    mesh_genarator(no_chamber = 2,
-                    chamber_bot_radius = 10,
-                    cone_angle = 85.5,
-                    chamber_height = 24,
-                    mesh_size = 4)
+# if __name__ == '__main__':
+#     mesh_genarator(no_chamber = 2,
+#                     chamber_bot_radius = 10,
+#                     cone_angle = 85.5,
+#                     chamber_height = 24,
+#                     mesh_size = 4)

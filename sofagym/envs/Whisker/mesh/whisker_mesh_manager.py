@@ -28,10 +28,10 @@ class chamber_mesh():
             chamber_plane = gmsh.model.occ.addPlaneSurface([curve], tag=-1)
             chamber = gmsh.model.occ.revolve([(2, chamber_plane)], rot_axis[0], rot_axis[1], 
                                             rot_axis[2], rot_axis[3], rot_axis[4], rot_axis[5], 2*m.pi)
-            p1 = gmsh.model.occ.addPoint(chamber_bot_radius, chamber_dist, 0, mesh_size, -1)
-            p2 = gmsh.model.occ.addPoint(-chamber_bot_radius, -chamber_dist, 0, mesh_size, -1)
-            p3 = gmsh.model.occ.addPoint(chamber_bot_radius, -chamber_dist, 0, mesh_size, -1)
-            p4 = gmsh.model.occ.addPoint(-chamber_bot_radius, chamber_dist, 0, mesh_size, -1)
+            p1 = gmsh.model.occ.addPoint(chamber_dist, chamber_bot_radius,  0, mesh_size, -1)
+            p2 = gmsh.model.occ.addPoint( -chamber_dist, -chamber_bot_radius, 0, mesh_size, -1)
+            p3 = gmsh.model.occ.addPoint(-chamber_dist, chamber_bot_radius,  0, mesh_size, -1)
+            p4 = gmsh.model.occ.addPoint(chamber_dist,-chamber_bot_radius,  0, mesh_size, -1)
             
             l1 = gmsh.model.occ.addLine(p1, p4, tag=-1)
             l2 = gmsh.model.occ.addLine(p4, p2, tag=-1)
@@ -167,7 +167,7 @@ def main():
 
         
 
-    gmsh.fltk.run()
+    # gmsh.fltk.run()
     gmsh.finalize()
 
 if __name__ == '__main__':

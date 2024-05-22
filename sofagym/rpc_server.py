@@ -378,7 +378,6 @@ def avalaible_port(to_str=False):
     """
     with socketserver.TCPServer(("localhost", 0), None) as s:
         free_port = s.server_address[1]
-        print(free_port)
 
     if to_str:
         return str(free_port)
