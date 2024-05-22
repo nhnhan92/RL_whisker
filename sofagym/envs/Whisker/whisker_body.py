@@ -3,13 +3,12 @@ import os
 import csv
 import math as m
 from mesh import whisker_body, whisker_chamber, whisker_mesh_manager
-from 
+
 YoungsModulus = 150
 PoissonRatio = 0.4
 
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
-MeshesPath = os.path.dirname(os.path.abspath(__file__))+'/mesh/length_'
-
+# MeshesPath = os.path.dirname(os.path.abspath(__file__))+'/mesh/length_'
 
 def fiber_construction(Ks = 1e3, Kd = 5):
     chamber = ["right", "left"]
@@ -76,7 +75,7 @@ def Whisker(visu, simu, name="Whisker",
                                     cone_angle = 85.5,
                                     chamber_height = 24,
                                     mesh_size = 4)
-    model.addObject('MeshVTKLoader', name='loader', filename=MeshesPath+str(body_length)+'/whisker_'+str(no_chamber)+'chamber_'+str(body_length)+'_vtk.vtk', 
+    model.addObject('MeshVTKLoader', name='loader', filename=path+'body_vtk.vtk', 
                     scale3d=[1, 1, 1], translation=translation, rotation=rotation,createSubelements=1)
     model.addObject('TetrahedronSetTopologyContainer', name = "container", position="@loader.position", tetrahedra="@loader.tetrahedra")
     model.addObject('TetrahedronSetTopologyModifier')
@@ -94,7 +93,7 @@ def Whisker(visu, simu, name="Whisker",
     # model.addObject('LinearSolverConstraintCorrection', name='GCS')
     
     collisionmodel = model.addChild("CollisionMesh")
-    collisionmodel.addObject("MeshSTLLoader", name="loader", filename=MeshesPath+str(body_length)+'/whisker_'+str(body_length)+'_stl.stl',
+    collisionmodel.addObject("MeshSTLLoader", name="loader", filename=path+'body_stl.stl',
                                 rotation=[180.0, 0.0, 0.0], translation=translation, flipNormals = 0)
     collisionmodel.addObject('MeshTopology', src="@loader")
     collisionmodel.addObject('MechanicalObject')
@@ -110,7 +109,7 @@ def Whisker(visu, simu, name="Whisker",
     chamber_node = model.addChild('Chamber')
     chamber_name = ["right", "left"]
     for cavity_idx in range(no_chamber):
-        CavitySurfaceMeshPath = path+str(no_chamber)+'chamber.stl'
+        CavitySurfaceMeshPath = path+'chamber_stl.stl'
         cavity = chamber_node.addChild('cavity'+str(cavity_idx))
         cavity.addObject('MeshSTLLoader', name='loader', filename=CavitySurfaceMeshPath,rotation=[0, 0, 0+360*cavity_idx/no_chamber])
         cavity.addObject('MeshTopology', src='@loader', name='topo')
