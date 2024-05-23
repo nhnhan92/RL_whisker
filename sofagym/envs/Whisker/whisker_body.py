@@ -122,20 +122,20 @@ def Whisker(visu, simu, name="Whisker",
     ##########################################
     # Fibers node                            #
     ##########################################
-    fiber_node = model.addChild("fiber")
-    fiber_dof, spring_info = fiber_construction(Ks = 1e4, Kd = 5)
-    for chamber in range(len(chamber_name)):
-        for fiber_idx in range (2):
-            fiber = fiber_node.addChild('fiber'+str(fiber_idx+1)+"_"+chamber_name[chamber])
-            # fiber = parent.addChild(name+chamber[cavity_idx])
-            fiber.addObject("MechanicalObject", template="Vec3", name="dofs",
-                            position=fiber_dof[chamber][fiber_idx],
-                            showObject=1, showObjectScale=1,translation=[0, 0, 0.1])
-            fiber.addObject('MeshTopology', name='lines', lines=[[i, i + 1] for i in range(len(fiber_dof[chamber][fiber_idx])-1)]) 
-            fiber.addObject('UniformMass', totalMass=0.000008)
-            # fiber.addObject("FixedConstraint", name="FixedConstraint", indices=[0])
-            fiber.addObject("StiffSpringForceField", template="Vec3d", name="springs", showArrowSize=0.2, drawMode=1,spring=spring_info[chamber][fiber_idx])
-            fiber.addObject('BarycentricMapping', name='mapping', input = model.getLinkPath())
+    # fiber_node = model.addChild("fiber")
+    # fiber_dof, spring_info = fiber_construction(Ks = 1e4, Kd = 5)
+    # for chamber in range(len(chamber_name)):
+    #     for fiber_idx in range (2):
+    #         fiber = fiber_node.addChild('fiber'+str(fiber_idx+1)+"_"+chamber_name[chamber])
+    #         # fiber = parent.addChild(name+chamber[cavity_idx])
+    #         fiber.addObject("MechanicalObject", template="Vec3", name="dofs",
+    #                         position=fiber_dof[chamber][fiber_idx],
+    #                         showObject=1, showObjectScale=1,translation=[0, 0, 0.1])
+    #         fiber.addObject('MeshTopology', name='lines', lines=[[i, i + 1] for i in range(len(fiber_dof[chamber][fiber_idx])-1)]) 
+    #         fiber.addObject('UniformMass', totalMass=0.000008)
+    #         # fiber.addObject("FixedConstraint", name="FixedConstraint", indices=[0])
+    #         fiber.addObject("StiffSpringForceField", template="Vec3d", name="springs", showArrowSize=0.2, drawMode=1,spring=spring_info[chamber][fiber_idx])
+    #         fiber.addObject('BarycentricMapping', name='mapping', input = model.getLinkPath())
             
     ##########################################
     # Visualization                          #

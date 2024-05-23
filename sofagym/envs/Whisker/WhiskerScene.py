@@ -8,7 +8,7 @@ from splib3.animation import AnimationManagerController
 from stlib3.components import addOrientedBoxRoi
 from splib3.numerics import vec3
 from stlib3.physics.mixedmaterial import Rigidify
-
+import json
 import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute())+"/../")
@@ -100,9 +100,8 @@ pole_simu_pos = [pole_init_pos[0]+precontact_distance,
 
 def createScene(root, config={"source": [-600.0, -25, 200],
                               "target": [30, -25, 100],
-                              "goalPos": [0, 0, 100],
-                              "body": 100,
-                              "no_chamber":2}, mode='simu_and_visu'):
+                              "goalPos": [0, 0, 100]
+                              }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
     from splib3.animation import animate
     from splib3.animation import AnimationManager
@@ -167,13 +166,14 @@ def createScene(root, config={"source": [-600.0, -25, 200],
                     angleCone=0.1)
     # root.addObject(AnimationManagerController(root))
     root.gravity.value = [0.0, -9810, 0.0]
-
+    
     root.dt.value = 0.01
 
     # _, ref_pos = Whisker(root, visu, simu, name="Whisker",
     #        rotation=[180, 0.0, 0.0], translation=[0.0, 0.0, 0.0], ref_point = [0, 0, 90])
-
-    a,body_length = Whisker_node(body_length=config["body"],no_chamber=config["no_chamber"])
+    with open('data.json', 'r') as file:
+        design_params = json.load(file)
+    a,body_length = Whisker_node(body_length=design_params["body_length"],no_chamber=design_params["no_chamber"])
     whisker_model = root.addChild(a)
 
     goal_mo = add_goal_node(root)
@@ -202,7 +202,7 @@ def createScene(root, config={"source": [-600.0, -25, 200],
 
     root.addObject(rewardShaper(name="Reward", rootNode=root, goalPos=config['goalPos']))
     root.addObject(goalSetter(name="GoalSetter", goalMO=goal_mo, goalPos=config['goalPos']))
-    root.addObject(applyAction(name="applyAction", root=root))
+    root.addObject(applyAction(name="applyAction", root=root,config = config))
     # setData(whisker_model.Articulation_system.ServoMotor.Articulation.ServoWheel.dofs, showObject=1, showObjectScale=20,
     # drawMode=2, showColor=[1., 1., 0., 1.])
     
