@@ -29,7 +29,7 @@ USE_GUI = True
 
 
 
-def Whisker_node(name="Whisker_node", body_length = 0,no_chamber = 0):
+def Whisker_node(name="Whisker_node", design_params = None):
     
     def __rigidify(self, translation = [0,0,0], eulerRotation = [0, 0.0, 0.0],scale = [40, 40, 0.5]):
         deformableObject = self.Whisker.MechanicalModel
@@ -74,7 +74,7 @@ def Whisker_node(name="Whisker_node", body_length = 0,no_chamber = 0):
     self.addObject('GenericConstraintCorrection') 
 
     whiskernode = Whisker(visu = True, simu = True, name="Whisker",rotation=[0, 0.0, 0.0], 
-                          translation=[0.0, 0.0, 0.0], body_length=body_length,no_chamber=no_chamber)
+                          translation=[0.0, 0.0, 0.0], design_params = design_params)
     self.addChild(whiskernode)
     arti_system = ActuatedArm(
         name="Articulation_system", translation=[0.0, 0.0, 0.0], rotation=[180.0, 0.0, 0.0],
@@ -82,7 +82,7 @@ def Whisker_node(name="Whisker_node", body_length = 0,no_chamber = 0):
     self.addChild(arti_system)
     __rigidify(self)
     __attachToSkin(self)
-    return self, int(body_length)
+    return self
 
 
 def add_goal_node(root):
@@ -173,13 +173,13 @@ def createScene(root, config={"source": [-600.0, -25, 200],
     #        rotation=[180, 0.0, 0.0], translation=[0.0, 0.0, 0.0], ref_point = [0, 0, 90])
     with open('data.json', 'r') as file:
         design_params = json.load(file)
-    a,body_length = Whisker_node(body_length=design_params["body_length"],no_chamber=design_params["no_chamber"])
+    a = Whisker_node(design_params=design_params)
     whisker_model = root.addChild(a)
 
     goal_mo = add_goal_node(root)
     
-    small_end_radi = 12 - (int(body_length)/m.tan(85.5*m.pi/180))
-    pole_simu_pos = [1+3+root.localmindistance.contactDistance.value+small_end_radi,0,body_length]
+    small_end_radi = 12 - (design_params["body_length"])/m.tan(85.5*m.pi/180)
+    pole_simu_pos = [1+3+root.localmindistance.contactDistance.value+small_end_radi,0,design_params["body_length"]]
     #### POLE
     pole(root,visu, name="pole",translation = pole_simu_pos)
 
