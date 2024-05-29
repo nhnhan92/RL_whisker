@@ -1,5 +1,4 @@
 import numpy as np
-import gym
 from collections import deque
 
 from dl import nest
@@ -62,12 +61,13 @@ class DesignManager(VecEnvWrapper):
          - records and logs the performance of each design.
     """
 
-    def __init__(self, venv):
+    def __init__(self, venv, design_space):
         super().__init__(venv)
         self.steps_per_design = None
         self.design_count = 0
         self.steps = 0
         self.design_dist = None
+        self.design_space = design_space
         self.designs = None
         self.rewards = np.zeros(self.num_envs)
 
@@ -96,11 +96,15 @@ class DesignManager(VecEnvWrapper):
         return p
     
     def _sample_design(self):
+        if self.design_dist is None:
+            return np.array(self.design_space.sample())
         with torch.no_grad():
             return self._unnorm(nest.map_structure(
                             lambda x: x.numpy(), self.design_dist.sample()))
 
     def _sample_mode(self):
+        if self.design_dist is None:
+            return np.array(self.design_space.sample())
         with torch.no_grad():
             return self._unnorm(nest.map_structure(
                             lambda x: x.numpy(), self.design_dist.mode()))
@@ -112,6 +116,7 @@ class DesignManager(VecEnvWrapper):
 
     def init_scene(self):
         self.designs = [self._sample_design() for _ in range(self.num_envs)]
+        print("designs: ", self.designs)
         self.venv.set_designs(self.designs)
         self.rewards = np.zeros(self.num_envs)
 

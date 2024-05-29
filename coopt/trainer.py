@@ -12,6 +12,7 @@ from coopt.discrete_robot_optimizer import DiscreteDesignOptimizer
 class CoOpt():
     def __init__(self,
                  env,
+                 design_space,
                  logdir,
                  steps_per_design,  # Number of evironment steps each design takes
                  batch_size,        # number of designs used in each update
@@ -28,9 +29,8 @@ class CoOpt():
             self.steps_per_design,
             self.batch_size
         )
-        # self.parameter_space = self.env.parameter_space
-        self.parameter_space = gym.spaces.Discrete(n=3)
-        self.design_optimizer = DiscreteDesignOptimizer(self.parameter_space, ent_decay_start, ent_decay_end)
+
+        self.design_optimizer = DiscreteDesignOptimizer(design_space, ent_decay_start, ent_decay_end)
         self.ckptr = Checkpointer(os.path.join(logdir, 'ckpts_design_params'))
         self.t = 0
         self.design = None
@@ -40,12 +40,11 @@ class CoOpt():
         self._ob = None
 
     def step(self):
-        # Set the design distribution in the environment
-        self.env.set_design_dist(self.design_optimizer.get_design_dist())
+        # Log the current step
         if self.t == 0:
             self.design_optimizer.log(self.t)
 
-        # Step env untiil update.
+        # Step env until update.
         if self._ob is None:
             self._ob = self.env.reset()
 
@@ -56,17 +55,22 @@ class CoOpt():
 
 
         # Update the design distribution
-        dt = self.env.num_envs
+        dt = self.env.num_envs * self.update_period
         self.t += dt
         design_count = self.env.get_design_count()
         designs_since_update = design_count - self.last_design_update
         if designs_since_update >= self.update_period:
             designs, rewards = self.env.get_designs_and_rewards(self.batch_size)
+            print("====================================")
+            print("designs: ", designs)
             designs = nest.map_structure(torch.from_numpy, designs)
             self.design_optimizer.update(designs, torch.from_numpy(rewards),
                                          self.t)
             self.design_optimizer.log(self.t)
             self.last_design_update = design_count
+    
+        # Set the design distribution in the environment
+        self.env.set_design_dist(self.design_optimizer.get_design_dist())
         return self.t
 
 

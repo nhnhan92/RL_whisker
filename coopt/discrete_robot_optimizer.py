@@ -65,6 +65,12 @@ class DiscreteDesignOptimizer(nn.Module):
 
     def update(self, designs, rewards, t):
         """Update the design distribution from the performance of a batch of designs."""
+        # print("+++++")
+        # print("designs: ", designs)
+        # print("rewards: ", rewards)
+        # print(rewards.float())
+        if isinstance(designs, list):
+            designs = torch.stack(designs)
         self.scores[designs] = rewards.float()
         self.set_beta(t)
 
