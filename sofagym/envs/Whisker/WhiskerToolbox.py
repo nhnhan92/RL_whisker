@@ -20,6 +20,8 @@ import sys
 import pathlib
 import csv
 import os
+import json
+import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute())+"/../")
@@ -306,7 +308,7 @@ class goalSetter(Sofa.Core.Controller):
         self.goalPos = None
         if kwargs["goalPos"]:
             self.goalPos = kwargs["goalPos"]
-            
+        
         self.count = 1
     def update(self):
         """Set the position of the goal.
@@ -329,10 +331,10 @@ class applyAction(Sofa.Core.Controller):
         self.whisker_node = self.root.Whisker_node
         self.angle_limit = round(60*m.pi/180,4)
         self.max_incr = 0.2*m.pi/180
-
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value
         new_angleIn = current_angleIn + incr
+
         # print("increment of action =", incr)
         if new_angleIn < round(60*m.pi/180,4):
             self.whisker_node.Articulation_system.angleIn.value = new_angleIn 
@@ -547,19 +549,23 @@ def getState(root):
         State: list of float
             The state of the environment/agent.
     """
-    cs = 3
-    right_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.SurfacePressureConstraint.getData('value').value.tolist()
+    # Define the file name
+    file_name = 'data.json'
+    with open(file_name, 'r') as file:
+        data = json.load(file)
+    
+    # right_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.SurfacePressureConstraint.getData('value').value.tolist()
     # right_pressure[0] /=10
-    left_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity1.SurfacePressureConstraint.getData('value').value.tolist()
+    # left_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity1.SurfacePressureConstraint.getData('value').value.tolist()
     # left_pressure[0] /=10
 
     rot_angle = [root.Whisker_node.Articulation_system.angleIn.value]
 
     goal_pos = _getGoalPos(root)
-    goal_pos = [round(float(k), cs) for k in goal_pos]
+    goal_pos = [round(float(k), 3) for k in goal_pos]
 
     # whisker_tips = [round(k, cs) for k in root.Whisker_node.Whisker.MechanicalModel.Ref_point.GoalMO.position.value[0].tolist()]
-    state = right_pressure + left_pressure + rot_angle
+    state = [data["pressure_1"]] + [data["pressure_1"]] + [data["pressure_1"]]+ rot_angle
 
     return state
 

@@ -33,7 +33,7 @@ def update_gibbs_distribution_for_categories(design_space, initial_logits, initi
     
     # Sample from the current distribution
     sample = current_distribution.sample()
-    print(f"Sampling Category {design_space[sample]}")
+    # print(f"Sampling Category {design_space[sample]}")
 
     # plt.title('Gibbs Distribution for Categories Over Time')
     # plt.xlabel('Categories')

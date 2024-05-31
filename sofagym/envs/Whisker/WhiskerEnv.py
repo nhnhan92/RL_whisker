@@ -17,7 +17,7 @@ from gym import spaces
 import sys
 import pathlib
 from .design_space.design_space import whiskerdesignspace
-
+import json
 # sys.path.insert(1, str(pathlib.Path(__file__).parent.absolute()))
 class WhiskerEnv(AbstractEnv):
     """Sub-class of AbstractEnv, dedicated to the gripper scene.
@@ -60,12 +60,14 @@ class WhiskerEnv(AbstractEnv):
         self.action_space = spaces.Box(low=low, high=high, shape=(1,), dtype='float32')
         self.nb_actions = str(nb_actions)
 
-        dim_state = 3
+        dim_state = 4
         low_coordinates = np.array([-1]*dim_state)
         high_coordinates = np.array([1]*dim_state)
         self.observation_space = spaces.Box(low_coordinates, high_coordinates,
                                             dtype='float32')
         
+        ins = whiskerdesignspace()
+        self.design_space = ins.design_space()
     
 
     def step(self, action):
@@ -85,16 +87,35 @@ class WhiskerEnv(AbstractEnv):
 
         """
         super().reset()
-        design_space = whiskerdesignspace.design_space()
-        initial_logits = torch.ones(len(design_space),dtype=torch.float)
-        initial_beta = 1.0  # Initial inverse temperature
-        
         self.config.update({'goalPos': self.goal})
-        sample = update_gibbs_distribution_for_categories(design_space, initial_logits, initial_beta)
-        print("SAMPLE = ", design_space[sample.item()])
-        self.design_changer(design_space[sample.item()])
+        sample = self.sampling_design()
+        self.save_json(self.design_space[sample])
+        print("SAMPLE = ", self.design_space[sample])
+        self.design_changer(self.design_space[sample])
         obs = start_scene(self.config, self.nb_actions)
+
         return (np.array(obs['observation']))
+    
+    def sampling_design(self):
+        
+        initial_logits = torch.ones(len(self.design_space),dtype=torch.float)
+        initial_beta = 1.0  # Initial inverse temperature
+        self.sample = update_gibbs_distribution_for_categories(self.design_space, initial_logits, initial_beta)
+        return self.sample.item()
+
+    def save_json(self,data):
+        # Define the file name
+        file_name = 'data.json'
+        # Define the new data to be added
+        write_data = {
+            "body_length": data[0],
+            "no_chamber": data[1],
+            "pressure_1": data[2],
+            "pressure_2": data[3],
+            "pressure_3": data[4]
+        }
+        with open(file_name, 'w') as file:
+            json.dump(write_data, file, indent=4)
 
     def get_available_actions(self):
         """Gives the actions available in the environment.

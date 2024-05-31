@@ -155,7 +155,7 @@ if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("SYNTAX: python3.7 client.py config nb_actions port_rpc")
         sys.exit(-1)
-
+    
     config = ast.literal_eval(sys.argv[1])
     nb_actions = sys.argv[2]
     port_rpc = sys.argv[3]
