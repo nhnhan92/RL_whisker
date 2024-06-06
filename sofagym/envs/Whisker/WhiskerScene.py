@@ -171,7 +171,10 @@ def createScene(root, config={"source": [-600.0, -25, 200],
 
     # _, ref_pos = Whisker(root, visu, simu, name="Whisker",
     #        rotation=[180, 0.0, 0.0], translation=[0.0, 0.0, 0.0], ref_point = [0, 0, 90])
-    with open('data.json', 'r') as file:
+    
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    json_file_path = os.path.join(current_dir, "data.json")
+    with open(json_file_path, 'r') as file:
         design_params = json.load(file)
     a = Whisker_node(design_params=design_params)
     whisker_model = root.addChild(a)

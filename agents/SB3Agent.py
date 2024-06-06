@@ -273,6 +273,7 @@ class SB3Agent(SofaBaseAgent):
         """
         if total_timesteps is None:
             total_timesteps = self.fit_kwargs['total_timesteps']
+
         save_freq = max(self.fit_kwargs['save_freq'] // self.n_envs, 1)
         eval_freq = max(self.fit_kwargs['eval_freq'] // self.n_envs, 1)
         n_eval_episodes = self.fit_kwargs['n_eval_episodes']

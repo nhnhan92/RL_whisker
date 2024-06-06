@@ -422,7 +422,7 @@ def startCmd_Whisker(rootNode, whisker,incr, duration):
             params={"whisker": whisker,
                     "incr": incr},
             duration=duration, mode="once"))
-    # print('start action')
+    print('start action')
 def translateWhisker(whisker, direction):
     """Function to translate finger.
 
@@ -551,7 +551,9 @@ def getState(root):
     """
     # Define the file name
     file_name = 'data.json'
-    with open(file_name, 'r') as file:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    json_file_path = os.path.join(current_dir, file_name)
+    with open(json_file_path, 'r') as file:
         data = json.load(file)
     
     # right_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.SurfacePressureConstraint.getData('value').value.tolist()
@@ -639,7 +641,7 @@ def setPos(root, pos):
      ref_pos,
      deformable_pos,
      rigid_pos,
-    #  fiber1_right_pos,
+    # fiber1_right_pos,
     # fiber1_left_pos,
     # fiber2_right_pos,
     # fiber2_left_pos,

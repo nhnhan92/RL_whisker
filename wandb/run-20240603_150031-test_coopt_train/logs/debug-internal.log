@@ -1,0 +1,295 @@
+2024-06-03 15:00:31,900 INFO    StreamThr :19150 [internal.py:wandb_internal():85] W&B internal server running at pid: 19150, started at: 2024-06-03 15:00:31.900006
+2024-06-03 15:00:31,903 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status
+2024-06-03 15:00:31,905 INFO    WriterThread:19150 [datastore.py:open_for_write():87] open: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/run-test_coopt_train.wandb
+2024-06-03 15:00:31,905 DEBUG   SenderThread:19150 [sender.py:send():378] send: header
+2024-06-03 15:00:31,907 DEBUG   SenderThread:19150 [sender.py:send():378] send: run
+2024-06-03 15:00:31,909 INFO    SenderThread:19150 [sender.py:_setup_resume():748] checking resume status for None/rl_whisker/test_coopt_train
+2024-06-03 15:00:32,427 INFO    SenderThread:19150 [sender.py:_setup_resume():826] configured resuming with: ResumeState(resumed=True,step=23,history=23,events=1,output=56,runtime=86,wandb_runtime=None,summary={'train/step': 140, 'design/beta': 20, 'design/perplexity': 3, 'train/design_count': 0, 'design/perplexity_target': 2.9542113146147395, 'designs': {'ncols': 3, 'nrows': 1, 'sha256': 'bb7d0cf9a5a3227a52d6634c87ec8c6676f7e1d26747b0b384575d11f22cf6ad', 'artifact_path': 'wandb-client-artifact://szhid0w2yp26488uj50khb64kpy7mmyh2196tk8942uqx3inv0txgszebw0zw0zoahmrduuwfmbi2ka8dcnkn7fvqxwulkv9imriwy7ve52gk10b58jzwwsv5thec6uo/designs.table.json', '_latest_artifact_path': 'wandb-client-artifact://borkneyijllqq798d658zyezsvxvn941r10yhr1nuxt0f86ebqe25dghzjiwtsntlrfyw3zhjq0pqbgp380k5ggwzndu45qa1aokeul95qkpalcwdphnt7ed81c1ekyh:latest/designs.table.json', 'path': 'media/table/designs_15_bb7d0cf9a5a3227a52d6.table.json', 'size': 67, '_type': 'table-file'}, 'design/ent': 1.0986123085021973, '_timestamp': 1717394308.413107, 'design/ent_target': 1.0832317166267562, '_step': 22, '_runtime': 86.18282556533813},config={'_wandb': {'desc': None, 'value': {'m': [{'1': 'train/step'}, {'1': 'train/design_count', '5': 1, '6': [1, 3]}, {'1': 'designs', '5': 2, '6': [1, 3]}, {'1': 'design/beta', '5': 1, '6': [1]}, {'1': 'design/ent', '5': 1, '6': [1]}, {'1': 'design/ent_target', '5': 1, '6': [1]}, {'1': 'design/perplexity', '5': 1, '6': [1]}, {'1': 'design/perplexity_target', '5': 1, '6': [1]}], 't': {'1': [1, 55], '2': [1, 55], '3': [5, 7, 14, 23, 62], '4': '3.10.13', '5': '0.17.0', '8': [5], '13': 'linux-x86_64'}, 'framework': 'torch', 'start_time': 1717394275, 'cli_version': '0.17.0', 'is_jupyter_run': False, 'python_version': '3.10.13', 'is_kaggle_kernel': False}}},tags=[])
+2024-06-03 15:00:33,047 INFO    SenderThread:19150 [dir_watcher.py:__init__():211] watching files in: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files
+2024-06-03 15:00:33,047 INFO    SenderThread:19150 [sender.py:_start_run_threads():1123] run started: test_coopt_train with start time 1717394345.900003
+2024-06-03 15:00:33,051 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:00:33,051 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:00:33,062 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: check_version
+2024-06-03 15:00:33,063 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: check_version
+2024-06-03 15:00:33,431 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: run_start
+2024-06-03 15:00:34,048 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:00:34,942 DEBUG   HandlerThread:19150 [system_info.py:__init__():26] System info init
+2024-06-03 15:00:34,942 DEBUG   HandlerThread:19150 [system_info.py:__init__():41] System info init done
+2024-06-03 15:00:34,942 INFO    HandlerThread:19150 [system_monitor.py:start():194] Starting system monitor
+2024-06-03 15:00:34,942 INFO    SystemMonitor:19150 [system_monitor.py:_start():158] Starting system asset monitoring threads
+2024-06-03 15:00:34,943 INFO    SystemMonitor:19150 [interfaces.py:start():188] Started cpu monitoring
+2024-06-03 15:00:34,944 INFO    SystemMonitor:19150 [interfaces.py:start():188] Started disk monitoring
+2024-06-03 15:00:34,945 INFO    SystemMonitor:19150 [interfaces.py:start():188] Started gpu monitoring
+2024-06-03 15:00:34,946 INFO    SystemMonitor:19150 [interfaces.py:start():188] Started memory monitoring
+2024-06-03 15:00:34,947 INFO    SystemMonitor:19150 [interfaces.py:start():188] Started network monitoring
+2024-06-03 15:00:34,952 ERROR   gpu       :19150 [interfaces.py:monitor():142] Failed to sample metric: No data
+2024-06-03 15:00:34,952 ERROR   gpu       :19150 [interfaces.py:monitor():142] Failed to sample metric: No data
+2024-06-03 15:00:35,038 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: python_packages
+2024-06-03 15:00:35,038 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: stop_status
+2024-06-03 15:00:35,038 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: python_packages
+2024-06-03 15:00:35,039 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: stop_status
+2024-06-03 15:00:35,048 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/requirements.txt
+2024-06-03 15:00:35,344 DEBUG   SenderThread:19150 [sender.py:send():378] send: telemetry
+2024-06-03 15:00:37,344 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:00:39,049 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:00:39,907 DEBUG   SenderThread:19150 [sender.py:send():378] send: metric
+2024-06-03 15:00:39,907 DEBUG   SenderThread:19150 [sender.py:send():378] send: metric
+2024-06-03 15:00:39,907 DEBUG   SenderThread:19150 [sender.py:send():378] send: telemetry
+2024-06-03 15:00:39,907 DEBUG   SenderThread:19150 [sender.py:send():378] send: metric
+2024-06-03 15:00:39,907 DEBUG   SenderThread:19150 [sender.py:send():378] send: metric
+2024-06-03 15:00:39,907 WARNING SenderThread:19150 [sender.py:send_metric():1340] Seen metric with glob (shouldn't happen)
+2024-06-03 15:00:39,907 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:00:39,909 DEBUG   SenderThread:19150 [sender.py:send():378] send: metric
+2024-06-03 15:00:39,909 DEBUG   SenderThread:19150 [sender.py:send():378] send: metric
+2024-06-03 15:00:39,909 DEBUG   SenderThread:19150 [sender.py:send():378] send: metric
+2024-06-03 15:00:39,909 DEBUG   SenderThread:19150 [sender.py:send():378] send: metric
+2024-06-03 15:00:39,909 DEBUG   SenderThread:19150 [sender.py:send():378] send: metric
+2024-06-03 15:00:39,909 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:00:39,909 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:00:39,910 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:00:40,049 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:00:41,049 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:00:42,910 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:00:45,230 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: log_artifact
+2024-06-03 15:00:45,231 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: log_artifact
+2024-06-03 15:00:46,052 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/media/table/designs_24_1a9074f0766c89995aa9.table.json
+2024-06-03 15:00:46,053 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/media/table
+2024-06-03 15:00:46,053 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/media
+2024-06-03 15:00:46,080 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:00:46,083 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:00:47,195 INFO    wandb-upload_0:19150 [upload_job.py:push():130] Uploaded file /tmp/tmpweu7i9d_wandb/ki4sajc1-media/table/designs_24_1a9074f0766c89995aa9.table.json
+2024-06-03 15:00:47,476 INFO    wandb-upload_1:19150 [upload_job.py:push():88] Uploaded file /home/nhnhan/.local/share/wandb/artifacts/staging/tmp0f1dt4em
+2024-06-03 15:00:48,706 INFO    SenderThread:19150 [sender.py:send_request_log_artifact():1455] logged artifact run-test_coopt_train-designs - {'id': 'QXJ0aWZhY3Q6ODU4NTQ1NzIw', 'state': 'PENDING', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjE4MTcxMzA0OQ==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6ODU4NTQyMzMy', 'versionIndex': 0}}}
+2024-06-03 15:00:48,706 DEBUG   SenderThread:19150 [sender.py:send():378] send: files
+2024-06-03 15:00:48,706 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file media/table/designs_24_1a9074f0766c89995aa9.table.json with policy now
+2024-06-03 15:00:48,706 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:00:48,706 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:00:48,707 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:00:48,707 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:00:48,708 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:00:48,708 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:00:48,708 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:00:49,053 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:00:49,409 INFO    wandb-upload_0:19150 [upload_job.py:push():130] Uploaded file /tmp/tmpweu7i9d_wandb/60yxh9lf-media/table/designs_24_1a9074f0766c89995aa9.table.json
+2024-06-03 15:00:49,699 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:00:49,700 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:00:49,700 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:00:49,700 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:00:50,038 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: stop_status
+2024-06-03 15:00:50,039 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: stop_status
+2024-06-03 15:00:50,053 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:00:51,054 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:00:53,322 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:00:53,323 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:00:53,323 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:00:53,324 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:00:54,055 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:00:54,324 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:00:55,055 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:00:56,819 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:00:56,820 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:00:56,820 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:00:56,821 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:00:57,056 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:00:59,057 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:00:59,821 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:00,052 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:00,053 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:00,058 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:00,058 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:01,058 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:02,661 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:02,662 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:02,662 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:02,662 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:03,058 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:03,058 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:05,038 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: stop_status
+2024-06-03 15:01:05,039 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: stop_status
+2024-06-03 15:01:05,059 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:05,399 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:05,454 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:05,706 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:05,706 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:05,707 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:06,059 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/config.yaml
+2024-06-03 15:01:06,060 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:07,060 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:08,075 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:08,076 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:08,076 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:08,077 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:09,060 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:10,700 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:10,701 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:10,701 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:10,701 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:11,061 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:11,061 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:11,701 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:13,062 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:13,385 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:13,385 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:13,390 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:13,391 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:14,062 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:15,063 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:16,016 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:16,017 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:16,017 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:16,017 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:16,063 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:17,018 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:18,634 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:18,635 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:18,635 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:18,635 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:19,064 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:19,064 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:20,038 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: stop_status
+2024-06-03 15:01:20,039 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: stop_status
+2024-06-03 15:01:21,065 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:21,257 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:21,258 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:21,258 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:21,258 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:22,065 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:22,259 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:23,065 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:23,897 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:23,898 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:23,898 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:23,899 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:24,066 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:25,066 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:26,522 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:26,523 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:26,523 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:26,523 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:27,067 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:27,524 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:29,068 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:29,162 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:29,163 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:29,163 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:29,164 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:30,068 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:31,068 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:31,782 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:31,783 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:31,784 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:31,784 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:32,069 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:32,785 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:33,069 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:34,404 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:34,405 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:34,405 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:34,405 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:34,947 DEBUG   SystemMonitor:19150 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2024-06-03 15:01:34,949 DEBUG   SenderThread:19150 [sender.py:send():378] send: stats
+2024-06-03 15:01:35,039 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: stop_status
+2024-06-03 15:01:35,039 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: stop_status
+2024-06-03 15:01:35,070 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:37,046 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:37,047 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:37,047 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:37,048 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:37,071 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:37,071 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:38,048 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:39,071 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:39,725 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:39,725 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:39,726 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:39,726 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:40,072 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:41,072 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:42,342 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:42,345 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:42,345 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:42,345 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:43,073 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:43,346 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:44,957 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:44,958 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:44,958 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:44,958 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:45,074 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:45,074 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:47,074 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:47,591 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:47,592 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:47,592 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:47,592 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:48,075 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:48,593 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:49,075 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:50,039 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: stop_status
+2024-06-03 15:01:50,039 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: stop_status
+2024-06-03 15:01:50,228 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:50,453 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:50,453 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:50,453 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:51,076 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:52,879 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:52,880 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:52,880 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:52,880 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:53,077 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:53,077 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:53,880 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:01:55,078 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:55,528 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:55,529 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:55,529 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:55,529 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:56,078 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:57,078 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:01:58,320 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:01:58,320 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:01:58,320 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:01:58,321 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:01:59,079 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:01:59,321 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:02:00,964 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:02:00,964 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:02:00,964 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:02:00,965 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:02:01,081 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:02:01,081 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:02:03,081 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:02:03,628 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:02:03,629 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:02:03,629 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:02:03,629 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:02:04,082 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:02:04,630 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:02:04,950 DEBUG   SenderThread:19150 [sender.py:send():378] send: stats
+2024-06-03 15:02:05,039 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: stop_status
+2024-06-03 15:02:05,039 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: stop_status
+2024-06-03 15:02:05,082 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:02:06,255 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:02:06,256 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:02:06,256 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:02:06,256 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:02:07,083 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:02:08,889 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:02:08,889 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:02:08,889 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:02:08,890 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:02:09,083 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:02:09,084 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:02:09,890 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:02:11,084 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:02:11,532 DEBUG   HandlerThread:19150 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:02:11,532 DEBUG   SenderThread:19150 [sender.py:send():378] send: history
+2024-06-03 15:02:11,533 DEBUG   SenderThread:19150 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:02:11,533 INFO    SenderThread:19150 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:02:12,085 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:02:12,975 INFO    memory    :19150 [interfaces.py:monitor():138] Process proc.memory.rssMB has exited.
+2024-06-03 15:02:12,976 DEBUG   SystemMonitor:19150 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2024-06-03 15:02:12,976 DEBUG   SystemMonitor:19150 [system_monitor.py:_start():183] Publishing last batch of metrics
+2024-06-03 15:02:12,980 DEBUG   SenderThread:19150 [sender.py:send():378] send: stats
+2024-06-03 15:02:13,086 INFO    Thread-12 :19150 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_150031-test_coopt_train/files/output.log
+2024-06-03 15:02:14,455 INFO    MainThread:19150 [internal.py:handle_exit():75] Internal process exited

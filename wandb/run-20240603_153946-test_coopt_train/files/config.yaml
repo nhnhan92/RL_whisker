@@ -1,0 +1,61 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.13
+    cli_version: 0.17.0
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1717396786
+    t:
+      1:
+      - 1
+      - 55
+      2:
+      - 1
+      - 55
+      3:
+      - 5
+      - 7
+      - 14
+      - 23
+      - 62
+      4: 3.10.13
+      5: 0.17.0
+      8:
+      - 5
+      13: linux-x86_64
+    m:
+    - 1: train/step
+    - 1: train/design_count
+      5: 1
+      6:
+      - 1
+      - 3
+    - 1: designs
+      5: 2
+      6:
+      - 1
+      - 3
+    - 1: design/beta
+      5: 1
+      6:
+      - 1
+    - 1: design/ent
+      5: 1
+      6:
+      - 1
+    - 1: design/ent_target
+      5: 1
+      6:
+      - 1
+    - 1: design/perplexity
+      5: 1
+      6:
+      - 1
+    - 1: design/perplexity_target
+      5: 1
+      6:
+      - 1

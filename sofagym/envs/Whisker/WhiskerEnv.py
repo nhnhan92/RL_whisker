@@ -9,7 +9,7 @@ __date__ = "Oct 7 2020"
 
 import os
 import numpy as np
-import torch
+
 from sofagym.AbstractEnv import AbstractEnv
 from sofagym.rpc_server import start_scene
 from .distribution import update_gibbs_distribution_for_categories
@@ -18,6 +18,7 @@ import sys
 import pathlib
 from .design_space.design_space import whiskerdesignspace
 import json
+import torch
 # sys.path.insert(1, str(pathlib.Path(__file__).parent.absolute()))
 class WhiskerEnv(AbstractEnv):
     """Sub-class of AbstractEnv, dedicated to the gripper scene.
@@ -51,7 +52,6 @@ class WhiskerEnv(AbstractEnv):
                       "dt": 0.01
                       }
 
-    
     def __init__(self, config=None):
         super().__init__(config)
         nb_actions = -1
@@ -68,15 +68,27 @@ class WhiskerEnv(AbstractEnv):
         
         ins = whiskerdesignspace()
         self.design_space = ins.design_space()
+        # self.body_length_categories = np.array([80,90,100])
     
 
     def step(self, action):
         return super().step(action)
     
     def design_changer(self,design_params):
-        self.config['body'] = design_params[0]
-        self.config['no_chamber'] = design_params[1]
+        print("********************************************************")
         
+        sample = self.sampling_design()
+        self.save_json(self.design_space[sample])
+        print("SAMPLE = ", self.design_space[sample])
+        self.config['body'] = self.design_space[sample][0]
+        self.config['no_chamber'] = self.design_space[sample][1]
+        
+
+    # def design_changer(self, body_length_id):
+    #     print("********************************************************")
+    #     body_length_id = int(body_length_id.item())
+    #     self.config['body'] = self.body_length_categories[body_length_id]
+
     def reset(self):
         """Reset simulation.
 
@@ -87,11 +99,9 @@ class WhiskerEnv(AbstractEnv):
 
         """
         super().reset()
+
+
         self.config.update({'goalPos': self.goal})
-        sample = self.sampling_design()
-        self.save_json(self.design_space[sample])
-        print("SAMPLE = ", self.design_space[sample])
-        self.design_changer(self.design_space[sample])
         obs = start_scene(self.config, self.nb_actions)
 
         return (np.array(obs['observation']))

@@ -1,0 +1,90 @@
+2024-06-03 15:31:06,432 INFO    StreamThr :22807 [internal.py:wandb_internal():85] W&B internal server running at pid: 22807, started at: 2024-06-03 15:31:06.432118
+2024-06-03 15:31:06,434 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: status
+2024-06-03 15:31:06,435 INFO    WriterThread:22807 [datastore.py:open_for_write():87] open: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/run-test_coopt_train.wandb
+2024-06-03 15:31:06,435 DEBUG   SenderThread:22807 [sender.py:send():378] send: header
+2024-06-03 15:31:06,439 DEBUG   SenderThread:22807 [sender.py:send():378] send: run
+2024-06-03 15:31:06,440 INFO    SenderThread:22807 [sender.py:_setup_resume():748] checking resume status for None/rl_whisker/test_coopt_train
+2024-06-03 15:31:11,441 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: keepalive
+2024-06-03 15:31:16,443 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: keepalive
+2024-06-03 15:31:21,445 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: keepalive
+2024-06-03 15:31:26,448 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: keepalive
+2024-06-03 15:31:31,451 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: keepalive
+2024-06-03 15:31:34,815 INFO    SenderThread:22807 [sender.py:_setup_resume():826] configured resuming with: ResumeState(resumed=True,step=57,history=57,events=3,output=153,runtime=186,wandb_runtime=None,summary={'designs': {'nrows': 1, 'sha256': '1a9074f0766c89995aa9e5e26af5e70511c2a2590fff616325d7cf69e6cb086e', 'artifact_path': 'wandb-client-artifact://rxowtbrv0ul55hjnkvrx5gfas4hakvta6bja1gkx0yd9ewpyohykxcocqxd64bhq70luvpdirzjovbvk6yjxew8aoh2oy9rooqmxgj75vjjecpe3acj6xkdo8wbou1v6/designs.table.json', '_latest_artifact_path': 'wandb-client-artifact://itaej8l5361oas7rao3c9878pr5ay5n4xq4t3cyy4hx7j6ie4k3qzuisfi8m2abaxoag8jm7efyoly6mpldy3dct0iwxeh4wkzxvfiwjitke5m6vxorsfqw2fqh1m1fh:latest/designs.table.json', 'path': 'media/table/designs_24_1a9074f0766c89995aa9.table.json', 'size': 67, '_type': 'table-file', 'ncols': 3}, '_runtime': 185.6321666240692, 'design/ent': 1.0986123085021973, 'train/design_count': 0, 'design/perplexity': 3, 'design/perplexity_target': 2.796311150101448, '_step': 56, '_timestamp': 1717394531.5321696, 'train/step': 640, 'design/beta': 20, 'design/ent_target': 1.0283011021933508},config={'_wandb': {'desc': None, 'value': {'m': [{'1': 'train/step'}, {'1': 'train/design_count', '5': 1, '6': [1, 3]}, {'1': 'designs', '5': 2, '6': [1, 3]}, {'1': 'design/beta', '5': 1, '6': [1]}, {'1': 'design/ent', '5': 1, '6': [1]}, {'1': 'design/ent_target', '5': 1, '6': [1]}, {'1': 'design/perplexity', '5': 1, '6': [1]}, {'1': 'design/perplexity_target', '5': 1, '6': [1]}], 't': {'1': [1, 55], '2': [1, 55], '3': [5, 7, 14, 23, 62], '4': '3.10.13', '5': '0.17.0', '8': [5], '13': 'linux-x86_64'}, 'framework': 'torch', 'start_time': 1717394431, 'cli_version': '0.17.0', 'is_jupyter_run': False, 'python_version': '3.10.13', 'is_kaggle_kernel': False}}},tags=[])
+2024-06-03 15:31:36,453 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: keepalive
+2024-06-03 15:31:37,481 INFO    SenderThread:22807 [dir_watcher.py:__init__():211] watching files in: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/files
+2024-06-03 15:31:37,481 INFO    SenderThread:22807 [sender.py:_start_run_threads():1123] run started: test_coopt_train with start time 1717396080.432394
+2024-06-03 15:31:37,481 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:31:37,483 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:31:37,483 INFO    SenderThread:22807 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:31:37,487 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: check_version
+2024-06-03 15:31:37,487 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: check_version
+2024-06-03 15:31:38,485 INFO    Thread-12 :22807 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:31:40,457 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: run_start
+2024-06-03 15:31:40,468 DEBUG   HandlerThread:22807 [system_info.py:__init__():26] System info init
+2024-06-03 15:31:40,468 DEBUG   HandlerThread:22807 [system_info.py:__init__():41] System info init done
+2024-06-03 15:31:40,468 INFO    HandlerThread:22807 [system_monitor.py:start():194] Starting system monitor
+2024-06-03 15:31:40,468 INFO    SystemMonitor:22807 [system_monitor.py:_start():158] Starting system asset monitoring threads
+2024-06-03 15:31:40,469 INFO    SystemMonitor:22807 [interfaces.py:start():188] Started cpu monitoring
+2024-06-03 15:31:40,470 INFO    SystemMonitor:22807 [interfaces.py:start():188] Started disk monitoring
+2024-06-03 15:31:40,472 INFO    SystemMonitor:22807 [interfaces.py:start():188] Started gpu monitoring
+2024-06-03 15:31:40,473 INFO    SystemMonitor:22807 [interfaces.py:start():188] Started memory monitoring
+2024-06-03 15:31:40,474 INFO    SystemMonitor:22807 [interfaces.py:start():188] Started network monitoring
+2024-06-03 15:31:40,566 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: python_packages
+2024-06-03 15:31:40,566 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: python_packages
+2024-06-03 15:31:40,608 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: stop_status
+2024-06-03 15:31:40,608 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: stop_status
+2024-06-03 15:31:41,483 INFO    Thread-12 :22807 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/files/requirements.txt
+2024-06-03 15:31:42,299 DEBUG   SenderThread:22807 [sender.py:send():378] send: telemetry
+2024-06-03 15:31:43,299 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:31:44,484 INFO    Thread-12 :22807 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/files/output.log
+2024-06-03 15:31:45,410 DEBUG   SenderThread:22807 [sender.py:send():378] send: metric
+2024-06-03 15:31:45,410 DEBUG   SenderThread:22807 [sender.py:send():378] send: metric
+2024-06-03 15:31:45,410 DEBUG   SenderThread:22807 [sender.py:send():378] send: telemetry
+2024-06-03 15:31:45,410 DEBUG   SenderThread:22807 [sender.py:send():378] send: metric
+2024-06-03 15:31:45,410 DEBUG   SenderThread:22807 [sender.py:send():378] send: metric
+2024-06-03 15:31:45,410 WARNING SenderThread:22807 [sender.py:send_metric():1340] Seen metric with glob (shouldn't happen)
+2024-06-03 15:31:45,411 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:31:45,412 DEBUG   SenderThread:22807 [sender.py:send():378] send: metric
+2024-06-03 15:31:45,412 DEBUG   SenderThread:22807 [sender.py:send():378] send: metric
+2024-06-03 15:31:45,412 DEBUG   SenderThread:22807 [sender.py:send():378] send: metric
+2024-06-03 15:31:45,412 DEBUG   SenderThread:22807 [sender.py:send():378] send: metric
+2024-06-03 15:31:45,412 DEBUG   SenderThread:22807 [sender.py:send():378] send: metric
+2024-06-03 15:31:45,412 DEBUG   SenderThread:22807 [sender.py:send():378] send: history
+2024-06-03 15:31:45,412 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:31:45,412 INFO    SenderThread:22807 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:31:45,484 INFO    Thread-12 :22807 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/files/wandb-summary.json
+2024-06-03 15:31:46,484 INFO    Thread-12 :22807 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/files/output.log
+2024-06-03 15:31:48,413 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:31:51,807 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: log_artifact
+2024-06-03 15:31:51,808 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: log_artifact
+2024-06-03 15:31:52,487 INFO    Thread-12 :22807 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/files/media/table/designs_58_be06d91145f977285ab0.table.json
+2024-06-03 15:31:52,488 INFO    Thread-12 :22807 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/files/media
+2024-06-03 15:31:52,488 INFO    Thread-12 :22807 [dir_watcher.py:_on_file_created():271] file/dir created: /home/nhnhan/Desktop/sofa/SofaGym/wandb/run-20240603_153106-test_coopt_train/files/media/table
+2024-06-03 15:31:55,567 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: stop_status
+2024-06-03 15:31:56,062 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:31:56,064 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:31:59,458 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: partial_history
+2024-06-03 15:31:59,806 INFO    wandb-upload_0:22807 [upload_job.py:push():130] Uploaded file /tmp/tmpasb7qhxcwandb/3h4f9hzq-media/table/designs_58_be06d91145f977285ab0.table.json
+2024-06-03 15:32:00,306 INFO    wandb-upload_1:22807 [upload_job.py:push():88] Uploaded file /home/nhnhan/.local/share/wandb/artifacts/staging/tmpm9atka3l
+2024-06-03 15:32:00,485 INFO    cpu       :22807 [interfaces.py:monitor():138] Process cpu has exited.
+2024-06-03 15:32:00,487 INFO    memory    :22807 [interfaces.py:monitor():138] Process proc.memory.rssMB has exited.
+2024-06-03 15:32:00,488 DEBUG   SystemMonitor:22807 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2024-06-03 15:32:00,488 DEBUG   SystemMonitor:22807 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2024-06-03 15:32:00,488 DEBUG   SystemMonitor:22807 [system_monitor.py:_start():183] Publishing last batch of metrics
+2024-06-03 15:32:01,327 INFO    SenderThread:22807 [sender.py:send_request_log_artifact():1455] logged artifact run-test_coopt_train-designs - {'id': 'QXJ0aWZhY3Q6ODU4NTY3OTMw', 'state': 'PENDING', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjE4MTcxMzA0OQ==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6ODU4NTQ1NzIw', 'versionIndex': 1}}}
+2024-06-03 15:32:01,328 DEBUG   SenderThread:22807 [sender.py:send():378] send: files
+2024-06-03 15:32:01,328 INFO    SenderThread:22807 [sender.py:_save_file():1389] saving file media/table/designs_58_be06d91145f977285ab0.table.json with policy now
+2024-06-03 15:32:01,329 DEBUG   HandlerThread:22807 [handler.py:handle_request():158] handle_request: status_report
+2024-06-03 15:32:01,330 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: stop_status
+2024-06-03 15:32:01,635 DEBUG   SenderThread:22807 [sender.py:send():378] send: history
+2024-06-03 15:32:01,635 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:32:01,635 INFO    SenderThread:22807 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:32:01,636 DEBUG   SenderThread:22807 [sender.py:send():378] send: history
+2024-06-03 15:32:01,636 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:32:01,641 INFO    SenderThread:22807 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:32:01,641 DEBUG   SenderThread:22807 [sender.py:send():378] send: history
+2024-06-03 15:32:01,642 DEBUG   SenderThread:22807 [sender.py:send_request():405] send_request: summary_record
+2024-06-03 15:32:01,642 INFO    SenderThread:22807 [sender.py:_save_file():1389] saving file wandb-summary.json with policy end
+2024-06-03 15:32:01,642 DEBUG   SenderThread:22807 [sender.py:send():378] send: stats
+2024-06-03 15:32:02,146 INFO    wandb-upload_0:22807 [upload_job.py:push():130] Uploaded file /tmp/tmpasb7qhxcwandb/u7p6jqhf-media/table/designs_58_be06d91145f977285ab0.table.json
+2024-06-03 15:32:02,464 INFO    MainThread:22807 [internal.py:handle_exit():75] Internal process exited
