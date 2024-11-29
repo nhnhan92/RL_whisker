@@ -4,7 +4,7 @@ import csv
 import math as m
 from mesh.whisker_body import mesh_generator as body_mesh
 from mesh.whisker_chamber import mesh_generator as chamber_mesh
-
+from mesh.whisker_surface import surface_mesh_generator
 YoungsModulus = 150
 PoissonRatio = 0.4
 
@@ -76,6 +76,10 @@ def Whisker(visu, simu, name="Whisker",
                                     cone_angle = 85.5,
                                     chamber_height = 24,
                                     mesh_size = 4)
+    surface_mesh_generator(body_bot_radius = 12,
+                            cone_angle = 85.5,
+                            body_height = body_length,
+                            mesh_size = 4)
     model.addObject('MeshVTKLoader', name='loader', filename=path+'body_vtk.vtk', 
                     scale3d=[1, 1, 1], translation=translation, rotation=rotation,createSubelements=1)
     model.addObject('TetrahedronSetTopologyContainer', name = "container", position="@loader.position", tetrahedra="@loader.tetrahedra")
