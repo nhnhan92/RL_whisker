@@ -4,6 +4,7 @@ import wandb
 import gym
 from agents.utils import make_env
 from coopt.design_manager import DesignManager
+import os
 RANDOM = False
 
 import psutil
