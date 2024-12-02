@@ -28,7 +28,6 @@ pid = os.getpid()
 py = psutil.Process(pid)
 
 sys.path.insert(0, os.getcwd()+"/..")
-
 __import__('sofagym')
 name = {
         1:'bubblemotion-v0',
@@ -62,7 +61,6 @@ if __name__ == '__main__':
     env_name = args.env
     episodes = args.episodes
     steps = args.steps
-
     try:
         env = gym.make(env_name)
     except Exception:

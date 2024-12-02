@@ -11,8 +11,6 @@ __date__ = "Dec 01 2021"
 import os
 import pathlib
 import sys
-import Sofa
-from splib3.objectmodel import setData
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute())+"/../")
 sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute()))
@@ -147,13 +145,8 @@ def createScene(rootNode, config={"source": [0, 300, 0],
 
     rootNode.addObject(rewardShaper(name="Reward", rootNode=rootNode, goal_node=config['goalPos'],
                                     path_mesh=p_mesh, path_mo=p_mo, ball_mo=ball_mo))
-    
     rootNode.addObject(goalSetter(name="GoalSetter", rootNode=rootNode, goal=goal, goalPos=config['goalPos']))
-    setData(tripod.RigidifiedStructure.RigidParts.dofs, showObject=0, showObjectScale=20, drawMode=2)
-    setData(tripod.ActuatedArm2.ServoMotor.Articulation.ServoWheel.dofs, showObject=1, showObjectScale=20, drawMode=2)
-    setData(tripod.RigidifiedStructure.RigidParts.RigidifiedParticules.dofs, showObject=0, showObjectScale=1,
-            drawMode=1, showColor=[1., 1., 0., 1.])
-    setData(tripod.RigidifiedStructure.DeformableParts.dofs, showObject=0, showObjectScale=1, drawMode=2)
+    
     if visu:
         source = config["source"]
         target = config["target"]
@@ -166,32 +159,3 @@ def createScene(rootNode, config={"source": [0, 300, 0],
     animate(setupanimation, {"actuators": actuators, "step": 35.0, "angularstep": -1.4965}, duration=0.2)
 
     return rootNode
-
-def main():
-    import SofaRuntime
-    import Sofa.Gui
-    SofaRuntime.importPlugin("SofaOpenglVisual")
-    SofaRuntime.importPlugin("CImgPlugin")
-    SofaRuntime.importPlugin("SofaBaseMechanics")
-    SofaRuntime.importPlugin("SofaImplicitOdeSolver")
-    
-    root=Sofa.Core.Node("root")
-    
-    createScene(root)
-    Sofa.Simulation.init(root)
-    USE_GUI = True
-    if not USE_GUI:
-        for iteration in range(10):
-            Sofa.Simulation.animate(root, root.dt.value)
-
-    Sofa.Gui.GUIManager.Init("myscene", "qglviewer")
-    Sofa.Gui.GUIManager.createGUI(root, __file__)
-    Sofa.Gui.GUIManager.SetDimension(1080, 1080)
-    Sofa.Gui.GUIManager.MainLoop(root)
-    Sofa.Gui.GUIManager.closeGUI()
-    
-    print("End of simulation.")
-
-
-if __name__ == '__main__':
-    main()

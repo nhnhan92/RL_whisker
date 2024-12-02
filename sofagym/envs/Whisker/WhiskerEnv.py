@@ -9,8 +9,9 @@ __date__ = "Oct 7 2020"
 
 import os
 import numpy as np
-
+from typing import Optional
 from sofagym.AbstractEnv import AbstractEnv
+from sofagym.ServerEnv import ServerEnv
 from sofagym.rpc_server import start_scene
 from .distribution import update_gibbs_distribution_for_categories
 from gym import spaces
@@ -20,21 +21,17 @@ from .design_space.design_space import whiskerdesignspace
 import json
 import torch
 # sys.path.insert(1, str(pathlib.Path(__file__).parent.absolute()))
-class WhiskerEnv(AbstractEnv):
-    """Sub-class of AbstractEnv, dedicated to the gripper scene.
-
-    See the class AbstractEnv for arguments and methods.
-    """
+class WhiskerEnv:
     # Setting a default configuration
     path = os.path.dirname(os.path.abspath(__file__))
     metadata = {'render.modes': ['human', 'rgb_array']}
+    dim_state = 4
     DEFAULT_CONFIG = {"scene": "Whisker",
                       "deterministic": True,
                       "source": [0, 180, 120],
-                      "target": [0, -80, 0],
+                      "target": [0, -100, 0],
                       "goalList": [[0, 0, 0]],
-                      "body": 100,
-                      "no_chamber": 2,
+                      "goal": False,
                       "start_node": None,
                       "scale_factor": 5,  # equivalent to simulation duration = scale_factor * dt - dt
                       "timer_limit": 250,
@@ -49,30 +46,66 @@ class WhiskerEnv(AbstractEnv):
                       "seed": None,
                       "start_from_history": [],  # this number represents the action of the RL environment not steps in SOFA simulation
                       "python_version": "python3",
-                      "dt": 0.01
+                      "time_before_start": 0,
+                      "dt": 0.01,
+                      "body": 100,
+                      "no_chamber": 2,
+                      "nb_actions": -1,
+                      "dim_state": dim_state,
+                      "init_states": [0] * dim_state,
+                      "randomize_states": False,
+                      "use_server": False,
+                      "goalPos": [0,0,10],
+                      "zFar":4000
                       }
-
-    def __init__(self, config=None):
-        super().__init__(config)
-        nb_actions = -1
+    def __init__(self, config = None, root=None, use_server: Optional[bool]=None):
+        if use_server is not None:
+            self.DEFAULT_CONFIG.update({'use_server': use_server})
+        self.use_server = self.DEFAULT_CONFIG["use_server"]
+        self.env = ServerEnv(self.DEFAULT_CONFIG, config, root=root) if self.use_server else AbstractEnv(self.DEFAULT_CONFIG, config, root=root)
+        self.initialize_states()
+        if self.env.config["goal"]:
+            self.init_goal()
         low = -1
         high = 1
-        self.action_space = spaces.Box(low=low, high=high, shape=(1,), dtype='float32')
-        self.nb_actions = str(nb_actions)
-
-        dim_state = 4
-        low_coordinates = np.array([-1]*dim_state)
-        high_coordinates = np.array([1]*dim_state)
-        self.observation_space = spaces.Box(low_coordinates, high_coordinates,
+        self.env.action_space = spaces.Box(low=low, high=high, shape=(1,), dtype='float32')
+        self.nb_actions = str(self.env.nb_actions)
+        low_coordinates = np.array([-1]*self.env.dim_state)
+        high_coordinates = np.array([1]*self.env.dim_state)
+        self.env.observation_space = spaces.Box(low_coordinates, high_coordinates,
                                             dtype='float32')
-        
         ins = whiskerdesignspace()
         self.design_space = ins.design_space()
-        # self.body_length_categories = np.array([80,90,100])
+        self.body_length_categories = np.array([80,90,100])
     
+    # called when an attribute is not found:
+    def __getattr__(self, name):
+        # assume it is implemented by self.instance
+        return self.env.__getattribute__(name)
+    
+    def initialize_states(self):
+        if self.env.config["randomize_states"]:
+            self.init_states = self.randomize_init_states()
+            self.env.config.update({'init_states': list(self.init_states)})
+        else:
+            self.init_states = self.env.config["init_states"]
+    
+    def randomize_init_states(self):
+        """Randomize initial states.
 
-    def step(self, action):
-        return super().step(action)
+        Returns:
+        -------
+            init_states: list
+                List of random initial states for the environment.
+        
+        Note:
+        ----
+            This method should be implemented according to needed random initialization.
+        """
+        init_states = self.env.np_random.uniform(low=-0.05, high=0.05, size=(self.env.config["dim_state"],))
+
+        return init_states
+    
     
     def design_changer(self,design_params):
         print("********************************************************")
@@ -91,20 +124,38 @@ class WhiskerEnv(AbstractEnv):
 
     def reset(self):
         """Reset simulation.
-
-        Note:
-        ----
-            We launch a client to create the scene. The scene of the program is
-            client_<scene>Env.py.
-
         """
-        super().reset()
+        self.initialize_states()
+
+        if self.env.config["goal"]:
+            self.init_goal()
+        
+        self.env.reset()
+        
+        if self.use_server:
+            obs = start_scene(self.env.config, self.nb_actions)
+            state = np.array(obs['observation'], dtype=np.float32)
+        else:
+            state = np.array(self.env._getState(self.env.root), dtype=np.float32)
+        
+        return state
+    
+    # def reset(self): ## OLD
+    #     """Reset simulation.
+
+    #     Note:
+    #     ----
+    #         We launch a client to create the scene. The scene of the program is
+    #         client_<scene>Env.py.
+
+    #     """
+    #     super().reset()
 
 
-        self.config.update({'goalPos': self.goal})
-        obs = start_scene(self.config, self.nb_actions)
+    #     self.config.update({'goalPos': self.goal})
+    #     obs = start_scene(self.config, self.nb_actions)
 
-        return (np.array(obs['observation']))
+    #     return (np.array(obs['observation']))
     
     def sampling_design(self):
         

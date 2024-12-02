@@ -35,12 +35,9 @@ def addHeader(rootNode, alarmDistance=2.0, contactDistance=0.5, tolerance=1e-6, 
                                                                         'SofaImplicitOdeSolver '
                                                                         'SofaMeshCollision '
                                                                         'SofaOpenglVisual '
-                                                                        # 'CosseratPlugin '
+                                                                        'CosseratPlugin '
                                                                         'SofaLoader '
-                                                                        'SofaGeneralLoader '
-                                                                        'SoftRobots '
-                                                                        'STLIB '
-                                                                        'ArticulatedSystemPlugin')
+                                                                        'SofaGeneralLoader')
     rootNode.addObject('BackgroundSetting', color=[1, 1, 1, 1])
 
     rootNode.addObject("DefaultPipeline")
@@ -62,9 +59,9 @@ def addVisu(rootNode, config, position, direction, cutoff=250):
     source = config["source"]
     target = config["target"]
     zFar = config["zFar"]
-
+    print('check')
     rootNode.addObject('DefaultVisualManagerLoop')
-    rootNode.addObject('VisualStyle', displayFlags='showVisualModels showCollisionModels')
+    # rootNode.addObject('VisualStyle', displayFlags='showVisualModels')
     # showWireframe showForceFields')
     # rootNode.addObject('OglSceneFrame', style="Arrows", alignment="TopRight")
 

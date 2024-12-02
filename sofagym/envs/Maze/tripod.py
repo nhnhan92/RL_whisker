@@ -130,11 +130,10 @@ def createScene(rootNode):
     tripod.BoxROI2.drawBoxes = True
 
     # Use this to activate some rendering on the rigidified object ######################################
-    setData(tripod.RigidifiedStructure.RigidParts.dofs, showObject=0, showObjectScale=20, drawMode=2)
-    setData(tripod.ActuatedArm0.ServoMotor.Articulation.ServoWheel.dofs, showObject=1, showObjectScale=20, drawMode=2)
-    setData(tripod.RigidifiedStructure.RigidParts.RigidifiedParticules.dofs, showObject=0, showObjectScale=1,
+    setData(tripod.RigidifiedStructure.RigidParts.dofs, showObject=True, showObjectScale=10, drawMode=2)
+    setData(tripod.RigidifiedStructure.RigidParts.RigidifiedParticules.dofs, showObject=True, showObjectScale=1,
             drawMode=1, showColor=[1., 1., 0., 1.])
-    setData(tripod.RigidifiedStructure.DeformableParts.dofs, showObject=0, showObjectScale=1, drawMode=2)
+    setData(tripod.RigidifiedStructure.DeformableParts.dofs, showObject=True, showObjectScale=1, drawMode=2)
     #####################################################################################################
 
     scene.Simulation.addChild(tripod)

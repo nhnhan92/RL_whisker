@@ -8,12 +8,13 @@ from splib3.animation import AnimationManagerController
 from stlib3.components import addOrientedBoxRoi
 from splib3.numerics import vec3
 from stlib3.physics.mixedmaterial import Rigidify
+
 import json
 import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute())+"/../")
 sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute()))
-from WhiskerToolbox import rewardShaper, goalSetter, applyAction
+from WhiskerToolbox import rewardShaper, applyAction,StateInitializer
 from Controllers import WhiskerController
 from ext_data import ext_data
 from articulation_system import ServoArm, ServoMotor, ActuatedArm
@@ -37,8 +38,7 @@ def Whisker_node(name="Whisker_node", design_params = None):
         name = "RigidifiedBase"
         rot_box = addOrientedBoxRoi(
             self,
-            position=[list(j) for j in deformableObject.dofs.rest_position.value],
-            # position = rest_pos,
+            position=[j for j in deformableObject.dofs.rest_position.value],
             name="FixedBox",
             translation=vec3.vadd(translation, [0.0, 0, 0.0]),
             eulerRotation=eulerRotation,
@@ -98,14 +98,17 @@ pole_init_pos = contact_pos[0]
 pole_simu_pos = [pole_init_pos[0]+precontact_distance,
                                             pole_init_pos[1],pole_init_pos[2]]
 
-def createScene(root, config={"source": [-600.0, -25, 200],
-                              "target": [30, -25, 100],
-                              "goalPos": [0, 0, 100]
+def createScene(root, config={"source": [0, 0, 160],
+                                "target": [0, 1, 0],
+                              "goalPos": [0, 0, 100],
+                                "init_states": [0] * 4,
+                                "zFar":4000
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
     from splib3.animation import animate
     from splib3.animation import AnimationManager
     from splib3.objectmodel import setData
+    from sofagym.header import addVisu
     # from sofagym.header import addHeader
     visu, simu = False, False
     if 'visu' in mode:
@@ -145,16 +148,13 @@ def createScene(root, config={"source": [-600.0, -25, 200],
     root.addObject('RequiredPlugin', name='Sofa.Component.Setting') # Needed to use components [BackgroundSetting]  
     root.addObject('RequiredPlugin', name='Sofa.Component.Visual') # Needed to use components [InteractiveCamera,VisualStyle]
 
-    source = config["source"]
-    target = config["target"]
-    root.addObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels hideCollisionModels '
-                                                'hideMappings hideForceFields hideWireframe')
-    root.addObject("LightManager")
-    root.addObject("DefaultVisualManagerLoop")
-    spotLoc = [0, 0, source[2]]
-    root.addObject("SpotLight", position=spotLoc, direction=[0.0, 0.0, -np.sign(source[2])])
-    root.addObject('InteractiveCamera', name='camera', position=source, lookAt=target, zFar=700)
-    root.addObject('BackgroundSetting', color='white')
+    
+    root.addObject('VisualStyle', displayFlags='showVisualModels')
+    source = [config["source"]]
+    target = [config["target"]]
+    position_spot = [[0, 100, 300]]
+    direction_spot = [[0.5, 1, 10.5]]
+    addVisu(root, config, position_spot, direction_spot, cutoff = 250)
     root.addObject('DefaultPipeline', draw=False, depth=6, verbose=False)
     root.addObject('BruteForceBroadPhase')
     root.addObject('BVHNarrowPhase')
@@ -203,13 +203,13 @@ def createScene(root, config={"source": [-600.0, -25, 200],
                              showColor="green", position=ref_point)
     ref.addObject('BarycentricMapping', name="Mapping_ref")
 
+    # SofaGym Env Components
+    root.addObject(StateInitializer(name="StateInitializer", rootNode=root, init_states=config['init_states']))
     root.addObject(rewardShaper(name="Reward", rootNode=root, goalPos=config['goalPos']))
-    root.addObject(goalSetter(name="GoalSetter", goalMO=goal_mo, goalPos=config['goalPos']))
     root.addObject(applyAction(name="applyAction", root=root,config = config))
     # setData(whisker_model.Articulation_system.ServoMotor.Articulation.ServoWheel.dofs, showObject=1, showObjectScale=20,
     # drawMode=2, showColor=[1., 1., 0., 1.])
-    
-    root.addObject(AnimationManager(root))
+    root.addObject(AnimationManagerController(root, name="AnimationManager"))
     # def animation(target, factor):
     #     rot_angle = 60
     #     target.angleIn.value = factor * (-rot_angle*m.pi/180)

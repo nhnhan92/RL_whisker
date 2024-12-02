@@ -48,6 +48,83 @@ fieldnames = ["time","xx", "yy", "zz", "yz", "xz", "xy"]
 #     csv_writer.writerow(info)
 # contact_list = [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
 
+class StateInitializer(Sofa.Core.Controller):
+    """Initialize the states.
+
+    Methods:
+    -------
+        __init__: Initialization of all arguments.
+        init_state: Randomly initialize the environment state.
+
+    Arguments:
+    ---------
+        rootNode: <Sofa.Core>
+            The scene.
+
+    """
+    def __init__(self, *args, **kwargs):
+        """Initialization of all arguments.
+
+        Parameters:
+        ----------
+            kwargs: Dictionary
+                Initialization of the arguments.
+
+        Returns:
+        -------
+            None.
+
+        """
+        Sofa.Core.Controller.__init__(self, *args, **kwargs)
+
+        self.rootNode = None
+        if kwargs["rootNode"]:
+            self.rootNode = kwargs["rootNode"]
+        # if kwargs["pole_length"]:
+        #     self.pole_length = kwargs["pole_length"]
+        # if kwargs["init_states"] is not None:
+        #     self.init_states = kwargs["init_states"]
+        # else:
+        #     print(">> ERROR: no initial states given.")
+        #     exit(1)
+
+        # self.cart = self.rootNode.Modeling.Cart
+        # self.pole = self.rootNode.Modeling.Pole
+
+    def init_state(self, init_states):
+        """Randomly initialize the environment state.
+
+        Parameters:
+        ----------
+            None.
+
+        Returns:
+        -------
+            None.
+
+        """
+        self.init_states = init_states
+        # cart_pos, cart_vel, pole_theta, pole_theta_dot = self.init_states
+
+        # with self.cart.MechanicalObject.position.writeable() as position:
+        #     position[0][0] = cart_pos
+
+        # with self.cart.MechanicalObject.velocity.writeable() as velocity:
+        #     velocity[0][0] = cart_vel
+
+        # with self.pole.MechanicalObject.velocity.writeable() as theta_dot:
+        #     theta_dot[0][5] = pole_theta_dot
+
+        # sin_theta = m.sin(pole_theta)
+        # cos_theta = m.cos(pole_theta)
+        # x_pos = sin_theta * self.pole_length
+        # y_pos = cos_theta * self.pole_length
+
+        # with self.pole.MechanicalObject.position.writeable() as position:
+        #     position[0][0] = x_pos
+        #     position[0][1] = y_pos
+
+
 class rewardShaper(Sofa.Core.Controller):
     """Compute the reward.
 
@@ -87,8 +164,8 @@ class rewardShaper(Sofa.Core.Controller):
         self.rootNode = None
         if kwargs["rootNode"]:
             self.rootNode = kwargs["rootNode"]
-        self.goal_pos = None
-        if kwargs["goalPos"]:
+        # self.goal_pos = None
+        if kwargs["goalPos"] is not None:
             self.goal_pos = kwargs["goalPos"]
         self.effMO = None
 
@@ -172,7 +249,7 @@ class rewardShaper(Sofa.Core.Controller):
         return reward, self.cost
     # Hàm cập nhật đồ thị
 
-    def update(self):
+    def update(self,goal=None):
         """Compute the distance between object and goal.
 
         This function is used as an initialization function.
@@ -270,57 +347,6 @@ def getReward(root):
 
     return False, reward
                
-class goalSetter(Sofa.Core.Controller):
-    """Compute the goal.
-
-    Methods:
-    -------
-        __init__: Initialization of all arguments.
-        update: Initialize the value of cost.
-
-    Arguments:
-    ---------
-        goalMO: <MechanicalObject>
-            The mechanical object of the goal.
-        goalPos: coordinates
-            The coordinates of the goal.
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Initialization of all arguments.
-
-        Parameters:
-        ----------
-            kwargs: Dictionary
-                Initialization of the arguments.
-
-        Returns:
-        -------
-            None.
-
-        """
-        Sofa.Core.Controller.__init__(self, *args, **kwargs)
-
-        self.goalMO = None
-        if kwargs["goalMO"]:
-            self.goalMO = kwargs["goalMO"]
-        self.goalPos = None
-        if kwargs["goalPos"]:
-            self.goalPos = kwargs["goalPos"]
-        
-        self.count = 1
-    def update(self):
-        """Set the position of the goal.
-
-        This function is used as an initialization function.
-        """
-
-        with self.goalMO.position.writeable() as position:
-            position += self.goalPos
-
-    def set_mo_pos(self, goal):
-        pass
 
 class applyAction(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):

@@ -72,6 +72,7 @@ class visualisationRunSofa(Sofa.Core.Controller):
         try:
             if self.already_done % self.scale == 0:
                 current_action = self.actions[self.current_idx]
+                # print(current_action)
                 self.current_incr = self.apply_action.compute_action(current_action, self.scale)
                 self.current_idx += 1
 

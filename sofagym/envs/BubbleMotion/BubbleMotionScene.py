@@ -81,30 +81,3 @@ def createScene(rootNode, config={"source": [5, -5, 20],
     #     actions = config['actions']
     #     scale = config_env['scale_factor']
     #     rootNode.addObject(visualisationRunSofa(name="visualisationRunSofa", root = rootNode, actions = actions, scale = scale) )
-def main():
-    import SofaRuntime
-    import Sofa.Gui
-    SofaRuntime.importPlugin("SofaOpenglVisual")
-    SofaRuntime.importPlugin("CImgPlugin")
-    SofaRuntime.importPlugin("SofaBaseMechanics")
-    SofaRuntime.importPlugin("SofaImplicitOdeSolver")
-    
-    root=Sofa.Core.Node("root")
-    
-    createScene(root)
-    Sofa.Simulation.init(root)
-    # if not USE_GUI:
-    #     for iteration in range(10):
-    #         Sofa.Simulation.animate(root, root.dt.value)
-
-    Sofa.Gui.GUIManager.Init("myscene", "qglviewer")
-    Sofa.Gui.GUIManager.createGUI(root, __file__)
-    Sofa.Gui.GUIManager.SetDimension(1080, 1080)
-    Sofa.Gui.GUIManager.MainLoop(root)
-    Sofa.Gui.GUIManager.closeGUI()
-    
-    print("End of simulation.")
-
-
-if __name__ == '__main__':
-    main()

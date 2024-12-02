@@ -41,8 +41,7 @@ envs = {
         12: 'trunk-v0',
         13: 'trunkcup-v0',
         14: 'cartpole-v0',
-        15: 'catheter_beam-v0',
-        16: 'whisker-v0'
+        15: 'catheter_beam-v0'
         }
 
 algos = {
@@ -95,7 +94,6 @@ if __name__ == '__main__':
     framework = args.framework
     args_check(framework, frameworks, 'framework')
 
-    print(args.env_num)
     n_envs = args.env_num
     seed = args.seed
     total_timesteps = args.total_timesteps
@@ -117,11 +115,11 @@ if __name__ == '__main__':
     else:
         agent = Agent.load(model_dir)
         
-    #     if train == 'continue':
-    #         agent.fit(total_timesteps)
+        if train == 'continue':
+            agent.fit(total_timesteps)
 
-    # if test:
-    #     agent.eval(n_tests, model_timestep='best_model', render=True, record=True)
+    if test:
+        agent.eval(n_tests, model_timestep='best_model', render=True, record=True)
 
     agent.close()
     print("... End.")

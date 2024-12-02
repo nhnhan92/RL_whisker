@@ -134,7 +134,7 @@ class WhiskerController(Sofa.Core.Controller):
             for i in range(len(self.smallend_box.pointsInROI.value)):
                 if -0.0001<self.smallend_box.pointsInROI.value[i][0] - self.small_end_radi < 0.0001:
                     self.contact_idx = self.smallend_box.indices.value[i]
-                    print(self.contact_idx)
+                    # print(self.contact_idx)
                     break
             new_pole_pos = self.moveRestPos(self.pole_meca.rest_position.value,
                                                 1+3+self.rootNode.localmindistance.contactDistance.value+self.mecawhisker.rest_position.value[self.contact_idx][0]-self.pole_meca.rest_position.value[0][0],

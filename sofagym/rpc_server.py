@@ -378,6 +378,7 @@ def avalaible_port(to_str=False):
     """
     with socketserver.TCPServer(("localhost", 0), None) as s:
         free_port = s.server_address[1]
+        print(free_port)
 
     if to_str:
         return str(free_port)
@@ -517,7 +518,7 @@ def start_scene(config, nb_actions):
                      "pendingResults": CustomQueue(),
                      "positionResults": CustomQueue()}}
     firstObservation = CustomQueue()
-    print("start_first client")
+
     results = {}
 
     # Run the first client
@@ -555,6 +556,7 @@ def add_new_step(history, new_action):
     """
     global instances, actions_to_stateId, planning
     id = get_id_from_actions(history)
+
     if planning:
         if deterministic and str(history+[new_action]) in actions_to_stateId:
             # Transition has already been simulated

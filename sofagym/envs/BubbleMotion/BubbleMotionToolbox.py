@@ -198,7 +198,6 @@ class applyAction(Sofa.Core.Controller):
 
         self.cavities = self.bubblemotion.cavities
         self.set_max_pressure(self.bubblemotion.max_pressure)
-        print("pressure max = ", self.bubblemotion.max_pressure)
         print(">>  Init done.")
 
     def set_max_pressure(self, new_max_pressure):
@@ -212,7 +211,6 @@ class applyAction(Sofa.Core.Controller):
             cavity.SurfacePressureConstraint.value.value = np.array([new_value])
 
     def _normalizedAction_to_action(self, action):
-        
         return self.a*action + self.b
 
     def compute_action(self, actions, nb_step):
@@ -266,7 +264,6 @@ def startCmd(root, actions, duration):
 
     """
     incr = action_to_command(actions, root, duration/root.dt.value + 1)
-    print("duration = ",duration)
     startCmd_BubbleMotion(root, incr, duration)
 
 

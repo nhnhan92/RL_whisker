@@ -416,7 +416,7 @@ def getPos(root):
     arm1 = root.Modelling.Tripod.ActuatedArm0.ServoMotor.Articulation.dofs.position.value.tolist()
     arm2 = root.Modelling.Tripod.ActuatedArm1.ServoMotor.Articulation.dofs.position.value.tolist()
     arm3 = root.Modelling.Tripod.ActuatedArm2.ServoMotor.Articulation.dofs.position.value.tolist()
-    
+
     servo1 = root.Modelling.Tripod.ActuatedArm0.ServoMotor.ServoBody.dofs.position.value.tolist()
     servo2 = root.Modelling.Tripod.ActuatedArm1.ServoMotor.ServoBody.dofs.position.value.tolist()
     servo3 = root.Modelling.Tripod.ActuatedArm2.ServoMotor.ServoBody.dofs.position.value.tolist()

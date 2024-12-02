@@ -32,7 +32,7 @@ class BubbleMotionEnv(AbstractEnv):
                       "scale_factor": 20,
                       "timer_limit": 20,
                       "timeout": 50,
-                      "display_size": (1000, 800),
+                      "display_size": (1600, 800),
                       "render": 0,
                       "save_data": False,
                       "save_image": False,
