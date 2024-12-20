@@ -3,7 +3,7 @@ import math as m
 
 no_chamber = 3
 no_regulator = 3
-body_length = [100, 90, 80]
+body_length = [100, 80, 60]
 class whiskerdesignspace():
     def __init__(self):
         self.pressure_range = gym.spaces.Box(low=0.0001, high=0.001, shape=(1,), dtype='float32')

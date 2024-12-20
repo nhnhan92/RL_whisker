@@ -17,11 +17,13 @@ from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.utils import constant_fn
-from stable_baselines3.common.vec_env import (SubprocVecEnv,
+from stable_baselines3.common.vec_env import (
+                                                # SubprocVecEnv,
                                               VecMonitor, VecVideoRecorder,
                                               sync_envs_normalization)
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
-
+from coopt.design_manager import DesignManager
+from coopt.coopt_vec_env import SubprocVecEnv
 
 # Adapted from RL Baselines3 Zoo
 def _preprocess_schedules(hyperparams: Dict[str, Any]) -> Dict[str, Any]:
@@ -435,7 +437,8 @@ class SB3Agent(SofaBaseAgent):
         """
         vec_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps) for i in range(n_envs)])
         self.test_env = SubprocVecEnv([make_env(self.env_id, 0, self.seed, self.max_episode_steps, config={"render": 1})])
-        
+        vec_env = DesignManager(venv=vec_env,design_space=None,n_steps = self.init_kwargs['n_steps'])
+        self.test_env = DesignManager(venv=self.test_env,design_space=None,n_steps = self.init_kwargs['n_steps'])
         if normalize:
             if self.model_timestep is None:
                 vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True)

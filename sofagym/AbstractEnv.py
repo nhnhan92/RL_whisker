@@ -347,7 +347,6 @@ class AbstractEnv(gym.Env):
         # assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
 
         action = self._formataction(action)
-
         self.pos = self.step_simulation(action)
 
         self.past_actions.append(action)
@@ -363,7 +362,7 @@ class AbstractEnv(gym.Env):
             truncated = True
         
         info = {} #(not use here)
-
+        # print(f"CHECKING DONE: Step ABSTract {done}")
         return obs, reward, done, info
     
     def reset(self):
@@ -379,7 +378,6 @@ class AbstractEnv(gym.Env):
 
         """
         self.viewer = None
-
         splib3.animation.animate.manager = None
 
         self.timer = 0
@@ -481,7 +479,6 @@ class AbstractEnv(gym.Env):
         SofaRuntime.importPlugin("Sofa.Component")
         self.create_scene(self.root, self.config, mode=mode)
         Sofa.Simulation.init(self.root)
-
         # Realise action from history
         if self.config['start_from_history'] is not None and self._startCmd is not None:
             print(">>   Start from history ...")
@@ -539,14 +536,13 @@ class AbstractEnv(gym.Env):
         
         render = self.config['render']
         surface_size = self.config['display_size']
-
         # Create the command from action
         self._startCmd(self.root, action, self.config["dt"]*(self.config["scale_factor"]-1))
         pos = []
         # Realise scale_factor simulation steps of 0.01 s
         for _ in range(self.config["scale_factor"]):
             Sofa.Simulation.animate(self.root, self.config["dt"])
-            
+            # print(f"CHECKING DONE: Abs_ENV{_}")
             #if render == 2:
             #    pos.append(self._getPos(self.root))
             #    if self.viewer is not None:

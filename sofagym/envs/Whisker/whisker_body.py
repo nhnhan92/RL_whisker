@@ -8,7 +8,7 @@ from mesh.whisker_chamber import mesh_generator as chamber_mesh
 YoungsModulus = 150
 PoissonRatio = 0.4
 
-path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
+mesh_path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 # MeshesPath = os.path.dirname(os.path.abspath(__file__))+'/mesh/length_'
 
 def fiber_construction(Ks = 1e3, Kd = 5):
@@ -58,25 +58,26 @@ def fiber_construction(Ks = 1e3, Kd = 5):
     return fiber_dof, spring_info
 
 
-def Whisker(visu, simu, name="Whisker",
-           rotation=[0.0, 0.0, 0.0], translation=[0.0, 0.0, 0.0], design_params = None):
+def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0], 
+            translation=[0.0, 0.0, 0.0], design_params = None,design_index = None):
 
     parent = Sofa.Core.Node(name)
     model = parent.addChild("MechanicalModel")
     ### body mesh creator
-    body_mesh(body_bot_radius = 12,
-                                cone_angle = 85.5,
-                                body_height = design_params["body_length"],
-                                no_chamber = design_params["no_chamber"],
-                                chamber_bot_radius = 10,
-                                chamber_height = 24,
-                                mesh_size = 4)
-    chamber_mesh(no_chamber = design_params["no_chamber"],
-                                    chamber_bot_radius = 10,
-                                    cone_angle = 85.5,
-                                    chamber_height = 24,
-                                    mesh_size = 4)
-    model.addObject('MeshVTKLoader', name='loader', filename=path+'body_vtk.vtk', 
+    # body_mesh(body_bot_radius = 12,
+    #                             cone_angle = 85.5,
+    #                             body_height = design_params["body_length"],
+    #                             no_chamber = design_params["no_chamber"],
+    #                             chamber_bot_radius = 10,
+    #                             chamber_height = 24,
+    #                             mesh_size = 4)
+    # chamber_mesh(no_chamber = design_params["no_chamber"],
+    #                                 chamber_bot_radius = 10,
+    #                                 cone_angle = 85.5,
+    #                                 chamber_height = 24,
+    #                                 mesh_size = 4)
+    
+    model.addObject('MeshVTKLoader', name='loader', filename=mesh_path+f'body{int(design_index)}_vtk.vtk', 
                     scale3d=[1, 1, 1], translation=translation, rotation=rotation,createSubelements=1)
     model.addObject('TetrahedronSetTopologyContainer', name = "container", position="@loader.position", tetrahedra="@loader.tetrahedra")
     model.addObject('TetrahedronSetTopologyModifier')
@@ -94,22 +95,23 @@ def Whisker(visu, simu, name="Whisker",
     # model.addObject('LinearSolverConstraintCorrection', name='GCS')
     
     collisionmodel = model.addChild("CollisionMesh")
-    collisionmodel.addObject("MeshSTLLoader", name="loader", filename=path+'body_stl.stl',
-                                rotation=[180.0, 0.0, 0.0], translation=translation, flipNormals = 0)
-    collisionmodel.addObject('MeshTopology', src="@loader")
+    # collisionmodel.addObject("MeshSTLLoader", name="loader", filename=mesh_path+'body_stl.stl',
+    #                             rotation=[180.0, 0.0, 0.0], translation=translation, flipNormals = 0)
+    collisionmodel.addObject('MeshTopology', src="@../loader",name='topology')
     collisionmodel.addObject('MechanicalObject')
 
     collisionmodel.addObject('PointCollisionModel')
     collisionmodel.addObject('LineCollisionModel')
     collisionmodel.addObject('TriangleCollisionModel')
-    collisionmodel.addObject('BarycentricMapping')
+    # collisionmodel.addObject('BarycentricMapping')
+    collisionmodel.addObject('IdentityMapping')
     
     ##########################################
     # Chamber node                            #
     ##########################################
     chamber_node = model.addChild('Chamber')
     for cavity_idx in range(design_params["no_chamber"]):
-        CavitySurfaceMeshPath = path+'chamber_stl.stl'
+        CavitySurfaceMeshPath = mesh_path+'chamber_stl.stl'
         cavity = chamber_node.addChild('cavity'+str(cavity_idx))
         cavity.addObject('MeshSTLLoader', name='loader', filename=CavitySurfaceMeshPath,rotation=[0, 0, 0+360*cavity_idx/design_params["no_chamber"]])
         cavity.addObject('MeshTopology', src='@loader', name='topo')

@@ -21,6 +21,9 @@ from .design_space.design_space import whiskerdesignspace
 import json
 import torch
 # sys.path.insert(1, str(pathlib.Path(__file__).parent.absolute()))
+
+path = os.path.dirname(os.path.abspath(__file__))
+# env_path = os.path.join(path,"sofagym/envs/Whisker/")
 class WhiskerEnv:
     # Setting a default configuration
     path = os.path.dirname(os.path.abspath(__file__))
@@ -33,10 +36,10 @@ class WhiskerEnv:
                       "goalList": [[0, 0, 0]],
                       "goal": False,
                       "start_node": None,
-                      "scale_factor": 5,  # equivalent to simulation duration = scale_factor * dt - dt
-                      "timer_limit": 250,
+                      "scale_factor": 10,  # equivalent to simulation duration = scale_factor * dt - dt
+                      "timer_limit": 60,
                       "timeout": 50,
-                      "display_size": (1200, 800),
+                      "display_size": (800, 600),
                       "render": 0,
                       "save_data": False,
                       "save_image": False,
@@ -48,8 +51,8 @@ class WhiskerEnv:
                       "python_version": "python3",
                       "time_before_start": 0,
                       "dt": 0.01,
-                      "body": 100,
-                      "no_chamber": 2,
+                      "design_params": [100,2,0,0,0],
+                      "design_index": 0,
                       "nb_actions": -1,
                       "dim_state": dim_state,
                       "init_states": [0] * dim_state,
@@ -109,18 +112,12 @@ class WhiskerEnv:
     
     def design_changer(self,design_params):
         print("********************************************************")
+        # sample = self.sampling_design()
+        # self.save_json(self.design_space[design_params])
+        print("SAMPLE = ", self.design_space[design_params])
+        self.config['design_params'] = self.design_space[design_params]
+        self.config['design_index'] = design_params
         
-        sample = self.sampling_design()
-        self.save_json(self.design_space[sample])
-        print("SAMPLE = ", self.design_space[sample])
-        self.config['body'] = self.design_space[sample][0]
-        self.config['no_chamber'] = self.design_space[sample][1]
-        
-
-    # def design_changer(self, body_length_id):
-    #     print("********************************************************")
-    #     body_length_id = int(body_length_id.item())
-    #     self.config['body'] = self.body_length_categories[body_length_id]
 
     def reset(self):
         """Reset simulation.
@@ -129,9 +126,8 @@ class WhiskerEnv:
 
         if self.env.config["goal"]:
             self.init_goal()
-        
+        # self.design_changer(design_params = design_params)
         self.env.reset()
-        
         if self.use_server:
             obs = start_scene(self.env.config, self.nb_actions)
             state = np.array(obs['observation'], dtype=np.float32)
@@ -166,7 +162,11 @@ class WhiskerEnv:
 
     def save_json(self,data):
         # Define the file name
-        file_name = 'data.json'
+        file_name = os.path.join(path,'data.json')
+        try:
+            os.remove(file_name)
+        except:
+            print('File does not exist')
         # Define the new data to be added
         write_data = {
             "body_length": data[0],
@@ -175,7 +175,7 @@ class WhiskerEnv:
             "pressure_2": data[3],
             "pressure_3": data[4]
         }
-        with open(file_name, 'w') as file:
+        with open(file_name, mode='w', newline='') as file:
             json.dump(write_data, file, indent=4)
 
     def get_available_actions(self):

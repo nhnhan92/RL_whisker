@@ -1,11 +1,15 @@
+import gym.spaces
 import numpy as np
 from collections import deque
-
 from dl import nest
 from stable_baselines3.common.vec_env.base_vec_env import VecEnvWrapper
 import torch
 import wandb
-
+import gym
+import torch
+import os
+from dl.ckptr import Checkpointer
+from coopt.discrete_robot_optimizer import DiscreteDesignOptimizer
 
 class DesignLogger:
     """Records and keeps the history of designs and refwards."""
@@ -60,23 +64,36 @@ class DesignManager(VecEnvWrapper):
          - samples and sets design parameters at fixed intervals.
          - records and logs the performance of each design.
     """
-
-    def __init__(self, venv, design_space):
+    
+    def __init__(self, venv, design_space=None,n_steps = 100,n_env = 1):
         super().__init__(venv)
-        self.steps_per_design = None
+        self.steps_per_EP= n_steps
+        self.n_env = n_env
+        self.steps_per_design = int(self.steps_per_EP/self.n_env) # Number of evironment steps each design takes
         self.design_count = 0
+        self.batch_size = 64 # number of designs used in each update
         self.steps = 0
         self.design_dist = None
-        self.design_space = design_space
+        space = gym.spaces.Discrete(n=9)
+        self.design_space = space
         self.designs = None
         self.rewards = np.zeros(self.num_envs)
-
+        
+        self.coopt = CoOpt(
+                 design_space = self.design_space,
+                 logdir = '../test_coopt',
+                 batch_size = self.batch_size,        
+                 update_period = 10,     # number of designs sampled between updates of design distribution
+                 ent_decay_start = 1, # start of entropy decay
+                 ent_decay_end = 1000  # end of entropy decay
+                 )
+        self.configure_design_manager(self.steps_per_design,self.batch_size)
     def step_wait(self):
         return self.venv.step_wait()
 
     def set_design_dist(self, design_dist):
         self.design_dist = design_dist
-
+        
     def get_design_count(self):
         return self.logger.get_design_count()
 
@@ -120,24 +137,118 @@ class DesignManager(VecEnvWrapper):
         self.venv.set_designs(self.designs)
         self.rewards = np.zeros(self.num_envs)
 
-    def reset(self, force=False):
+    def reset(self):
         if self.designs is None:
+            print("self.designs is None")
             self.init_scene()
         return self.venv.reset()
 
-    def step(self, action):
-        ob, r, done, info = self.venv.step(action)
+    # def step(self, action):
+    #     print("Step in Design Manager = ",self.steps)
+    #     ob, r, done, info = self.venv.step(action)
+    #     self.steps += 1
+    #     self.rewards += r
+    #     if self.steps_per_design and self.steps % self.steps_per_design == 0:
+    #         for design, reward in zip(self.designs, self.rewards):
+    #             self.logger.log(design, reward)
+    #         self.init_scene()
+    #         print("FINISHING EPI NOW MOVE TO NEW EPI")
+    #         done[:] = True
+    #     return ob, r, done, info
+    def step_async(self, actions):
+        self.venv.step_async(actions)
+
+    def step_wait(self):
+        obs, rewards, dones, infos = self.venv.step_wait()
+        
         self.steps += 1
-        self.rewards += r
+        self.rewards += rewards
+        print("STEP = ", self.steps)
+        print("Design count = ", self.logger.get_design_count())
         if self.steps_per_design and self.steps % self.steps_per_design == 0:
             for design, reward in zip(self.designs, self.rewards):
-                self.logger.log(design, reward)
+                if self.logger:
+                    self.logger.log(design, reward)
             self.init_scene()
-            done[:] = True
-        return ob, r, done, info
-
+            print("FINISHING EPI NOW MOVE TO NEW EPI")
+            dones[:] = True  # Force reset after a design interval
+        return obs, rewards, dones, infos
     def state_dict(self):
         return {'designs': self.logger.state_dict()}
 
     def load_state_dict(self, state_dict):
         self.logger.load_state_dict(state_dict['designs'])
+
+
+class CoOpt:
+    def __init__(self,
+                 design_space,
+                 logdir,
+                 batch_size,        # number of designs used in each update
+                 update_period,     # number of designs sampled between updates
+                 ent_decay_start, # start of entropy decay
+                 ent_decay_end   # end of entropy decay
+                 ):
+        self.logdir = logdir
+        self.batch_size = batch_size
+        self.update_period = update_period
+
+        self.design_optimizer = DiscreteDesignOptimizer(design_space, ent_decay_start, ent_decay_end)
+        self.ckptr = Checkpointer(os.path.join(logdir, 'ckpts_design_params'))
+        self.t = 0
+        self.design = None
+        self.last_design_update = 0
+        self._prev_design_grad = None
+        self._prev_design_count = 0
+        self._ob = None
+
+    def step(self):
+        # Log the current step
+        if self.t == 0:
+            self.design_optimizer.log(self.t)
+
+        # Step env until update.
+        if self._ob is None:
+            self._ob = self.env.reset()
+
+        for _ in range(self.update_period):
+            actions = [self.env.action_space.sample() for _ in range(self.env.num_envs)]
+            obs, rewards, dones, info = self.env.step(actions)
+            self._ob = obs
+
+
+        # Update the design distribution
+        dt = self.env.num_envs * self.update_period
+        self.t += dt
+        design_count = self.env.get_design_count()
+        print("Design Count =", design_count)
+        designs_since_update = design_count - self.last_design_update
+        if designs_since_update >= self.update_period:
+            designs, rewards = self.env.get_designs_and_rewards(self.batch_size)
+            designs = nest.map_structure(torch.from_numpy, designs)
+            self.design_optimizer.update(designs, torch.from_numpy(rewards),
+                                         self.t)
+            self.design_optimizer.log(self.t)
+            self.last_design_update = design_count
+    
+        # Set the design distribution in the environment
+        self.env.set_design_dist(self.design_optimizer.get_design_dist())
+        return self.t
+
+
+    def evaluate(self):
+        pass
+
+    def save(self):
+        state = self.design_optimizer.state_dict()
+        self.ckptr.save(state, self.t)
+
+    def load(self, t=None):
+        state_dict = self.ckptr.load(t)
+        if state_dict is not None:
+            self.design_optimizer.load_state_dict(state_dict)
+        design_count = self.env.get_design_count()
+        self.last_design_update = design_count - (design_count % self.update_period)
+
+    def close(self):
+        self.env.close()

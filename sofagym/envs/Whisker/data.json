@@ -1,7 +1,7 @@
 {
-    "body_length": 80,
-    "no_chamber": 3,
-    "pressure_1": 0.0005134712555445731,
-    "pressure_2": 0.0006596331368200481,
-    "pressure_3": 0.0005257329903542995
+    "body_length": 100,
+    "no_chamber": 2,
+    "pressure_1": 0.0005039084935560822,
+    "pressure_2": 0.0007811081013642251,
+    "pressure_3": 0
 }

@@ -59,7 +59,6 @@ def addVisu(rootNode, config, position, direction, cutoff=250):
     source = config["source"]
     target = config["target"]
     zFar = config["zFar"]
-    print('check')
     rootNode.addObject('DefaultVisualManagerLoop')
     # rootNode.addObject('VisualStyle', displayFlags='showVisualModels')
     # showWireframe showForceFields')

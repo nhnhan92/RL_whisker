@@ -58,6 +58,7 @@ class CoOpt():
         dt = self.env.num_envs * self.update_period
         self.t += dt
         design_count = self.env.get_design_count()
+        print("Design Count =", design_count)
         designs_since_update = design_count - self.last_design_update
         if designs_since_update >= self.update_period:
             designs, rewards = self.env.get_designs_and_rewards(self.batch_size)

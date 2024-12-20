@@ -92,6 +92,7 @@ class SubprocVecEnv(VecEnv):
         self.closed = False
         n_envs = len(env_fns)
         self.nenvs = n_envs
+        print("n_envs =",self.nenvs)
         if start_method is None:
             # Fork is not a thread safe method (see issue #217)
             # but is more user friendly (does not require to wrap the code in

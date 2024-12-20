@@ -448,7 +448,6 @@ def startCmd_Whisker(rootNode, whisker,incr, duration):
             params={"whisker": whisker,
                     "incr": incr},
             duration=duration, mode="once"))
-    print('start action')
 def translateWhisker(whisker, direction):
     """Function to translate finger.
 
@@ -576,11 +575,11 @@ def getState(root):
             The state of the environment/agent.
     """
     # Define the file name
-    file_name = 'data.json'
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    json_file_path = os.path.join(current_dir, file_name)
-    with open(json_file_path, 'r') as file:
-        data = json.load(file)
+    # file_name = 'data.json'
+    # current_dir = os.path.dirname(os.path.abspath(__file__))
+    # json_file_path = os.path.join(current_dir, file_name)
+    # with open(json_file_path, 'r') as file:
+    #     data = json.load(file)
     
     # right_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.SurfacePressureConstraint.getData('value').value.tolist()
     # right_pressure[0] /=10
@@ -593,8 +592,7 @@ def getState(root):
     goal_pos = [round(float(k), 3) for k in goal_pos]
 
     # whisker_tips = [round(k, cs) for k in root.Whisker_node.Whisker.MechanicalModel.Ref_point.GoalMO.position.value[0].tolist()]
-    state = [data["pressure_1"]] + [data["pressure_1"]] + [data["pressure_1"]]+ rot_angle
-
+    state = [0] + [0] + [0]+ rot_angle
     return state
 
 

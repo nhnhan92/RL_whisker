@@ -25,9 +25,9 @@ class CartPoleEnv:
                       "target": [0, 0, 0],
                       "goal": False,
                       "start_node": None,
-                      "scale_factor": 10,
+                      "scale_factor": 40,
                       "dt": 0.001,
-                      "timer_limit": 80,
+                      "timer_limit": 40,
                       "timeout": 50,
                       "display_size": (1600, 800),
                       "render": 0,
@@ -39,7 +39,7 @@ class CartPoleEnv:
                       "start_from_history": None,
                       "python_version": sys.version,
                       "zFar": 4000,
-                      "time_before_start": 0,
+                    #   "time_before_start": 0,
                       "seed": None,
                       "nb_actions": 2,
                       "dim_state": dim_state,
@@ -121,7 +121,7 @@ class CartPoleEnv:
             self.init_goal()
         
         self.env.reset()
-        
+        print("CHECKING RESET ENV")
         if self.use_server:
             obs = start_scene(self.env.config, self.nb_actions)
             state = np.array(obs['observation'], dtype=np.float32)

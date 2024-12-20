@@ -22,15 +22,12 @@ from obstacles import pole,plane
 from whisker_body import Whisker
 contact_list, contact_pos, rest_pos = ext_data()
 
-
 body_length = 100
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 MeshesPath = os.path.dirname(os.path.abspath(__file__))+'/mesh/length_'
 USE_GUI = True
 
-
-
-def Whisker_node(name="Whisker_node", design_params = None):
+def Whisker_node(name="Whisker_node", design_params = None,design_index = None):
     
     def __rigidify(self, translation = [0,0,0], eulerRotation = [0, 0.0, 0.0],scale = [40, 40, 0.5]):
         deformableObject = self.Whisker.MechanicalModel
@@ -74,7 +71,7 @@ def Whisker_node(name="Whisker_node", design_params = None):
     self.addObject('GenericConstraintCorrection') 
 
     whiskernode = Whisker(visu = True, simu = True, name="Whisker",rotation=[0, 0.0, 0.0], 
-                          translation=[0.0, 0.0, 0.0], design_params = design_params)
+                          translation=[0.0, 0.0, 0.0], design_params = design_params,design_index = design_index)
     self.addChild(whiskernode)
     arti_system = ActuatedArm(
         name="Articulation_system", translation=[0.0, 0.0, 0.0], rotation=[180.0, 0.0, 0.0],
@@ -102,7 +99,9 @@ def createScene(root, config={"source": [0, 0, 160],
                                 "target": [0, 1, 0],
                               "goalPos": [0, 0, 100],
                                 "init_states": [0] * 4,
-                                "zFar":4000
+                                "zFar":4000,
+                                "design_params": [80,1,0,0,0],
+                                "design_index": 3
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
     from splib3.animation import animate
@@ -149,7 +148,7 @@ def createScene(root, config={"source": [0, 0, 160],
     root.addObject('RequiredPlugin', name='Sofa.Component.Visual') # Needed to use components [InteractiveCamera,VisualStyle]
 
     
-    root.addObject('VisualStyle', displayFlags='showVisualModels')
+    root.addObject('VisualStyle', displayFlags='showVisualModels hideCollisionModels')
     source = [config["source"]]
     target = [config["target"]]
     position_spot = [[0, 100, 300]]
@@ -172,11 +171,14 @@ def createScene(root, config={"source": [0, 0, 160],
     # _, ref_pos = Whisker(root, visu, simu, name="Whisker",
     #        rotation=[180, 0.0, 0.0], translation=[0.0, 0.0, 0.0], ref_point = [0, 0, 90])
     
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    json_file_path = os.path.join(current_dir, "data.json")
-    with open(json_file_path, 'r') as file:
-        design_params = json.load(file)
-    a = Whisker_node(design_params=design_params)
+    design_params = {"body_length": config["design_params"][0],
+                     "no_chamber": config["design_params"][1],
+                     "pressure_1": config["design_params"][2],
+                    "pressure_2": config["design_params"][3],
+                    "pressure_3": config["design_params"][4]
+                    }
+    design_index = config["design_index"]
+    a = Whisker_node(design_params=design_params,design_index = design_index)
     whisker_model = root.addChild(a)
 
     goal_mo = add_goal_node(root)

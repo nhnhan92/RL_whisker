@@ -14,7 +14,7 @@ __date__ = "Nov 10 2020"
 
 
 import argparse
-
+import wandb
 from agents.RLberryAgent import RLberryAgent
 from agents.SB3Agent import SB3Agent
 
@@ -41,7 +41,8 @@ envs = {
         12: 'trunk-v0',
         13: 'trunkcup-v0',
         14: 'cartpole-v0',
-        15: 'catheter_beam-v0'
+        15: 'catheter_beam-v0',
+        16: 'whisker-v0'
         }
 
 algos = {
@@ -102,24 +103,28 @@ if __name__ == '__main__':
     test = args.test
     n_tests = args.num_test
     model_dir = args.model_dir
-    
-    if model_dir is None:
-        if train == 'continue' or (train == 'none' and test):
-            parser.error("Valid argument --model_dir must be provided where previous model training files are saved")
-    
-    Agent = eval(framework + "Agent")
-
-    if train == 'new':
-        agent = Agent(env_name, algo_name, seed, results_dir, max_episode_steps, n_envs)
-        agent.fit(total_timesteps)
-    else:
-        agent = Agent.load(model_dir)
+    logdir = './test_coopt'
+    run_id = os.path.basename(logdir)
+    with wandb.init(project='rl_whisker',
+                    id=run_id+'_train', group=run_id,
+                    job_type='train', resume='allow'):
+        if model_dir is None:
+            if train == 'continue' or (train == 'none' and test):
+                parser.error("Valid argument --model_dir must be provided where previous model training files are saved")
         
-        if train == 'continue':
-            agent.fit(total_timesteps)
+        Agent = eval(framework + "Agent")
 
-    if test:
-        agent.eval(n_tests, model_timestep='best_model', render=True, record=True)
+        if train == 'new':
+            agent = Agent(env_name, algo_name, seed, results_dir, max_episode_steps, n_envs)
+            agent.fit(total_timesteps)
+        else:
+            agent = Agent.load(model_dir)
+            
+            if train == 'continue':
+                agent.fit(total_timesteps)
+
+        if test:
+            agent.eval(n_tests, model_timestep='best_model', render=True, record=True)
 
     agent.close()
     print("... End.")
