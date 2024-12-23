@@ -27,7 +27,7 @@ import time
 if __name__ == '__main__':
     logdir = './test_coopt'
     run_id = os.path.basename(logdir)
-    train_steps = 100  # Total number of training steps
+    n_steps = 100  # Total number of training steps
     steps_per_design = 10  # Number of steps for each design
     batch_size = 10  # Batch size for design updates
     update_period = 5  # Number of designs before each update
@@ -43,15 +43,13 @@ if __name__ == '__main__':
         # Create the vectorized environment
         design_space = gym.spaces.Discrete(n=9)
         env = SubprocVecEnv([make_env(env_id,i, 1, 1000, config={"render": 1}) for i in range(num_cpu)])
-        env = DesignManager(env,design_space=design_space,) # Wrap the environment in the DesignManager class
-        env.configure_design_manager(steps_per_design=steps_per_design, maxlen=10)
+        env = DesignManager(env,design_space=design_space,n_steps = n_steps,n_env = nenv) # Wrap the environment in the DesignManager class
 
         obs = env.reset()
         timer = 0
         for i in range(3):
             while True:
                 timer +=1
-                print(timer)
                 actions = [env.action_space.sample() for _ in range(num_cpu)]
                 obs, rewards, dones, info = env.step(actions)
                 # print(obs)
@@ -59,7 +57,7 @@ if __name__ == '__main__':
                 # print(dones)
                 # print(info)
                 env.render()
-                if timer >=steps_per_design:
+                if timer == int(n_steps/nenv):
                     
                     if i <= 1:
                         print("Resetting")
