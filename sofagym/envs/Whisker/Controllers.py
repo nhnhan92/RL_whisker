@@ -54,6 +54,7 @@ class WhiskerController(Sofa.Core.Controller):
 
         return str_out
     
+    
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.rootNode = kwargs['node']

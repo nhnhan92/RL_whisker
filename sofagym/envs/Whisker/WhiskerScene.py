@@ -84,12 +84,20 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None):
 
 def add_goal_node(root):
     goal = root.addChild("Goal")
-    goal.addObject('VisualStyle', displayFlags="showCollisionModels")
     goal_mo = goal.addObject('MechanicalObject', name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
                              showColor="green", position=[0.0, 0.0, 100.0])
 
     return goal_mo
 
+def add_rand_node(root):
+    goal = root.addChild("test")
+    goal.addObject('EulerImplicitSolver', name='odesolver', rayleighStiffness='0.1', rayleighMass='0.1')
+    goal.addObject('SparseLDLSolver', name='preconditioner', template="CompressedRowSparseMatrixMat3x3d")
+    goal.addObject('MechanicalObject', template="Vec3d", name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
+                             showColor="green", position = [20, 0, 0])
+    goal.addObject('UniformMass', name="m2",totalMass='0.00012')
+    goal.addObject('OscillatorConstraint', template="Vec3d", name="OscillatingConstraint", oscillators="0 25 0 0 20 0 0 2 10")
+    
 precontact_distance = 1+2+3# 1:precontact plus radius of the pole, 1: contactdistance, 3: pole radius. 
 pole_init_pos = contact_pos[0]
 pole_simu_pos = [pole_init_pos[0]+precontact_distance,
@@ -182,7 +190,7 @@ def createScene(root, config={"source": [0, 0, 160],
     whisker_model = root.addChild(a)
 
     goal_mo = add_goal_node(root)
-    
+    # test_node = add_rand_node(root)
     small_end_radi = 12 - (design_params["body_length"])/m.tan(85.5*m.pi/180)
     pole_simu_pos = [1+3+root.localmindistance.contactDistance.value+small_end_radi,0,design_params["body_length"]]
     #### POLE
@@ -200,9 +208,14 @@ def createScene(root, config={"source": [0, 0, 160],
 
     ref_point = [0, 0, 100]
     ref = whisker_model.Whisker.MechanicalModel.addChild("Ref_point")
-    ref.addObject('VisualStyle', displayFlags="showCollisionModels")
-    ref_pos = ref.addObject('MechanicalObject', name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
-                             showColor="green", position=ref_point)
+    # ref_pos = ref.addObject('MechanicalObject', name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
+    #                          showColor="green", position=ref_point)
+    # ref.addObject('EulerImplicitSolver', name='odesolver', rayleighStiffness='0.1', rayleighMass='0.1')
+    # ref.addObject('SparseLDLSolver', name='preconditioner', template="CompressedRowSparseMatrixMat3x3d")
+    ref.addObject('MechanicalObject', template="Vec3d", name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
+                             showColor="green", position = ref_point)
+    ref.addObject('UniformMass', name="m2",totalMass='0.00012')
+    ref.addObject('OscillatorConstraint', template="Vec3d", name="OscillatingConstrai   nt", oscillators="0 0 0 100 20 0 0 2 10")
     ref.addObject('BarycentricMapping', name="Mapping_ref")
 
     # SofaGym Env Components

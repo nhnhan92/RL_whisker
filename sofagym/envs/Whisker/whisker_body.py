@@ -91,7 +91,7 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
                     strainmeasuringelements=[1785,1392,1336,1561])
     model.addObject('BoxROI', name='smallend_Box', box=[-20, -20, design_params["body_length"]-0.5, 20, 20, design_params["body_length"]+0.5], 
                     drawBoxes=True, doUpdate=False)
-
+    # model.addObject('OscillatorConstraint', name="OscillatingConstraint", oscillators="75 2 0 0 1 0 0 5 200")
     # model.addObject('LinearSolverConstraintCorrection', name='GCS')
     
     collisionmodel = model.addChild("CollisionMesh")
