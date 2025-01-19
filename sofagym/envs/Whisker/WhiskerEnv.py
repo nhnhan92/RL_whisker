@@ -28,11 +28,11 @@ class WhiskerEnv:
     # Setting a default configuration
     path = os.path.dirname(os.path.abspath(__file__))
     metadata = {'render.modes': ['human', 'rgb_array']}
-    dim_state = 4
+    dim_state = 2
     DEFAULT_CONFIG = {"scene": "Whisker",
                       "deterministic": True,
-                      "source": [0, 180, 120],
-                      "target": [0, -100, 0],
+                      "source": [-220, -20, 30],
+                      "target": [100, -100, -50],
                       "goalList": [[0, 0, 0]],
                       "goal": False,
                       "start_node": None,
@@ -51,7 +51,7 @@ class WhiskerEnv:
                       "python_version": "python3",
                       "time_before_start": 0,
                       "dt": 0.01,
-                      "design_params": [100,2,0,0,0],
+                      "design_params": [100,1,0,0,0],
                       "design_index": 0,
                       "nb_actions": -1,
                       "dim_state": dim_state,
@@ -92,7 +92,7 @@ class WhiskerEnv:
             self.env.config.update({'init_states': list(self.init_states)})
         else:
             self.init_states = self.env.config["init_states"]
-    
+        
     def randomize_init_states(self):
         """Randomize initial states.
 
@@ -133,7 +133,7 @@ class WhiskerEnv:
             state = np.array(obs['observation'], dtype=np.float32)
         else:
             state = np.array(self.env._getState(self.env.root), dtype=np.float32)
-        
+        print("Init state = ", self.init_states)
         return state
     
     # def reset(self): ## OLD

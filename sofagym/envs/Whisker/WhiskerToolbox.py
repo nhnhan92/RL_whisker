@@ -104,21 +104,6 @@ class StateInitializer(Sofa.Core.Controller):
 
         """
         self.init_states = init_states
-        # cart_pos, cart_vel, pole_theta, pole_theta_dot = self.init_states
-
-        # with self.cart.MechanicalObject.position.writeable() as position:
-        #     position[0][0] = cart_pos
-
-        # with self.cart.MechanicalObject.velocity.writeable() as velocity:
-        #     velocity[0][0] = cart_vel
-
-        # with self.pole.MechanicalObject.velocity.writeable() as theta_dot:
-        #     theta_dot[0][5] = pole_theta_dot
-
-        # sin_theta = m.sin(pole_theta)
-        # cos_theta = m.cos(pole_theta)
-        # x_pos = sin_theta * self.pole_length
-        # y_pos = cos_theta * self.pole_length
 
         # with self.pole.MechanicalObject.position.writeable() as position:
         #     position[0][0] = x_pos
@@ -179,13 +164,43 @@ class rewardShaper(Sofa.Core.Controller):
         self.whisker_topo = self.whisker.getObject("loader")
         self.measured_ele = self.fem.strainmeasuringelements.value
         self.current_strain = []
+        self.forces = []
     # def onKeypressedEvent(self, e):
     #     c = e['key']
 
 
-    def onAnimateBeginEvent(self, event):
-        pass
-
+    def onAnimateEndEvent(self, event):
+        constraint = self.mecawhisker.constraint.value
+        constraintMatrixInline = np.fromstring(constraint, sep='  ')
+        pointId = []
+        constraintId = []
+        constraintDirections = []
+        index = 0
+        forcesNorm = self.rootNode.GCS.constraintForces.value
+        constraintDirections = []
+        
+        while index < len(constraintMatrixInline):
+            nbConstraint   = int(constraintMatrixInline[index+1])
+            currConstraintID = int(constraintMatrixInline[index])
+            for pts in range(nbConstraint):
+                currIDX = index+2+pts*4
+                pointId.append(constraintMatrixInline[currIDX])
+                constraintId.append(currConstraintID)
+                constraintDirections.append([constraintMatrixInline[currIDX+1],
+                                            constraintMatrixInline[currIDX+2],
+                                            constraintMatrixInline[currIDX+3]])
+            index = index + 2 + nbConstraint*4
+        contactforce_x = 0
+        contactforce_y = 0
+        contactforce_z = 0
+        indice = []
+        for i in range(len(pointId)):
+            indice.append(int(pointId[i]))  
+            contactforce_x += constraintDirections[i][0] * forcesNorm[constraintId[i]] 
+            contactforce_y += constraintDirections[i][1] * forcesNorm[constraintId[i]]
+            contactforce_z += constraintDirections[i][2] * forcesNorm[constraintId[i]]
+        
+        self.forces = [float(contactforce_x),float(contactforce_y),float(contactforce_z)]
     
     def getReward(self):
         """Compute the reward.
@@ -204,7 +219,7 @@ class rewardShaper(Sofa.Core.Controller):
         ele = 1785
         
         self.strain = self.fem.totalstrain.value
-        self.current_strain.append(self.strain[1][4])
+        # self.current_strain.append(self.strain[1][4])
         current_cost = 0.1
         # self.current_strain[self.count]= self.strain[1][4]
         # current_cost = np.sqrt(np.mean((self.current_strain - self.strain_baseline)**2))
@@ -247,7 +262,6 @@ class rewardShaper(Sofa.Core.Controller):
 
 
         return reward, self.cost
-    # Hàm cập nhật đồ thị
 
     def update(self,goal=None):
         """Compute the distance between object and goal.
@@ -353,26 +367,18 @@ class applyAction(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
 
         self.root = kwargs["root"]
-        self.const_angle = -0.8*m.pi/180
         self.whisker_node = self.root.Whisker_node
-        self.angle_limit = round(60*m.pi/180,4)
-        self.max_incr = 0.2*m.pi/180
+        self.max_incr = 5*m.pi/180
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value
         new_angleIn = current_angleIn + incr
-
-        # print("increment of action =", incr)
-        if new_angleIn < round(60*m.pi/180,4):
-            self.whisker_node.Articulation_system.angleIn.value = new_angleIn 
-        else:
-            self.whisker_node.Articulation_system.angleIn.value = round(60*m.pi/180,4)
+        self.whisker_node.Articulation_system.angleIn.value = new_angleIn 
 
     def _normalizedAction_to_action(self, action):
-        return self.max_incr*action/2 + self.max_incr/2
+        return self.max_incr*action/2
 
     def compute_rot_action(self, action, nb_step):
-        current_angleIn = self.whisker_node.Articulation_system.angleIn.value
-        incr= (self.const_angle+self._normalizedAction_to_action(action))/nb_step
+        incr= self._normalizedAction_to_action(action)/nb_step
         # incr = (goal_angleIn - current_angleIn)/nb_step
         return incr
 
@@ -542,20 +548,6 @@ def pressurize(whisker, pressure, cavity):
     """
     pass
 
-def _getGoalPos(root):
-    """Get XYZ position of the goal.
-
-    Parameters:
-    ----------
-        rootNode: <Sofa.Core>
-            The scene.
-
-    Returns:
-    -------
-        The position of the goal.
-    """
-    return root.Goal.GoalMO.position.value[0]
-
 
 def getState(root):
     """Compute the state of the environment/agent.
@@ -574,25 +566,15 @@ def getState(root):
         State: list of float
             The state of the environment/agent.
     """
-    # Define the file name
-    # file_name = 'data.json'
-    # current_dir = os.path.dirname(os.path.abspath(__file__))
-    # json_file_path = os.path.join(current_dir, file_name)
-    # with open(json_file_path, 'r') as file:
-    #     data = json.load(file)
-    
     # right_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.SurfacePressureConstraint.getData('value').value.tolist()
     # right_pressure[0] /=10
     # left_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity1.SurfacePressureConstraint.getData('value').value.tolist()
     # left_pressure[0] /=10
 
-    rot_angle = [root.Whisker_node.Articulation_system.angleIn.value]
+    rot_angle = root.Whisker_node.Articulation_system.angleIn.value
+    strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.totalstrain.value[0][2].tolist()
 
-    goal_pos = _getGoalPos(root)
-    goal_pos = [round(float(k), 3) for k in goal_pos]
-
-    # whisker_tips = [round(k, cs) for k in root.Whisker_node.Whisker.MechanicalModel.Ref_point.GoalMO.position.value[0].tolist()]
-    state = [0] + [0] + [0]+ rot_angle
+    state = [rot_angle] + [strain_zz]
     return state
 
 
@@ -619,12 +601,12 @@ def getPos(root):
     # fiber2_right_pos = root.Whisker_node.Whisker.MechanicalModel.fiber.fiber2_right.dofs.position.value.tolist()
     # fiber2_left_pos = root.Whisker_node.Whisker.MechanicalModel.fiber.fiber2_right.dofs.position.value.tolist()
 
-    arm_pos = root.Whisker_node.Articulation_system.ServoArm.dofs.position.value.tolist()
+    # arm_pos = root.Whisker_node.Articulation_system.ServoArm.dofs.position.value.tolist()
     arti_pos = root.Whisker_node.Articulation_system.ServoMotor.Articulation.dofs.rest_position.value.tolist()
     body_pos = root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value.tolist()
     
 
-    goal = root.Goal.GoalMO.position.value.tolist()
+    # goal = root.Goal.GoalMO.position.value.tolist()
 
     return [
             whisker_pos,
@@ -635,10 +617,10 @@ def getPos(root):
             # fiber1_left_pos,
             # fiber2_right_pos,
             # fiber2_left_pos,
-            arm_pos,
+            # arm_pos,
             arti_pos,
             body_pos, 
-            goal
+            # goal
             ]
 
 def setPos(root, pos):
@@ -669,10 +651,10 @@ def setPos(root, pos):
     # fiber1_left_pos,
     # fiber2_right_pos,
     # fiber2_left_pos,
-     arm_pos,
+    #  arm_pos,
      arti_pos,
      body_pos,
-     goal
+    #  goal
     ] = pos
     root.Whisker_node.Whisker.MechanicalModel.dofs.position.value = np.array(whisker_pos)
     root.Whisker_node.Whisker.MechanicalModel.Ref_point.GoalMO.position.value = np.array(ref_pos)
@@ -684,8 +666,8 @@ def setPos(root, pos):
     # root.Whisker_node.Whisker.MechanicalModel.fiber.fiber2_right.dofs.position.value = np.array(fiber2_right_pos)
     # root.Whisker_node.Whisker.MechanicalModel.fiber.fiber2_right.dofs.position.value = np.array(fiber2_left_pos)
 
-    root.Whisker_node.Articulation_system.ServoArm.dofs.position.value = np.array(arm_pos)
+    # root.Whisker_node.Articulation_system.ServoArm.dofs.position.value = np.array(arm_pos)
     root.Whisker_node.Articulation_system.ServoMotor.Articulation.dofs.rest_position.value = np.array(arti_pos)
     root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value = np.array(body_pos)
 
-    root.Goal.GoalMO.position.value = np.array(goal)
+    # root.Goal.GoalMO.position.value = np.array(goal)

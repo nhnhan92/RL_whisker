@@ -84,11 +84,11 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
     model.addObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
 
     model.addObject('MechanicalObject', name='dofs', template='Vec3d', showIndices='false', showIndicesScale='4e-5',
-                    translation=translation, rotation=rotation)
+                    translation=translation)
     model.addObject('UniformMass', totalMass='0.00012')
     model.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large', 
                     poissonRatio=PoissonRatio,  youngModulus=YoungsModulus, strainmeasurementstatus = 1, 
-                    strainmeasuringelements=[1785,1392,1336,1561])
+                    strainmeasuringelements=[1785])
     model.addObject('BoxROI', name='smallend_Box', box=[-20, -20, design_params["body_length"]-0.5, 20, 20, design_params["body_length"]+0.5], 
                     drawBoxes=True, doUpdate=False)
     # model.addObject('OscillatorConstraint', name="OscillatingConstraint", oscillators="75 2 0 0 1 0 0 5 200")
@@ -110,10 +110,19 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
     # Chamber node                            #
     ##########################################
     chamber_node = model.addChild('Chamber')
+    
     for cavity_idx in range(design_params["no_chamber"]):
+        rot_matrix = []
+        for i in range(3):
+            if i != 2:
+                rot_matrix += [rotation[i]]
+            else:
+                rot_matrix += [rotation[i]]
         CavitySurfaceMeshPath = mesh_path+'chamber_stl.stl'
         cavity = chamber_node.addChild('cavity'+str(cavity_idx))
-        cavity.addObject('MeshSTLLoader', name='loader', filename=CavitySurfaceMeshPath,rotation=[0, 0, 0+360*cavity_idx/design_params["no_chamber"]])
+        cavity.addObject('MeshSTLLoader', name='loader', filename=CavitySurfaceMeshPath,
+                         translation=translation,
+                         rotation = rot_matrix)
         cavity.addObject('MeshTopology', src='@loader', name='topo')
         cavity.addObject('MechanicalObject', name='cavity')
         cavity.addObject('SurfacePressureConstraint', name='SurfacePressureConstraint', template='Vec3', value=design_params[f"pressure_{cavity_idx+1}"], flipNormal = 1,

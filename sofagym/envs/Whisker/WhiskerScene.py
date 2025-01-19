@@ -18,7 +18,7 @@ from WhiskerToolbox import rewardShaper, applyAction,StateInitializer
 from Controllers import WhiskerController
 from ext_data import ext_data
 from articulation_system import ServoArm, ServoMotor, ActuatedArm
-from obstacles import pole,plane
+from obstacles import pole,plane,oscilate_plane
 from whisker_body import Whisker
 contact_list, contact_pos, rest_pos = ext_data()
 
@@ -27,7 +27,8 @@ path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 MeshesPath = os.path.dirname(os.path.abspath(__file__))+'/mesh/length_'
 USE_GUI = True
 
-def Whisker_node(name="Whisker_node", design_params = None,design_index = None):
+def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
+                translation = [0,0,0], rotation = [0,0,0]):
     
     def __rigidify(self, translation = [0,0,0], eulerRotation = [0, 0.0, 0.0],scale = [40, 40, 0.5]):
         deformableObject = self.Whisker.MechanicalModel
@@ -70,14 +71,15 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None):
     # EigenSimplicialLDLT SparseLDLSolver
     self.addObject('GenericConstraintCorrection') 
 
-    whiskernode = Whisker(visu = True, simu = True, name="Whisker",rotation=[0, 0.0, 0.0], 
-                          translation=[0.0, 0.0, 0.0], design_params = design_params,design_index = design_index)
+    whiskernode = Whisker(visu = True, simu = True, name="Whisker",rotation=rotation, 
+                          translation=translation, design_params = design_params,design_index = design_index)
     self.addChild(whiskernode)
     arti_system = ActuatedArm(
-        name="Articulation_system", translation=[0.0, 0.0, 0.0], rotation=[180.0, 0.0, 0.0],
+        name="Articulation_system", translation=translation, rotation=rotation,
     )
     self.addChild(arti_system)
-    __rigidify(self)
+
+    __rigidify(self,translation=translation,eulerRotation=rotation)
     __attachToSkin(self)
     return self
 
@@ -96,7 +98,7 @@ def add_rand_node(root):
     goal.addObject('MechanicalObject', template="Vec3d", name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
                              showColor="green", position = [20, 0, 0])
     goal.addObject('UniformMass', name="m2",totalMass='0.00012')
-    goal.addObject('OscillatorConstraint', template="Vec3d", name="OscillatingConstraint", oscillators="0 25 0 0 20 0 0 2 10")
+    # goal.addObject('OscillatorConstraint', template="Vec3d", name="OscillatingConstraint", oscillators="0 25 0 0 20 0 0 2 10")
     
 precontact_distance = 1+2+3# 1:precontact plus radius of the pole, 1: contactdistance, 3: pole radius. 
 pole_init_pos = contact_pos[0]
@@ -108,8 +110,8 @@ def createScene(root, config={"source": [0, 0, 160],
                               "goalPos": [0, 0, 100],
                                 "init_states": [0] * 4,
                                 "zFar":4000,
-                                "design_params": [80,1,0,0,0],
-                                "design_index": 3
+                                "design_params": [100,1,0,0,0],
+                                "design_index": 0
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
     from splib3.animation import animate
@@ -168,8 +170,9 @@ def createScene(root, config={"source": [0, 0, 160],
     root.addObject('FreeMotionAnimationLoop')
     root.addObject('RuleBasedContactManager', responseParams="mu="+str(0.1), name='Response',
                            response='FrictionContactConstraint')
-    root.addObject('GenericConstraintSolver', tolerance=1e-6, maxIterations=1000)
-    root.addObject('LocalMinDistance', contactDistance=2, alarmDistance=3, name='localmindistance',
+    root.addObject('GenericConstraintSolver', name='GCS', tolerance=1e-6, maxIterations=1000,
+                       computeConstraintForces=1)
+    root.addObject('LocalMinDistance', contactDistance=5, alarmDistance=8, name='localmindistance',
                     angleCone=0.1)
     # root.addObject(AnimationManagerController(root))
     root.gravity.value = [0.0, -9810, 0.0]
@@ -186,22 +189,32 @@ def createScene(root, config={"source": [0, 0, 160],
                     "pressure_3": config["design_params"][4]
                     }
     design_index = config["design_index"]
-    a = Whisker_node(design_params=design_params,design_index = design_index)
+    a = Whisker_node(design_params=design_params,
+                    design_index = design_index,
+                    translation=[0,0,0],
+                    rotation=[70,0,0])
     whisker_model = root.addChild(a)
 
-    goal_mo = add_goal_node(root)
+    # goal_mo = add_goal_node(root)
     # test_node = add_rand_node(root)
     small_end_radi = 12 - (design_params["body_length"])/m.tan(85.5*m.pi/180)
     pole_simu_pos = [1+3+root.localmindistance.contactDistance.value+small_end_radi,0,design_params["body_length"]]
     #### POLE
-    pole(root,visu, name="pole",translation = pole_simu_pos)
+    # pole(root,visu, name="pole",translation = pole_simu_pos)
 
-    ###  PLANE node
-    # init_angle = 30
-    # sweep_dist = 20   #half cource => full course = sweep dist *2
-    # x_translate = m.sqrt(90*90-sweep_dist*sweep_dist)*m.cos(m.pi/2-init_angle*m.pi/180)
-    # z_translate  = m.sqrt(90*90-sweep_dist*sweep_dist)*m.sin(m.pi/2-init_angle*m.pi/180)
-    # plane(root,visu=visu,translation=[x_translate, 0, z_translate], rotation=[0,init_angle,0], sphere_r=None)
+    ##  PLANE node
+    init_angle = 30
+    sweep_dist = 10   #half cource => full course = sweep dist *2
+    oscilate_amp = 5
+    x_translate = m.sqrt(90*90-sweep_dist*sweep_dist)*m.cos(m.pi/2-init_angle*m.pi/180)
+    z_translate  = m.sqrt(90*90-sweep_dist*sweep_dist)*m.sin(m.pi/2-init_angle*m.pi/180)
+    # plane(root,visu=visu,translation=[x_translate, -50, z_translate], rotation=[45,0,0], sphere_r=None)
+    oscilater_plane_trans = [0,-95,40]
+    oscilater_plane_rot = [90,0,0]
+    amp = [0,5,0,0,0,0]
+    # oscillators = [0] + 
+    plane = oscilate_plane(root,visu=visu,amp= amp,pulse=5,phase=10,
+                           translation=oscilater_plane_trans, rotation=oscilater_plane_rot, sphere_r=None)
 
     # Add Controller and reward + goal for RL
     # root.addObject(WhiskerController(node=root, name='whisker_controller',body_length=body_length))  # Controller
@@ -215,7 +228,7 @@ def createScene(root, config={"source": [0, 0, 160],
     ref.addObject('MechanicalObject', template="Vec3d", name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
                              showColor="green", position = ref_point)
     ref.addObject('UniformMass', name="m2",totalMass='0.00012')
-    ref.addObject('OscillatorConstraint', template="Vec3d", name="OscillatingConstrai   nt", oscillators="0 0 0 100 20 0 0 2 10")
+    # ref.addObject('OscillatorConstraint', template="Vec3d", name="OscillatingConstrai   nt", oscillators="0 0 0 100 20 0 0 2 10")
     ref.addObject('BarycentricMapping', name="Mapping_ref")
 
     # SofaGym Env Components
@@ -225,9 +238,13 @@ def createScene(root, config={"source": [0, 0, 160],
     # setData(whisker_model.Articulation_system.ServoMotor.Articulation.ServoWheel.dofs, showObject=1, showObjectScale=20,
     # drawMode=2, showColor=[1., 1., 0., 1.])
     root.addObject(AnimationManagerController(root, name="AnimationManager"))
-    # def animation(target, factor):
-    #     rot_angle = 60
-    #     target.angleIn.value = factor * (-rot_angle*m.pi/180)
+    root.addObject(AnimationManager(root))
+    
+    def animation(target, factor):
+        rot_angle = 90
+        invalue = [rot_angle*m.pi/180]
+        target.angleIn.value = invalue
+        # root.Whisker_node.Articulation_system.angles = [0,10,1]
     # animate(animation, {"target": whisker_model.Articulation_system}, duration=2, mode="pingpong") 
     ### factor = dt/duration => angular velocity = rot_angle*dt/duration (rad/dt) with step of angleIn per dt
     return root

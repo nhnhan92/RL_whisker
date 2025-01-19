@@ -136,7 +136,7 @@ class AbstractEnv(gym.Env):
             self.config.update(config)
 
         self.scene = self.config['scene']
-
+        print(self.scene)
         self._getState = importlib.import_module("sofagym.envs."+self.scene+"."+self.scene+"Toolbox").getState
         self._getReward = importlib.import_module("sofagym.envs."+self.scene+"."+self.scene+"Toolbox").getReward
         self._startCmd = importlib.import_module("sofagym.envs."+self.scene+"."+self.scene+"Toolbox").startCmd

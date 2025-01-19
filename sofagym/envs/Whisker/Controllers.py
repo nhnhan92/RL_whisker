@@ -54,7 +54,6 @@ class WhiskerController(Sofa.Core.Controller):
 
         return str_out
     
-    
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.rootNode = kwargs['node']
@@ -81,35 +80,14 @@ class WhiskerController(Sofa.Core.Controller):
 
         ### Articulation system node
         self.arti_sys = self.rootNode.Whisker_node.getChild("Articulation_system")
-        for ele in self.measured_ele:
-            filePath_node = "strain_data_scene/strain_" + str(ele)+".csv"
-            try:
-                os.remove(filePath_node)
-            except:
-                print("Error while deleting file ", filePath_node)
-            self.strain_header = ["Sim_step", "lamda_xx", "lamda_yy", "lamda_zz","lamda_yz", "lamda_xz", "lamda_xy"]
-            with open(filePath_node, "w", newline="") as csv_file:
-                csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
-                csv_writer.writeheader()
-            with open(filePath_node, 'a') as csv_file:
-                csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
-
-                info = {
-                    "Sim_step": 0,
-                    "lamda_xx": 0,
-                    "lamda_yy": 0,
-                    "lamda_zz": 0,
-                    "lamda_yz": 0,
-                    "lamda_xz": 0,
-                    "lamda_xy": 0
-                }
-                csv_writer.writerow(info)
-        
-        self.pole = self.rootNode.getChild("pole")
-        self.pole_meca = self.pole.dofs
-        self.pole_loader = self.pole.getObject("pole_loader")
+        self.servo_arti = self.arti_sys.ServoMotor.Articulation.dofs
+        self.servo_wheel = self.arti_sys.ServoMotor.Articulation.ServoWheel.dofs
         self.factor = 0
-        self.count_scene = 0
+
+        ### Plane
+        self.plane = self.rootNode.getChild("plane")
+        self.meca_plane = self.plane.getChild("oscilated_dof")
+
 
     def getTranslated(points, vec):
         r = []
@@ -122,53 +100,39 @@ class WhiskerController(Sofa.Core.Controller):
     def animation(target, factor):
         rot_angle = 60
         target.angleIn.value = factor * (-rot_angle*m.pi/180)
-    def onAnimateBeginEvent(self, event):
-        # print(self.pole_meca.position.value)
-        self.count_scene += round(self.dt,2)
-        self.strain = self.fem.totalstrain.value
-        random_no = random.randint(1, 2)
-        angle = 60
-        self.factor += self.dt/2
-        rot_angle = self.rootNode.Whisker_node.Articulation_system.angleIn.value
-
-        if self.count_scene <= 0.01:
-            for i in range(len(self.smallend_box.pointsInROI.value)):
-                if -0.0001<self.smallend_box.pointsInROI.value[i][0] - self.small_end_radi < 0.0001:
-                    self.contact_idx = self.smallend_box.indices.value[i]
-                    # print(self.contact_idx)
-                    break
-            new_pole_pos = self.moveRestPos(self.pole_meca.rest_position.value,
-                                                1+3+self.rootNode.localmindistance.contactDistance.value+self.mecawhisker.rest_position.value[self.contact_idx][0]-self.pole_meca.rest_position.value[0][0],
-                                                self.mecawhisker.rest_position.value[self.contact_idx][1]-self.pole_meca.rest_position.value[0][1],
-                                                self.mecawhisker.rest_position.value[self.contact_idx][2]-self.pole_meca.rest_position.value[0][2])
-            self.pole_meca.rest_position.value = new_pole_pos
-
-                
+    def onAnimateEndEvent(self, event):
+        constraint = self.mecawhisker.constraint.value
+        constraintMatrixInline = np.fromstring(constraint, sep='  ')
+        pointId = []
+        constraintId = []
+        constraintDirections = []
+        index = 0
+        forcesNorm = self.rootNode.GCS.constraintForces.value
+        constraintDirections = []
         
-        if rot_angle < (angle*m.pi/180)*2:
-            # self.moveRestPos(self.mecawhisker.rest_position.value, increment, 0, 0)
-            # current_angleIn = self.arti_sys.angleIn.value
-            # self.arti_sys.angleIn.value = current_angleIn - 0.002
-            # print(self.arti_sys.angleIn.value)
-            # print(self.mecawhisker.position.value[0])
-            if self.count_scene>0.02:
-                for ele in range(len(self.measured_ele)):
-                    with open("strain_data_scene/strain_" + str(self.measured_ele[ele])+".csv", 'a') as csv_file:
-                        csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
-
-                        info = {
-                            "Sim_step": round(self.count_scene,2),
-                            "lamda_xx": round(self.strain[ele][0],4) ,
-                            "lamda_yy": round(self.strain[ele][1],4),
-                            "lamda_zz": round(self.strain[ele][2],4),
-                            "lamda_yz": round(self.strain[ele][3],4),
-                            "lamda_xz": round(self.strain[ele][4],4),
-                            "lamda_xy": round(self.strain[ele][5],4),
-                        }
-                        csv_writer.writerow(info)
-
-        else:
-            pass
+        while index < len(constraintMatrixInline):
+            nbConstraint   = int(constraintMatrixInline[index+1])
+            currConstraintID = int(constraintMatrixInline[index])
+            for pts in range(nbConstraint):
+                currIDX = index+2+pts*4
+                pointId.append(constraintMatrixInline[currIDX])
+                constraintId.append(currConstraintID)
+                constraintDirections.append([constraintMatrixInline[currIDX+1],
+                                            constraintMatrixInline[currIDX+2],
+                                            constraintMatrixInline[currIDX+3]])
+            index = index + 2 + nbConstraint*4
+        contactforce_x = 0
+        contactforce_y = 0
+        contactforce_z = 0
+        indice = []
+        for i in range(len(pointId)):
+            indice.append(int(pointId[i]))  
+            contactforce_x += constraintDirections[i][0] * forcesNorm[constraintId[i]] 
+            contactforce_y += constraintDirections[i][1] * forcesNorm[constraintId[i]]
+            contactforce_z += constraintDirections[i][2] * forcesNorm[constraintId[i]]
+        
+        forces = [float(contactforce_x),float(contactforce_y),float(contactforce_z)]
+        
     def onKeypressedEvent(self, e):
         c = e['key']
 

@@ -10,7 +10,7 @@ from sofagym.envs import *
 from agents.utils import make_env
 from coopt.design_manager import DesignManager
 import wandb
-
+import os
 
 RANDOM = False
 
