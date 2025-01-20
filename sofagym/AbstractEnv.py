@@ -136,7 +136,6 @@ class AbstractEnv(gym.Env):
             self.config.update(config)
 
         self.scene = self.config['scene']
-        print(self.scene)
         self._getState = importlib.import_module("sofagym.envs."+self.scene+"."+self.scene+"Toolbox").getState
         self._getReward = importlib.import_module("sofagym.envs."+self.scene+"."+self.scene+"Toolbox").getReward
         self._startCmd = importlib.import_module("sofagym.envs."+self.scene+"."+self.scene+"Toolbox").startCmd
@@ -175,7 +174,8 @@ class AbstractEnv(gym.Env):
 
         self.nb_actions = self.config["nb_actions"]
         self.dim_state = self.config["dim_state"]
-
+        if self.scene == "Whisker":
+            self.no_chamber = self.config['design_params'][1]
     def init_save_paths(self):
         """Create directories to save results and images.
 
@@ -351,8 +351,10 @@ class AbstractEnv(gym.Env):
 
         self.past_actions.append(action)
         self.past_pos.append(self.pos)
-
-        obs = np.array(self._getState(self.root), dtype=np.float32)
+        if self.scene == 'Whisker':
+            obs = np.array(self._getState(self.root,self.no_chamber), dtype=np.float32)
+        else:
+            obs = np.array(self._getState(self.root), dtype=np.float32)
         done, reward = self._getReward(self.root)
 
         # Avoid long explorations by using a timer.
@@ -389,7 +391,10 @@ class AbstractEnv(gym.Env):
         self.root = None
         self.init_simulation()
         
-        obs = np.array(self._getState(self.root), dtype=np.float32)
+        if self.scene == 'Whisker':
+            obs = np.array(self._getState(self.root,self.no_chamber), dtype=np.float32)
+        else:
+            obs = np.array(self._getState(self.root), dtype=np.float32)
         
         return obs
 

@@ -164,7 +164,7 @@ def test_co_opt():
                     job_type='train', resume='allow'):
             
         env_id = "whisker-v0"
-        nenv = 1  # Number of processes to use
+        nenv = 2  # Number of processes to use
         seed = 1 # The inital seed for RNG
         design_space = gym.spaces.Discrete(n=9)
         env = SubprocVecEnv([make_env(env_id, rank=i, seed=seed, max_episode_steps=1000, config={"render": 1}) for i in range(nenv)]) # Create the vectorized environment
@@ -244,6 +244,6 @@ def train_co_opt():
         co_opt.save()
 
 if __name__ == '__main__':
-    # test_co_opt()
-    test_trainer_sofagym()
+    test_co_opt()
+    # test_trainer_sofagym()
     # train_co_opt()

@@ -28,7 +28,7 @@ class WhiskerEnv:
     # Setting a default configuration
     path = os.path.dirname(os.path.abspath(__file__))
     metadata = {'render.modes': ['human', 'rgb_array']}
-    dim_state = 2
+    dim_state = 5
     DEFAULT_CONFIG = {"scene": "Whisker",
                       "deterministic": True,
                       "source": [-220, -20, 30],
@@ -132,8 +132,7 @@ class WhiskerEnv:
             obs = start_scene(self.env.config, self.nb_actions)
             state = np.array(obs['observation'], dtype=np.float32)
         else:
-            state = np.array(self.env._getState(self.env.root), dtype=np.float32)
-        print("Init state = ", self.init_states)
+            state = np.array(self.env._getState(self.env.root,self.config['design_params'][1]), dtype=np.float32)
         return state
     
     # def reset(self): ## OLD

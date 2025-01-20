@@ -81,7 +81,7 @@ class DesignManager(VecEnvWrapper):
         self.design_space = space
         self.designs = None
         self.rewards = np.zeros(self.num_envs)
-        ent_decay_start = 1, # start of entropy decay
+        ent_decay_start = 10 # start of entropy decay
         ent_decay_end = 1000  # end of entropy decay
         logdir = './test_coopt'
         self.design_optimizer = DiscreteDesignOptimizer(self.design_space, ent_decay_start, ent_decay_end)
@@ -166,7 +166,8 @@ class DesignManager(VecEnvWrapper):
             self.design_optimizer.log(self.t)
 
         obs, rewards, dones, infos = self.venv.step_wait()
-        
+        dt = self.n_env * self.update_period
+        self.t += dt
         self.steps += 1
         self.rewards += rewards
         if self.steps_per_design and self.steps % self.steps_per_design == 0:

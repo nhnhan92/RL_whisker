@@ -92,17 +92,7 @@ class StateInitializer(Sofa.Core.Controller):
         # self.pole = self.rootNode.Modeling.Pole
 
     def init_state(self, init_states):
-        """Randomly initialize the environment state.
 
-        Parameters:
-        ----------
-            None.
-
-        Returns:
-        -------
-            None.
-
-        """
         self.init_states = init_states
 
         # with self.pole.MechanicalObject.position.writeable() as position:
@@ -123,12 +113,6 @@ class rewardShaper(Sofa.Core.Controller):
     ---------
         rootNode: <Sofa.Core>
             The scene.
-        goal_pos: coordinates
-            The position of the goal.
-        effMO: <MechanicalObject>
-            The mechanical object of the element to move.
-        cost:
-            Evolution of the distance between object and goal.
 
     """
     def __init__(self, *args, **kwargs):
@@ -500,33 +484,6 @@ def getTranslated(points, vec):
         r.append([x, y, z])
 
     return r
-
-def rotateWhisker(whisker, rot, direction,factor):
-    """Function to rotate finger.
-
-    Parameters:
-    ----------
-        direction: list
-            1-Clockwise (CW), 2-Counter Clockwise (CCW)
-        rot: float
-            The rotation angle.
-
-    Returns:
-    -------
-        None.
-
-    """
-    const_rot = -0.001
-    current_angleIn = whisker.Articulation_system.angleIn.value
-    # print(current_angleIn)
-    # print(whisker.Whisker.MechanicalModel.dofs.position.value[0])
-
-    if direction == "CW":
-        whisker.Articulation_system.angleIn.value = current_angleIn + const_rot + rot
-    elif direction == "CCW":
-        whisker.Articulation_system.angleIn.value = current_angleIn + const_rot + rot
-    elif direction == "Stand":
-        whisker.Articulation_system.angleIn.value = current_angleIn + const_rot
     
 
 def pressurize(whisker, pressure, cavity):
@@ -549,7 +506,7 @@ def pressurize(whisker, pressure, cavity):
     pass
 
 
-def getState(root):
+def getState(root, no_chamber):
     """Compute the state of the environment/agent.
 
     Note:
@@ -566,15 +523,20 @@ def getState(root):
         State: list of float
             The state of the environment/agent.
     """
-    # right_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.SurfacePressureConstraint.getData('value').value.tolist()
-    # right_pressure[0] /=10
-    # left_pressure = root.Whisker_node.Whisker.MechanicalModel.Chamber.cavity1.SurfacePressureConstraint.getData('value').value.tolist()
-    # left_pressure[0] /=10
+    chamber_node = root.Whisker_node.Whisker.MechanicalModel.Chamber
+    pressure = []
+    for i in range(3):
+        if i <= no_chamber-1:
+            pressure.append(chamber_node.getChild(f'cavity{i}').SurfacePressureConstraint.getData('value').value[0].tolist())
+        else:
+            pressure.append(0.0)
+    print("pressure = ",pressure)
 
     rot_angle = root.Whisker_node.Articulation_system.angleIn.value
     strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.totalstrain.value[0][2].tolist()
 
-    state = [rot_angle] + [strain_zz]
+    state = [rot_angle] + [strain_zz] + pressure
+    print("State = ", state)
     return state
 
 
