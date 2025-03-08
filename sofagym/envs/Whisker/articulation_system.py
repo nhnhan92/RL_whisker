@@ -45,10 +45,10 @@ class ServoMotor(Sofa.Prefab):
     prefabData = [
         {'name': 'minAngle', 'help': 'min angle of rotation (in radians)', 'type': 'float', 'default': -180},
         {'name': 'maxAngle', 'help': 'max angle of rotation (in radians)', 'type': 'float', 'default': 180},
-        {'name': 'angleIn', 'help': 'angle of rotation (in radians)', 'type': 'float', 'default': 0},
-        {'name': 'angleOut', 'help': 'angle of rotation (in degree)', 'type': 'float', 'default': 0}
-        # {'name': 'angleIn', 'help': 'angle of rotation (in radians)', 'type': 'vector<float>', 'default': [0,0]},
-        # {'name': 'angleOut', 'help': 'angle of rotation (in degree)', 'type': 'vector<float>', 'default': [0,0]}
+        # {'name': 'angleIn', 'help': 'angle of rotation (in radians)', 'type': 'float', 'default': 0},
+        # {'name': 'angleOut', 'help': 'angle of rotation (in degree)', 'type': 'float', 'default': 0}
+        {'name': 'angleIn', 'help': 'angle of rotation (in radians)', 'type': 'vector<float>', 'default': [0,0]},
+        {'name': 'angleOut', 'help': 'angle of rotation (in degree)', 'type': 'vector<float>', 'default': [0,0]}
     ]
 
     def __init__(self, *args, **kwargs):
@@ -75,13 +75,13 @@ class ServoMotor(Sofa.Prefab):
         angle.addObject('MechanicalObject', name='dofs', template='Vec1', position=[0,0],
                         rest_position=self.angleIn.getLinkPath())
         angle.addObject('ArticulatedHierarchyContainer', printLog=False)
-        angle.addObject('RestShapeSpringsForceField', points=[0], stiffness=1e9)
+        angle.addObject('RestShapeSpringsForceField', points=[0,1], stiffness=1e9)
         angle.addObject('UniformMass', totalMass=0.00001)
 
         servoWheel = angle.addChild('ServoWheel')
         servoWheel.addObject('MechanicalObject', name='dofs', template='Rigid3',
                              position=[[0., 0., 0., 0., 0., 0., 1.],[0., 0., 0., 0., 0., 0., 1.],
-                                    #    [0., 0., 0., 0., 0., 0., 1.]
+                                       [0., 0., 0., 0., 0., 0., 1.]
                                     ],
                              showObject =1, 
                              showObjectScale=5,translation=self.translation.value, rotation=self.rotation.value,
@@ -92,12 +92,12 @@ class ServoMotor(Sofa.Prefab):
                              output=servoWheel.dofs.getLinkPath())
 
         articulationCenter_sys = angle.addChild('ArticulationCenter')
-        # translation_center = articulationCenter_sys.addChild("translation")
-        # translation_center.addObject('ArticulationCenter', parentIndex=1, childIndex=2, posOnParent=[0., 0., 0.],
-        #                              posOnChild=[0., 0., 0.], articulationProcess = 0)
-        # trans_articulation = translation_center.addChild('Articulations')
-        # trans_articulation.addObject('Articulation', translation=True, rotation=False, axis=[0, 1, 0],
-        #                        articulationIndex=0)
+        translation_center = articulationCenter_sys.addChild("translation")
+        translation_center.addObject('ArticulationCenter', parentIndex=1, childIndex=2, posOnParent=[0., 0., 0.],
+                                     posOnChild=[0., 0., 0.], articulationProcess = 0)
+        trans_articulation = translation_center.addChild('Articulations')
+        trans_articulation.addObject('Articulation', translation=True, rotation=False, axis=[0, 1, 0],
+                               articulationIndex=1)
         
         rotation_center = articulationCenter_sys.addChild("rotation")
         rotation_center.addObject('ArticulationCenter', parentIndex=0, childIndex=1, posOnParent=[0., 0., 0.],
@@ -163,14 +163,14 @@ class ActuatedArm(Sofa.Prefab):
     ]
 
     prefabData = [
-        # {'name': 'angleIn', 'group': 'ArmProperties', 'help': 'angle of rotation (in radians) of the arm',
+        {'name': 'angleIn', 'group': 'ArmProperties', 'help': 'angle of rotation (in radians) of the arm',
+         'type': 'vector<float>', 'default': [0,0]},
+        {'name': 'angleOut', 'group': 'ArmProperties', 'type': 'vector<float>', 'help': 'angle of rotation (in radians) of '
+                                                                                'the arm', 'default': [0,0]}
+        #        {'name': 'angleIn', 'group': 'ArmProperties', 'help': 'angle of rotation (in radians) of the arm',
         #  'type': 'float', 'default':0},
         # {'name': 'angleOut', 'group': 'ArmProperties', 'type': 'float', 'help': 'angle of rotation (in radians) of '
-        #                                                                         'the arm', 'default': 0}
-               {'name': 'angleIn', 'group': 'ArmProperties', 'help': 'angle of rotation (in radians) of the arm',
-         'type': 'float', 'default':0},
-        {'name': 'angleOut', 'group': 'ArmProperties', 'type': 'float', 'help': 'angle of rotation (in radians) of '
-                                                                                'the arm', 'default': 0}                                                                       
+        #                                                                         'the arm', 'default': 0}                                                                       
     ]
 
     def __init__(self, *args, **kwargs):

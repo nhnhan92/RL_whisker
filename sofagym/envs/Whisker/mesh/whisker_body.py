@@ -12,8 +12,8 @@ def mesh_generator(body_bot_radius,
                     no_chamber,
                     chamber_bot_radius,
                     chamber_height,
-                    mesh_size,
-                    index):
+                    mesh_size
+                    ):
     ### Chambers
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)
@@ -37,7 +37,7 @@ def mesh_generator(body_bot_radius,
     gmsh.model.mesh.generate(3)
 
     ### Exporting files
-    gmsh.write(f"/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/mesh/body{index}_vtk.vtk")
+    gmsh.write(f"/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/mesh/body_{no_chamber}chamber_{body_height}.vtk")
 
     # gmsh.fltk.run()
     gmsh.finalize()
@@ -52,5 +52,4 @@ if __name__ == '__main__':
                         no_chamber = 2,
                         chamber_bot_radius = 10,
                         chamber_height = 24,
-                        mesh_size = 4,
-                        index = i)
+                        mesh_size = 4)

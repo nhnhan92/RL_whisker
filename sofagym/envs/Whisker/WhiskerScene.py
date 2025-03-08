@@ -57,7 +57,7 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
             "SubsetMultiMapping",
             input=[arti_system.ServoMotor.Articulation.ServoWheel.getLinkPath()],
             output="@./",
-            indexPairs=[0,1],
+            indexPairs=[0,2],
         )
           ## idx[0]: node của output model, do đó sẽ lần lượt 0, 1, ..., n
         ### idx[1]: node ucar input model, cái này thì tùy vào node nào muốn được map tương ứng với idx[0]
@@ -75,7 +75,7 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
                           translation=translation, design_params = design_params,design_index = design_index)
     self.addChild(whiskernode)
     arti_system = ActuatedArm(
-        name="Articulation_system", translation=translation, rotation=rotation,
+        name="Articulation_system", translation=translation, rotation=[0,0,0],
     )
     self.addChild(arti_system)
 
@@ -110,7 +110,7 @@ def createScene(root, config={"source": [0, 0, 160],
                               "goalPos": [0, 0, 100],
                                 "init_states": [0] * 4,
                                 "zFar":4000,
-                                "design_params": [100,1,0,0,0],
+                                "design_params": [100,1,0.01,0,0],
                                 "design_index": 0
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
@@ -170,7 +170,7 @@ def createScene(root, config={"source": [0, 0, 160],
     root.addObject('FreeMotionAnimationLoop')
     root.addObject('RuleBasedContactManager', responseParams="mu="+str(0.1), name='Response',
                            response='FrictionContactConstraint')
-    root.addObject('GenericConstraintSolver', name='GCS', tolerance=1e-6, maxIterations=1000,
+    root.addObject('GenericConstraintSolver', name='GCS', tolerance=1e-4, maxIterations=1000,
                        computeConstraintForces=1)
     root.addObject('LocalMinDistance', contactDistance=5, alarmDistance=8, name='localmindistance',
                     angleCone=0.1)
@@ -189,27 +189,18 @@ def createScene(root, config={"source": [0, 0, 160],
                     "pressure_3": config["design_params"][4]
                     }
     design_index = config["design_index"]
+    whisker_rot = [70,0,0]
     a = Whisker_node(design_params=design_params,
                     design_index = design_index,
                     translation=[0,0,0],
-                    rotation=[70,0,0])
+                    rotation=whisker_rot)
     whisker_model = root.addChild(a)
 
-    # goal_mo = add_goal_node(root)
-    # test_node = add_rand_node(root)
-    small_end_radi = 12 - (design_params["body_length"])/m.tan(85.5*m.pi/180)
-    pole_simu_pos = [1+3+root.localmindistance.contactDistance.value+small_end_radi,0,design_params["body_length"]]
-    #### POLE
-    # pole(root,visu, name="pole",translation = pole_simu_pos)
-
     ##  PLANE node
-    init_angle = 30
-    sweep_dist = 10   #half cource => full course = sweep dist *2
-    oscilate_amp = 5
-    x_translate = m.sqrt(90*90-sweep_dist*sweep_dist)*m.cos(m.pi/2-init_angle*m.pi/180)
-    z_translate  = m.sqrt(90*90-sweep_dist*sweep_dist)*m.sin(m.pi/2-init_angle*m.pi/180)
-    # plane(root,visu=visu,translation=[x_translate, -50, z_translate], rotation=[45,0,0], sphere_r=None)
-    oscilater_plane_trans = [0,-95,40]
+    contactDistance = root.localmindistance.contactDistance.value
+    oscilater_plane_trans = [0,
+                             -m.sin(70*m.pi/180)*design_params['body_length'] - contactDistance,
+                             40]
     oscilater_plane_rot = [90,0,0]
     amp = [0,5,0,0,0,0]
     # oscillators = [0] + 
@@ -218,18 +209,6 @@ def createScene(root, config={"source": [0, 0, 160],
 
     # Add Controller and reward + goal for RL
     # root.addObject(WhiskerController(node=root, name='whisker_controller',body_length=body_length))  # Controller
-
-    ref_point = [0, 0, 100]
-    ref = whisker_model.Whisker.MechanicalModel.addChild("Ref_point")
-    # ref_pos = ref.addObject('MechanicalObject', name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
-    #                          showColor="green", position=ref_point)
-    # ref.addObject('EulerImplicitSolver', name='odesolver', rayleighStiffness='0.1', rayleighMass='0.1')
-    # ref.addObject('SparseLDLSolver', name='preconditioner', template="CompressedRowSparseMatrixMat3x3d")
-    ref.addObject('MechanicalObject', template="Vec3d", name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
-                             showColor="green", position = ref_point)
-    ref.addObject('UniformMass', name="m2",totalMass='0.00012')
-    # ref.addObject('OscillatorConstraint', template="Vec3d", name="OscillatingConstrai   nt", oscillators="0 0 0 100 20 0 0 2 10")
-    ref.addObject('BarycentricMapping', name="Mapping_ref")
 
     # SofaGym Env Components
     root.addObject(StateInitializer(name="StateInitializer", rootNode=root, init_states=config['init_states']))
@@ -242,7 +221,8 @@ def createScene(root, config={"source": [0, 0, 160],
     
     def animation(target, factor):
         rot_angle = 90
-        invalue = [rot_angle*m.pi/180]
+        invalue = [factor*rot_angle*m.pi/180, 0]
+        # invalue = [0, factor*5]
         target.angleIn.value = invalue
         # root.Whisker_node.Articulation_system.angles = [0,10,1]
     # animate(animation, {"target": whisker_model.Articulation_system}, duration=2, mode="pingpong") 

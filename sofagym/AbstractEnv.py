@@ -351,10 +351,7 @@ class AbstractEnv(gym.Env):
 
         self.past_actions.append(action)
         self.past_pos.append(self.pos)
-        if self.scene == 'Whisker':
-            obs = np.array(self._getState(self.root,self.no_chamber), dtype=np.float32)
-        else:
-            obs = np.array(self._getState(self.root), dtype=np.float32)
+        obs = np.array(self._getState(self.root), dtype=np.float32)
         done, reward = self._getReward(self.root)
 
         # Avoid long explorations by using a timer.
@@ -391,10 +388,7 @@ class AbstractEnv(gym.Env):
         self.root = None
         self.init_simulation()
         
-        if self.scene == 'Whisker':
-            obs = np.array(self._getState(self.root,self.no_chamber), dtype=np.float32)
-        else:
-            obs = np.array(self._getState(self.root), dtype=np.float32)
+        obs = np.array(self._getState(self.root), dtype=np.float32)
         
         return obs
 

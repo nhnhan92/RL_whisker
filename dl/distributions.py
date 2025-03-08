@@ -4,8 +4,91 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributions as D
+from torch.distributions import Categorical, Normal, MixtureSameFamily, Distribution
 
-
+class GaussianMixtureDist(Distribution):
+    """
+    Gaussian Mixture Distribution implemented using PyTorch's MixtureSameFamily.
+    
+    Parameters:
+      - logits (torch.Tensor): Logits for the categorical mixture components.
+          Shape: (num_components,) or (batch_size, num_components)
+      - loc (torch.Tensor): Means of each Gaussian component.
+          Shape: (num_components, D) or (batch_size, num_components, D)
+      - scale (torch.Tensor): Standard deviations of each Gaussian component.
+          Shape: (num_components, D) or (batch_size, num_components, D)
+    
+    This class wraps a categorical distribution for mixing and a Normal distribution
+    for the components.
+    """
+    def __init__(self, logits, loc, scale, validate_args=None):
+        self.logits = logits
+        self.loc = loc
+        self.scale = scale
+        
+        # Create the categorical distribution over components.
+        self.mixture_distribution = Categorical(logits=logits)
+        # Create the component distribution (diagonal Gaussians).
+        self.component_distribution = Normal(loc, scale)
+        # Create the mixture distribution.
+        self._gmm = MixtureSameFamily(
+            mixture_distribution=self.mixture_distribution,
+            component_distribution=self.component_distribution
+        )
+        
+        # Set batch_shape and event_shape based on the underlying GMM.
+        super(GaussianMixtureDist, self).__init__(self._gmm.batch_shape, self._gmm.event_shape, validate_args=validate_args)
+    
+    def sample(self, sample_shape=torch.Size()):
+        """Draw samples from the Gaussian mixture distribution."""
+        return self._gmm.sample(sample_shape)
+    
+    def rsample(self, sample_shape=torch.Size()):
+        """Draw reparameterized samples from the distribution."""
+        return self._gmm.rsample(sample_shape)
+    
+    def log_prob(self, value):
+        """Compute log probability of a given value."""
+        return self._gmm.log_prob(value)
+    
+    def mean(self):
+        """
+        Compute the mean of the mixture distribution.
+        
+        For a Gaussian mixture with weights p_i and means mu_i,
+        the overall mean is sum_i p_i * mu_i.
+        """
+        # Compute probabilities from logits.
+        probs = F.softmax(self.logits, dim=-1)
+        # If logits shape is (num_components,), unsqueeze to make shape (num_components, 1)
+        if self.logits.dim() == 1:
+            probs = probs.unsqueeze(-1)
+        # Compute weighted sum of means over the component dimension.
+        # Assumes that loc has shape (..., num_components, D)
+        return torch.sum(probs * self.loc, dim=-2)
+    
+    def to_tensors(self):
+        """
+        Serialize the distribution parameters to a dictionary.
+        
+        Returns:
+            dict: A dictionary with keys 'logits', 'loc', and 'scale'.
+        """
+        return {'logits': self.logits, 'loc': self.loc, 'scale': self.scale}
+    
+    @classmethod
+    def from_tensors(cls, tensors):
+        """
+        Reconstruct a GaussianMixtureDist instance from a dictionary of tensors.
+        
+        Parameters:
+          tensors (dict): A dictionary with keys 'logits', 'loc', and 'scale'.
+          
+        Returns:
+          GaussianMixtureDist: A new instance of GaussianMixtureDist.
+        """
+        return cls(tensors['logits'], tensors['loc'], tensors['scale'])
+    
 class CatDist(D.Categorical):
     """Categorical disctribution."""
 

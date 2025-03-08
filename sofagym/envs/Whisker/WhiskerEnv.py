@@ -55,8 +55,8 @@ class WhiskerEnv:
                       "design_index": 0,
                       "nb_actions": -1,
                       "dim_state": dim_state,
-                      "init_states": [0] * dim_state,
-                      "randomize_states": False,
+                      "init_states": [0,0,0,0,0],
+                      "randomize_states": True,
                       "use_server": False,
                       "goalPos": [0,0,10],
                       "zFar":4000
@@ -77,8 +77,6 @@ class WhiskerEnv:
         high_coordinates = np.array([1]*self.env.dim_state)
         self.env.observation_space = spaces.Box(low_coordinates, high_coordinates,
                                             dtype='float32')
-        ins = whiskerdesignspace()
-        self.design_space = ins.design_space()
         self.body_length_categories = np.array([80,90,100])
     
     # called when an attribute is not found:
@@ -88,13 +86,14 @@ class WhiskerEnv:
     
     def initialize_states(self):
         if self.env.config["randomize_states"]:
-            self.init_states = self.randomize_init_states()
-            self.env.config.update({'init_states': list(self.init_states)})
+            # self.init_states = self.randomize_init_states()
+            # self.env.config.update({'init_states': list(self.init_states)})
+            self.init_states = self.env.config["init_states"]
         else:
             self.init_states = self.env.config["init_states"]
         
     def randomize_init_states(self):
-        """Randomize initial states.
+        """Randomize initial inclined angle of whisker body
 
         Returns:
         -------
@@ -105,18 +104,24 @@ class WhiskerEnv:
         ----
             This method should be implemented according to needed random initialization.
         """
-        init_states = self.env.np_random.uniform(low=-0.05, high=0.05, size=(self.env.config["dim_state"],))
-
+        init_body_angle = self.env.np_random.uniform(low=0, high=0.05, size=None)
+        init_states = [init_body_angle,0,0,0,0]
         return init_states
     
     
-    def design_changer(self,design_params):
+    def design_changer(self,design_param):
         print("********************************************************")
         # sample = self.sampling_design()
         # self.save_json(self.design_space[design_params])
-        print("SAMPLE = ", self.design_space[design_params])
-        self.config['design_params'] = self.design_space[design_params]
-        self.config['design_index'] = design_params
+        # print("SAMPLE = ", design_param)
+        body_length = design_param['body_length']
+        no_chamber = design_param['no_chamber']
+        pressure1= design_param['pressure1']
+        pressure2= design_param['pressure2']
+        pressure3= design_param['pressure3']
+
+        self.config['design_params'] = [body_length,no_chamber,
+                                       pressure1,pressure2,pressure3]
         
 
     def reset(self):
@@ -132,25 +137,9 @@ class WhiskerEnv:
             obs = start_scene(self.env.config, self.nb_actions)
             state = np.array(obs['observation'], dtype=np.float32)
         else:
-            state = np.array(self.env._getState(self.env.root,self.config['design_params'][1]), dtype=np.float32)
+            state = np.array(self.env._getState(self.env.root), dtype=np.float32)
         return state
     
-    # def reset(self): ## OLD
-    #     """Reset simulation.
-
-    #     Note:
-    #     ----
-    #         We launch a client to create the scene. The scene of the program is
-    #         client_<scene>Env.py.
-
-    #     """
-    #     super().reset()
-
-
-    #     self.config.update({'goalPos': self.goal})
-    #     obs = start_scene(self.config, self.nb_actions)
-
-    #     return (np.array(obs['observation']))
     
     def sampling_design(self):
         

@@ -28,25 +28,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute())+"/../")
 sys.path.insert(0, str(pathlib.Path(__file__).parent.absolute()))
 
 SofaRuntime.importPlugin("Sofa.Component")
-fieldnames = ["time","xx", "yy", "zz", "yz", "xz", "xy"]
-# with open('strain_data_rl/strain_data.csv', 'w') as csv_file:
-#     csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-#     csv_writer.writeheader()
-
-# with open('strain_data_rl/strain_data.csv', 'a') as csv_file:
-#     csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-
-#     info = {
-#         "time": 0,
-#         "xx": 0,
-#         "yy": 0,
-#         "zz": 0,
-#         "yz": 0,
-#         "xz": 0,
-#         "xy": 0
-#     }
-#     csv_writer.writerow(info)
-# contact_list = [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
 
 class StateInitializer(Sofa.Core.Controller):
     """Initialize the states.
@@ -80,26 +61,54 @@ class StateInitializer(Sofa.Core.Controller):
         self.rootNode = None
         if kwargs["rootNode"]:
             self.rootNode = kwargs["rootNode"]
-        # if kwargs["pole_length"]:
-        #     self.pole_length = kwargs["pole_length"]
-        # if kwargs["init_states"] is not None:
-        #     self.init_states = kwargs["init_states"]
-        # else:
-        #     print(">> ERROR: no initial states given.")
-        #     exit(1)
 
-        # self.cart = self.rootNode.Modeling.Cart
-        # self.pole = self.rootNode.Modeling.Pole
+        self.dt = self.rootNode.findData("dt").value
+
+        self.whisker = self.rootNode.Whisker_node.Whisker.MechanicalModel
+        self.mecawhisker = self.whisker.getObject("dofs")
+        self.fem = self.whisker.getObject("FEM")
+        self.measured_ele = self.fem.strainmeasuringelements.value
+        self.chambers = self.whisker.getObject("Chamber")
+        self.no_chamber = self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.no_chamber.value
+        ### Articulation system node
+        self.arti_sys = self.rootNode.Whisker_node.getChild("Articulation_system")
+        self.servo_arti = self.arti_sys.ServoMotor.Articulation.dofs
+        self.servo_wheel = self.arti_sys.ServoMotor.Articulation.ServoWheel.dofs
+
+        ### Plane
+        self.plane = self.rootNode.getChild("plane")
+        self.meca_plane = self.plane.getChild("oscilated_dof")
+        self.step = 0
+        # self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value[0] = 0.1
+    def initialize(self,incr):
+        rot_angle = 90
+        current_angleIn = self.whisker_node.Articulation_system.angleIn.value[0]
+        new_angleIn = current_angleIn + incr
+        self.arti_sys.angleIn.value = new_angleIn 
 
     def init_state(self, init_states):
-
         self.init_states = init_states
+        print("init_states = ", self.init_states)
+        rot,strain,pressure1,pressure2,pressure3 = self.init_states
 
-        # with self.pole.MechanicalObject.position.writeable() as position:
-        #     position[0][0] = x_pos
-        #     position[0][1] = y_pos
-
-
+        for i in range(self.no_chamber):
+            if i == 0:
+                self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value[0] = pressure1
+            if i == 1:
+                self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity1.pressure_input.value[0] = pressure2
+            if i == 2:
+                self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity2.pressure_input.value[0] = pressure3
+        with self.arti_sys.angleIn.writeable() as arti_input:
+            arti_input[0] = rot
+    # def onAnimateBeginEvent(self, event):
+    #     self.step += 1
+    #     if self.step == 1:
+    #         self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value[0] = 0.0001
+    #         self.original_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
+    # def onAnimateEndEvent(self,event):
+    #     self.initiated_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
+    #     if self.step == 1:
+    #         self.arti_sys.angleIn[1] = self.original_min_pos - self.initiated_min_pos
 class rewardShaper(Sofa.Core.Controller):
     """Compute the reward.
 
@@ -133,13 +142,8 @@ class rewardShaper(Sofa.Core.Controller):
         self.rootNode = None
         if kwargs["rootNode"]:
             self.rootNode = kwargs["rootNode"]
-        # self.goal_pos = None
-        if kwargs["goalPos"] is not None:
-            self.goal_pos = kwargs["goalPos"]
-        self.effMO = None
-
         self.cost = None
-        
+        self.force_thres = 0.2
         self.dt = self.rootNode.findData("dt").value
 
         self.whisker = self.rootNode.Whisker_node.Whisker.getChild("MechanicalModel")
@@ -148,12 +152,27 @@ class rewardShaper(Sofa.Core.Controller):
         self.whisker_topo = self.whisker.getObject("loader")
         self.measured_ele = self.fem.strainmeasuringelements.value
         self.current_strain = []
-        self.forces = []
+        self.time = 0
+        self.rootNode.Whisker_node.Whisker.addData(name='force', type='vector<float>', help='Reaction Force',
+                             value=[0.0,0.0,0.0])
+        self.force_value = self.rootNode.Whisker_node.Whisker.force.value
+
+        ### Articulation system node
+        self.arti_sys = self.rootNode.Whisker_node.getChild("Articulation_system")
+        self.servo_arti = self.arti_sys.ServoMotor.Articulation.dofs
+        self.servo_wheel = self.arti_sys.ServoMotor.Articulation.ServoWheel.dofs
+        self.angleIn_prev = 0
+        self.angleIn_after = 0
+        self.force_by_initiated_pressure = 0
     # def onKeypressedEvent(self, e):
     #     c = e['key']
-
-
+    def onAnimateBeginEvent(self, event):
+        self.angleIn_prev = self.arti_sys.angleIn.value[0]
+        
+        # print("Begin Envent check")
     def onAnimateEndEvent(self, event):
+        # print("CHECK AFTER = ",min(sublist[1] for sublist in self.mecawhisker.position.value))
+        self.time += 1
         constraint = self.mecawhisker.constraint.value
         constraintMatrixInline = np.fromstring(constraint, sep='  ')
         pointId = []
@@ -177,15 +196,26 @@ class rewardShaper(Sofa.Core.Controller):
         contactforce_x = 0
         contactforce_y = 0
         contactforce_z = 0
-        indice = []
+        contactforce_x_57 = 0
+        contactforce_y_57 = 0
+        contactforce_z_57 = 0
         for i in range(len(pointId)):
-            indice.append(int(pointId[i]))  
-            contactforce_x += constraintDirections[i][0] * forcesNorm[constraintId[i]] 
-            contactforce_y += constraintDirections[i][1] * forcesNorm[constraintId[i]]
-            contactforce_z += constraintDirections[i][2] * forcesNorm[constraintId[i]]
+            contactforce_x += constraintDirections[i][0] * forcesNorm[constraintId[i]]/self.dt
+            contactforce_y += constraintDirections[i][1] * forcesNorm[constraintId[i]]/self.dt
+            contactforce_z += constraintDirections[i][2] * forcesNorm[constraintId[i]]/self.dt
+            if pointId[i] == 58:
+                contactforce_x_57 += constraintDirections[i][0] * forcesNorm[constraintId[i]] /self.dt
+                contactforce_y_57 += constraintDirections[i][1] * forcesNorm[constraintId[i]]/self.dt
+                contactforce_z_57 += constraintDirections[i][2] * forcesNorm[constraintId[i]]/self.dt
+        # print("Force node 57 = ",[contactforce_x_57,contactforce_y_57,contactforce_z_57])
         
-        self.forces = [float(contactforce_x),float(contactforce_y),float(contactforce_z)]
-    
+        force_value = [float(contactforce_x),float(contactforce_y),float(contactforce_z)]
+        
+        if self.time <= 1:
+            self.force_by_initiated_pressure = force_value
+        self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
+        self.angleIn_after = self.arti_sys.angleIn.value[0]
+
     def getReward(self):
         """Compute the reward.
 
@@ -198,123 +228,18 @@ class rewardShaper(Sofa.Core.Controller):
             The reward and the cost.
 
         # """ 
-        self.count_scene += 0.01
-        self.count += 1
-        ele = 1785
-        
-        self.strain = self.fem.totalstrain.value
-        # self.current_strain.append(self.strain[1][4])
-        current_cost = 0.1
-        # self.current_strain[self.count]= self.strain[1][4]
-        # current_cost = np.sqrt(np.mean((self.current_strain - self.strain_baseline)**2))
+        alpha = 1
+        beta = 0.5
+        reward = self.force_value[2]
+        force_penalty = np.maximum(0, self.force_value[2] - self.force_thres) ** 2
+        rot_angle_penalty = (self.angleIn_after - self.angleIn_prev)**2
 
-        if not self.cost:
-            self.cost = current_cost
-            return 0, self.cost
-
-        reward = round(abs(self.cost - current_cost),6)
-        self.cost = current_cost
-        # print(self.cost)
-
-        angle = 60
-        self.factor += self.dt/2
-        rot_angle = self.factor * (angle*m.pi/180)
-        # if rot_angle < (angle*m.pi/180)*2:   
-        #     if self.count_scene>0.01:         
-        #         for ele in range(len(self.measured_ele)):
-        #             with open("strain_data_rl/strain_" + str(self.measured_ele[ele])+".csv", 'a') as csv_file:
-        #                 csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
-
-        #                 info = {
-        #                     "Sim_step": round(self.count_scene,2),
-        #                     "lamda_xx": self.strain[ele][0],
-        #                     "lamda_yy": self.strain[ele][1],
-        #                     "lamda_zz": self.strain[ele][2],
-        #                     "lamda_yz": self.strain[ele][3],
-        #                     "lamda_xz": self.strain[ele][4],
-        #                     "lamda_xy": self.strain[ele][5]
-        #                 }
-        #                 csv_writer.writerow(info)
-        #         with open("strain_data_rl/reward_cost_record.csv", 'a') as csv_file:
-        #             csv_writer = csv.DictWriter(csv_file, fieldnames=self.header)
-        #             info = {
-        #                     "Sim_step": round(self.count_scene,2),
-        #                     "cost": self.cost,
-        #                     "reward": reward
-        #                 }
-        #             csv_writer.writerow(info)   
-
-
+        reward = alpha * force_penalty + beta * rot_angle_penalty
         return reward, self.cost
 
     def update(self,goal=None):
-        """Compute the distance between object and goal.
+        pass
 
-        This function is used as an initialization function.
-
-        Parameters:
-        ----------
-            None.
-
-        Arguments:
-        ---------
-            None.
-
-        """
-        self.count = 0
-        self.count_scene = 0
-        self.factor = 0
-        ele = 1785
-        # self.groundtruth_data = pd.read_csv("strain_groundtruth/strain_" + str(ele)+".csv")
-        # self.strain_baseline = self.groundtruth_data['lamda_xz']
-        # ele_err = 1392
-        # self.error_data = pd.read_csv("strain_groundtruth/strain_" + str(ele_err)+".csv")
-        # self.strain_error = self.error_data['lamda_xz']
-
-        # self.cost = np.sqrt(np.mean((self.strain_error[1:] - self.strain_baseline[1:])**2))
-        # self.current_strain = self.strain_error
-        # # print('initial cost = ', self.cost)
-        # for ele in self.measured_ele:
-        #     filePath_node = "strain_data_rl/strain_" + str(ele)+".csv"
-        #     try:
-        #         os.remove(filePath_node)
-        #     except:
-        #         print("Error while deleting file ", filePath_node)
-        #     self.strain_header = ["Sim_step", "lamda_xx", "lamda_yy", "lamda_zz","lamda_yz", "lamda_xz", "lamda_xy"]
-        #     with open(filePath_node, "w", newline="") as csv_file:
-        #         csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
-        #         csv_writer.writeheader()
-        #     with open(filePath_node, 'a') as csv_file:
-        #         csv_writer = csv.DictWriter(csv_file, fieldnames=self.strain_header)
-
-        #         info = {
-        #             "Sim_step": 0,
-        #             "lamda_xx": 0,
-        #             "lamda_yy": 0,
-        #             "lamda_zz": 0,
-        #             "lamda_yz": 0,
-        #             "lamda_xz": 0,
-        #             "lamda_xy": 0
-        #         }
-        #         csv_writer.writerow(info)
-
-        # filePath_node = "strain_data_rl/reward_cost_record.csv"
-        # try:
-        #     os.remove(filePath_node)
-        # except:
-        #     print("Error while deleting file ", filePath_node)
-        # self.header = ["Sim_step", "cost", "reward"]
-        # with open(filePath_node, "w", newline="") as csv_file:
-        #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.header)
-        #     csv_writer.writeheader()
-        # with open(filePath_node, 'a') as csv_file:
-        #     csv_writer = csv.DictWriter(csv_file, fieldnames=self.header)
-        #     info = {
-        #         "Sim_step": 0,
-        #         "cost": 0,
-        #         "reward": 0
-        #     }
-        #     csv_writer.writerow(info)
 
 def getReward(root):
     """Compute the reward using Reward.getReward().
@@ -329,19 +254,7 @@ def getReward(root):
         done, reward
 
     """
-
     reward, cost = root.Reward.getReward()
-
-    if reward >= 1.0:
-        reward = 1.0
-    elif reward < 0.0:
-        reward = 0.0
-
-    if cost <= 0.00003:
-        reward += 1
-        return True, reward
-    if root.Whisker_node.Articulation_system.angleIn.value >= round(60*m.pi/180,4):
-        return True, reward
 
     return False, reward
                
@@ -349,14 +262,13 @@ def getReward(root):
 class applyAction(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
-
         self.root = kwargs["root"]
         self.whisker_node = self.root.Whisker_node
-        self.max_incr = 5*m.pi/180
+        self.max_incr = 10*m.pi/180
     def _rotate(self, incr):
-        current_angleIn = self.whisker_node.Articulation_system.angleIn.value
+        current_angleIn = self.whisker_node.Articulation_system.angleIn.value[0]
         new_angleIn = current_angleIn + incr
-        self.whisker_node.Articulation_system.angleIn.value = new_angleIn 
+        self.whisker_node.Articulation_system.angleIn.value = [new_angleIn,0] 
 
     def _normalizedAction_to_action(self, action):
         return self.max_incr*action/2
@@ -379,7 +291,7 @@ def startCmd(root, action, duration):
             The scene.
         action: int
             The action.
-        duration: float
+        duration: float  = self.config["dt"]*(self.config["scale_factor"]-1
             Duration of the animation.
 
     Returns:
@@ -438,75 +350,9 @@ def startCmd_Whisker(rootNode, whisker,incr, duration):
             params={"whisker": whisker,
                     "incr": incr},
             duration=duration, mode="once"))
-def translateWhisker(whisker, direction):
-    """Function to translate finger.
-
-    Parameters:
-    ----------
-        fingers: list
-            The fingers.
-        direction: [vec_x, vec_y, vec_z]
-            Translation vector.
-
-    Returns:
-    -------
-        None.
-
-    """
-    
-    possible = True
-
-    mecaobject = whisker.dofs
-    res = getTranslated(mecaobject.rest_position.value,  direction)
-    if res is None:
-        possible = False
-
-    if possible:
-        mecaobject.rest_position.value = res
-
-def getTranslated(points, vec):
-    """Translate a point.
-
-    Parameters:
-    ----------
-        points: list
-            List of points [x, y, z]
-        vec: [vec_x, vec_y, vec_z]
-            Translation vector.
-    """
-    r = []
-
-    for v in points:
-        x = v[0]+vec[0]
-        y = v[1]+vec[1]
-        z = v[2]+vec[2]
-
-        r.append([x, y, z])
-
-    return r
-    
-
-def pressurize(whisker, pressure, cavity):
-    """Change the pressure value of a specific chamber in the whisker.
-
-    Parameters:
-    ----------
-        whisker:
-            The whisker.
-        cavity:
-            Which chamber is applied
-        pressure: float
-            The applied pressure.
-
-    Returns:
-    -------
-        None.
-
-    """
-    pass
 
 
-def getState(root, no_chamber):
+def getState(root):
     """Compute the state of the environment/agent.
 
     Note:
@@ -524,19 +370,19 @@ def getState(root, no_chamber):
             The state of the environment/agent.
     """
     chamber_node = root.Whisker_node.Whisker.MechanicalModel.Chamber
+    no_chamber = root.Whisker_node.Whisker.MechanicalModel.Chamber.no_chamber.value
     pressure = []
     for i in range(3):
         if i <= no_chamber-1:
-            pressure.append(chamber_node.getChild(f'cavity{i}').SurfacePressureConstraint.getData('value').value[0].tolist())
+            pressure.append(chamber_node.getChild(f'cavity{i}').pressure_input.getData('value').value[0].tolist())
         else:
             pressure.append(0.0)
-    print("pressure = ",pressure)
 
-    rot_angle = root.Whisker_node.Articulation_system.angleIn.value
+    rot_angle = root.Whisker_node.Articulation_system.angleIn.value[0].tolist()
     strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.totalstrain.value[0][2].tolist()
 
     state = [rot_angle] + [strain_zz] + pressure
-    print("State = ", state)
+    # print("State = ", state)
     return state
 
 
@@ -554,7 +400,6 @@ def getPos(root):
     """
 
     whisker_pos = root.Whisker_node.Whisker.MechanicalModel.dofs.position.value.tolist()
-    ref_pos = root.Whisker_node.Whisker.MechanicalModel.Ref_point.GoalMO.position.value.tolist()
     deformable_pos = root.Whisker_node.RigidifiedBase.DeformableParts.dofs.position.value.tolist()
     rigid_pos = root.Whisker_node.RigidifiedBase.RigidParts.dofs.position.value.tolist()
     
@@ -567,12 +412,8 @@ def getPos(root):
     arti_pos = root.Whisker_node.Articulation_system.ServoMotor.Articulation.dofs.rest_position.value.tolist()
     body_pos = root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value.tolist()
     
-
-    # goal = root.Goal.GoalMO.position.value.tolist()
-
     return [
             whisker_pos,
-            ref_pos,
             deformable_pos,
             rigid_pos,
             # fiber1_right_pos,
@@ -582,7 +423,6 @@ def getPos(root):
             # arm_pos,
             arti_pos,
             body_pos, 
-            # goal
             ]
 
 def setPos(root, pos):
@@ -606,7 +446,6 @@ def setPos(root, pos):
     """
     [
     whisker_pos,
-     ref_pos,
      deformable_pos,
      rigid_pos,
     # fiber1_right_pos,
@@ -616,10 +455,8 @@ def setPos(root, pos):
     #  arm_pos,
      arti_pos,
      body_pos,
-    #  goal
     ] = pos
     root.Whisker_node.Whisker.MechanicalModel.dofs.position.value = np.array(whisker_pos)
-    root.Whisker_node.Whisker.MechanicalModel.Ref_point.GoalMO.position.value = np.array(ref_pos)
     root.Whisker_node.RigidifiedBase.DeformableParts.dofs.position.value = np.array(deformable_pos)
     root.Whisker_node.RigidifiedBase.RigidParts.dofs.position.value = np.array(rigid_pos)
     
@@ -631,5 +468,3 @@ def setPos(root, pos):
     # root.Whisker_node.Articulation_system.ServoArm.dofs.position.value = np.array(arm_pos)
     root.Whisker_node.Articulation_system.ServoMotor.Articulation.dofs.rest_position.value = np.array(arti_pos)
     root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value = np.array(body_pos)
-
-    # root.Goal.GoalMO.position.value = np.array(goal)

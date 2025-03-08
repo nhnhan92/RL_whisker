@@ -1,24 +1,25 @@
 import gym
 import math as m
+from itertools import product
 
-no_chamber = 3
-no_regulator = 3
-body_length = [100, 80, 60]
 class whiskerdesignspace():
-    def __init__(self):
-        self.pressure_range = gym.spaces.Box(low=0.0001, high=0.001, shape=(1,), dtype='float32')
-        self.alldesign = self.design_space()
-        # self.body_length = gym.spaces.Box(low=80, high=100, shape=(1,), dtype='float32')
-        
-
+    def __init__(self,body_length,no_chamber,pressure_range):
+        self.no_chamber = no_chamber
+        self.body_length = body_length
+        self.pressure_range = pressure_range
+        # All possible combinations between body_length and no_chamber as tuples.
+        self.discrete_combinations = list(product(self.body_length, self.no_chamber))
+        self.num_combinations = len(self.discrete_combinations)
     def design_space(self):
-        design = []
-        for i in range(len(body_length)):
-            for j in range(1,no_chamber+1):
-                sub_array = [body_length[i],j,0,0,0]
-                for k in range (2,j+2):
-                    sub_array[k] = self.pressure_range.sample().item()
-                design.append(sub_array)
+        design = {"body_length": self.body_length,
+                  "no_chamber": self.no_chamber,
+                  "pressure_range": self.pressure_range}
     
         return design
             
+if __name__ == '__main__':
+    no_chamber = [1,2,3]
+    pressure_range = [0,0.01]
+    body_length = [100, 80, 60]
+    ins = whiskerdesignspace(body_length,no_chamber,pressure_range)
+    print(ins)

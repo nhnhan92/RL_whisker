@@ -58,7 +58,6 @@ class WhiskerController(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.rootNode = kwargs['node']
         self.body_length = kwargs['body_length']
-        # self.inner_pressure = self.node.Cavity1.SurfacePressureConstraint.value
 
         self.dt = self.rootNode.findData("dt").value
         ### Whisker body node
@@ -69,26 +68,21 @@ class WhiskerController(Sofa.Core.Controller):
         self.measured_ele = self.fem.strainmeasuringelements.value
         self.smallend_box = self.whisker.smallend_Box
         self.small_end_radi = 12 - (int(self.body_length)/m.tan(85.5*m.pi/180))
-        # self.trash_roi = self.whisker.getObject("trash")
-        # self.current_trash_roi = self.trash_roi.findData("box").value
-        # self.chamber_node = self.whisker.getChild("Chamber")
-        # self.chamber_right = self.chamber_node.getChild("cavity_right")
-        # self.pressure_right = self.chamber_right.getObject('SurfacePressureConstraint')
- 
-        # self.chamber_left = self.chamber_node.getChild('cavity_left')
-        # self.pressure_left = self.chamber_left.getObject('SurfacePressureConstraint')
-
+        self.chambers = self.whisker.getObject("Chamber")
+        self.no_chamber = self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.no_chamber.value
         ### Articulation system node
         self.arti_sys = self.rootNode.Whisker_node.getChild("Articulation_system")
         self.servo_arti = self.arti_sys.ServoMotor.Articulation.dofs
         self.servo_wheel = self.arti_sys.ServoMotor.Articulation.ServoWheel.dofs
-        self.factor = 0
 
         ### Plane
         self.plane = self.rootNode.getChild("plane")
-        self.meca_plane = self.plane.getChild("oscilated_dof")
+        self.meca_plane = self.plane.getObject("oscilated_dof")
 
-
+        self.rootNode.Whisker_node.Whisker.addData(name='force', type='vector<float>', help='Reaction Force',
+                             value=[0.0,0.0,0.0])
+        self.force_value = self.rootNode.Whisker_node.Whisker.force.value
+        self.step = 0
     def getTranslated(points, vec):
         r = []
         for v in points:
@@ -97,10 +91,45 @@ class WhiskerController(Sofa.Core.Controller):
             z = v[2]+vec[2]
             r.append([x, y, z])
         return r
-    def animation(target, factor):
-        rot_angle = 60
-        target.angleIn.value = factor * (-rot_angle*m.pi/180)
+    def init_state(self, init_states):
+        self.init_states = init_states
+        print("CHECK Before = ",min(sublist[1] for sublist in self.mecawhisker.position.value))
+        
+        
+        # print(min(sublist[1] for sublist in self.mecawhisker.position.value))
+
+    def onAnimateBeginEvent(self, event):
+        
+        print("Begin Envent check")
+        self.step += 1
+        print(self.step)
+        if self.step == 1:
+            print("CHECK Before = ",min(sublist[1] for sublist in self.mecawhisker.position.value))
+        if self.step == 2:
+            print("In")
+            self.init_states = [1.5,0,0.05,0,0]
+            rot,strain,pressure1,pressure2,pressure3 = self.init_states
+            for i in range(self.no_chamber):
+                if i == 0:
+                    with self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value.writeable() as pressure_input:
+                        pressure_input[0] = pressure1
+                if i == 1:
+                    with self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity1.pressure_input.value.writeable() as pressure_input:
+                        pressure_input[0] = pressure2
+                if i == 3:
+                    with self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity2.pressure_input.value.writeable() as pressure_input:
+                        pressure_input[0] = pressure3
+            with self.arti_sys.angleIn.writeable() as arti_input:
+                arti_input[1] = 0
+            #     arti_input[1] = 10
+            print("CHECK AFTER = ",min(sublist[1] for sublist in self.mecawhisker.position.value))
+            
     def onAnimateEndEvent(self, event):
+        print("Pressure = ", self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value)
+        # print(min(sublist[1] for sublist in self.mecawhisker.position.value))
+        # self.rootNode.Whisker_node.Articulation_system.angleIn.value[1] = -10
+        angleIn = self.rootNode.Whisker_node.Articulation_system.angleIn.value[0]
+        # print("angleIn = ", angleIn)
         constraint = self.mecawhisker.constraint.value
         constraintMatrixInline = np.fromstring(constraint, sep='  ')
         pointId = []
@@ -132,13 +161,13 @@ class WhiskerController(Sofa.Core.Controller):
             contactforce_z += constraintDirections[i][2] * forcesNorm[constraintId[i]]
         
         forces = [float(contactforce_x),float(contactforce_y),float(contactforce_z)]
-        
+        self.force_value = forces
     def onKeypressedEvent(self, e):
         c = e['key']
 
         increment = 1
-        # if c == Sofa.constants.Key.plus:  
-        #     self.move_trash_roi(self.current_trash_roi,0,0,-increment)
+        if c == Sofa.constants.Key.plus:  
+            self.init_state([1.5,0,0.1,0,0])
         
         if c == Sofa.constants.Key.leftarrow:
             self.moveRestPos(self.mecawhisker.findData("rest_position").value, 0, 0, -increment)
