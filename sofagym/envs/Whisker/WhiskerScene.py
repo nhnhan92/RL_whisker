@@ -28,7 +28,7 @@ MeshesPath = os.path.dirname(os.path.abspath(__file__))+'/mesh/length_'
 USE_GUI = True
 
 def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
-                translation = [0,0,0], rotation = [0,0,0]):
+                translation = [0,0,0], rotation = [0,0,0], strain_gauge = [10,2]):
     
     def __rigidify(self, translation = [0,0,0], eulerRotation = [0, 0.0, 0.0],scale = [40, 40, 0.5]):
         deformableObject = self.Whisker.MechanicalModel
@@ -43,6 +43,23 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
             scale=scale,
             drawBoxes=1,
         )
+        cross_section_radius = 12-strain_gauge[0]/m.tan(85.5*m.pi/180)+0.5
+        nominal_offset = m.sqrt(cross_section_radius**2 + strain_gauge[0]**2)
+        alpha = rotation[0]*m.pi/180 - m.atan(cross_section_radius/strain_gauge[0])
+        gauge_y_offset = -nominal_offset*m.cos(alpha)
+        gauge_z_offset = -nominal_offset*m.sin(alpha)
+        strain_measuring_box = addOrientedBoxRoi(
+            self,
+            position=[j for j in deformableObject.dofs.rest_position.value],
+            name="strain_measuring_Box",
+            translation=[0,gauge_y_offset,gauge_z_offset],
+            eulerRotation=eulerRotation,
+            scale=[6, 4, 8],
+            drawBoxes=1,
+        )
+        strain_measuring_box.tetrahedra.value = self.Whisker.MechanicalModel.container.tetrahedra.value
+        strain_measuring_box.drawTetrahedra.value = True
+        strain_measuring_box.init()
         rot_box.init()
         groupIndices = []
         groupIndices.append([ind for ind in rot_box.indices.value])
@@ -72,7 +89,7 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
     self.addObject('GenericConstraintCorrection') 
 
     whiskernode = Whisker(visu = True, simu = True, name="Whisker",rotation=rotation, 
-                          translation=translation, design_params = design_params,design_index = design_index)
+                          translation=translation, design_params = design_params)
     self.addChild(whiskernode)
     arti_system = ActuatedArm(
         name="Articulation_system", translation=translation, rotation=[0,0,0],
@@ -108,10 +125,9 @@ pole_simu_pos = [pole_init_pos[0]+precontact_distance,
 def createScene(root, config={"source": [0, 0, 160],
                                 "target": [0, 1, 0],
                               "goalPos": [0, 0, 100],
-                                "init_states": [0] * 4,
+                                "init_states": [70,0,0,0],
                                 "zFar":4000,
-                                "design_params": [100,1,0.01,0,0],
-                                "design_index": 0
+                                "design_params": [60, 2,20,2,0.01,0.02]
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
     from splib3.animation import animate
@@ -184,27 +200,29 @@ def createScene(root, config={"source": [0, 0, 160],
     
     design_params = {"body_length": config["design_params"][0],
                      "no_chamber": config["design_params"][1],
-                     "pressure_1": config["design_params"][2],
-                    "pressure_2": config["design_params"][3],
-                    "pressure_3": config["design_params"][4]
+                     "chamber_length": config["design_params"][2],
+                     "thickness": float(config["design_params"][3]),
+                     "pressure_1": float(config["design_params"][4]),
+                    "pressure_2": float(config["design_params"][5])
                     }
-    design_index = config["design_index"]
-    whisker_rot = [70,0,0]
+    init_whisker_angle = 70
+    whisker_rot = [init_whisker_angle,0,0]
     a = Whisker_node(design_params=design_params,
-                    design_index = design_index,
                     translation=[0,0,0],
-                    rotation=whisker_rot)
+                    rotation=whisker_rot,
+                    strain_gauge = [10,2]) # 10: strain gauge pos; 2: gauge length
     whisker_model = root.addChild(a)
 
     ##  PLANE node
     contactDistance = root.localmindistance.contactDistance.value
-    oscilater_plane_trans = [0,
-                             -m.sin(70*m.pi/180)*design_params['body_length'] - contactDistance,
-                             40]
-    oscilater_plane_rot = [90,0,0]
     amp = [0,5,0,0,0,0]
-    # oscillators = [0] + 
-    plane = oscilate_plane(root,visu=visu,amp= amp,pulse=5,phase=10,
+    plane_offset = m.cos(init_whisker_angle*m.pi/180)*(12-design_params['body_length']/m.tan(85.5*m.pi/180))
+    oscilater_plane_trans = [0,
+                             -m.sin(init_whisker_angle*m.pi/180)*design_params['body_length'] - contactDistance + plane_offset+0.5,
+                             0]
+    
+    oscilater_plane_rot = [90,90,0]
+    plane = oscilate_plane(root,visu=visu,amp= amp,pulse=5,phase=-90,
                            translation=oscilater_plane_trans, rotation=oscilater_plane_rot, sphere_r=None)
 
     # Add Controller and reward + goal for RL
@@ -217,7 +235,7 @@ def createScene(root, config={"source": [0, 0, 160],
     # setData(whisker_model.Articulation_system.ServoMotor.Articulation.ServoWheel.dofs, showObject=1, showObjectScale=20,
     # drawMode=2, showColor=[1., 1., 0., 1.])
     root.addObject(AnimationManagerController(root, name="AnimationManager"))
-    root.addObject(AnimationManager(root))
+    # root.addObject(AnimationManager(root))
     
     def animation(target, factor):
         rot_angle = 90

@@ -2,10 +2,10 @@ import Sofa
 import os
 import csv
 import math as m
-from mesh.whisker_body import mesh_generator as body_mesh
+# from mesh.whisker_body import mesh_generator as body_mesh
 # from mesh.whisker_chamber import mesh_generator as chamber_mesh
 
-YoungsModulus = 0.8
+YoungsModulus = 500
 PoissonRatio = 0.4
 
 mesh_path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
@@ -59,22 +59,22 @@ def fiber_construction(Ks = 1e3, Kd = 5):
 
 
 def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0], 
-            translation=[0.0, 0.0, 0.0], design_params = None,design_index = None):
+            translation=[0.0, 0.0, 0.0], design_params = None):
 
     parent = Sofa.Core.Node(name)
     model = parent.addChild("MechanicalModel")
-    body_mesh_path = mesh_path+f'body_{design_params["no_chamber"]}chamber_{design_params["body_length"]}.vtk'
-    if os.path.exists(body_mesh_path):
-        pass
-    else:
-        ### body mesh creator
-        body_mesh(body_bot_radius = 12,
-                    cone_angle = 85.5,
-                    body_height = design_params["body_length"],
-                    no_chamber = design_params["no_chamber"],
-                    chamber_bot_radius = 10,
-                    chamber_height = 24,
-                    mesh_size = 4)
+    body_mesh_path = mesh_path + f'mesh_body/body_{design_params["no_chamber"]}chamber_{design_params["body_length"]}_{design_params["chamber_length"]}_{design_params["thickness"]}.vtk'
+    # if os.path.exists(body_mesh_path):
+    #     pass
+    # else:
+    #     ### body mesh creator
+    #     body_mesh(body_bot_radius = 12,
+    #                 cone_angle = 85.5,
+    #                 body_height = design_params["body_length"],
+    #                 no_chamber = design_params["no_chamber"],
+    #                 chamber_bot_radius = 12 - design_params["thickness"],
+    #                 chamber_height = design_params["chamber_length"],
+    #                 mesh_size = 4)
     
     model.addObject('MeshVTKLoader', name='loader', filename=body_mesh_path, 
                     scale3d=[1, 1, 1], translation=translation, rotation=rotation,createSubelements=1)
@@ -84,10 +84,12 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
 
     model.addObject('MechanicalObject', name='dofs', template='Vec3d', showIndices='false', showIndicesScale='4e-5',
                     translation=translation)
-    model.addObject('UniformMass', totalMass='0.00002')
-    model.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large', 
+    model.addObject('UniformMass', totalMass='0.02')
+    fem = model.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large', 
                     poissonRatio=PoissonRatio,  youngModulus=YoungsModulus, strainmeasurementstatus = 1, 
-                    strainmeasuringelements=[1785])
+                    strainmeasuringelements=[0])
+    fem.addData(name='ave_strain', type='float', help='average strain',
+                             value=0)
     model.addObject('BoxROI', name='smallend_Box', box=[-20, -20, design_params["body_length"]-0.5, 20, 20, design_params["body_length"]+0.5], 
                     drawBoxes=True, doUpdate=False)
     # model.addObject('OscillatorConstraint', name="OscillatingConstraint", oscillators="75 2 0 0 1 0 0 5 200")
@@ -116,7 +118,7 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
         rot_matrix = [rotation[0],rotation[1],cavity_idx*360/design_params["no_chamber"]+rotation[2]]
         if cavity_idx == 1:
             rot_matrix = [rotation[0],rotation[1],cavity_idx*360/design_params["no_chamber"]+rotation[2]]
-        CavitySurfaceMeshPath = mesh_path+f'{design_params["no_chamber"]}chamber_{cavity_idx+1}.stl'
+        CavitySurfaceMeshPath = mesh_path+f'mesh_chamber/{design_params["no_chamber"]}chamber_{design_params["chamber_length"]}_{float(design_params["thickness"])}_idx{cavity_idx+1}.stl'
         cavity = chamber_node.addChild('cavity'+str(cavity_idx))
         cavity.addObject('MeshSTLLoader', name='loader', filename=CavitySurfaceMeshPath,
                          translation=translation,
@@ -124,11 +126,10 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
         cavity.addObject('MeshTopology', src='@loader', name='topo')
         cavity.addObject('MechanicalObject', name='cavity')
         cavity.addObject('SurfacePressureConstraint', name='pressure_input', template='Vec3', 
-                        #  value=design_params[f"pressure_{cavity_idx+1}"],
-                         value=0, 
-                         flipNormal = 0,triangles='@topo.triangles', valueType='pressure')
+                         value=design_params[f"pressure_{cavity_idx+1}"],
+                        #  value=0, 
+                         flipNormal = 1,triangles='@topo.triangles', valueType='pressure')
         cavity.addObject('BarycentricMapping', name='mapping', input = model.getLinkPath())
-        
     ##########################################
     # Fibers node                            #
     ##########################################

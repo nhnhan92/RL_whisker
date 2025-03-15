@@ -12,7 +12,7 @@ class chamber_mesh_full():
         chamber_dist = 1.5
         if no_chamber == 2:
             rot_axis = [0, 0, 0, 0, 0, 1]
-            init_p = [[0,0,0],[chamber_bot_radius, 0,0],[chamber_top_radius, 0,chamber_height],[0, 0,chamber_height]]
+            init_p = [[0,0,0],[0,chamber_bot_radius,0],[0, chamber_top_radius,chamber_height],[0, 0,chamber_height]]
             p1 = gmsh.model.occ.addPoint(init_p[0][0], init_p[0][1], init_p[0][2], mesh_size, -1)
             p2 = gmsh.model.occ.addPoint(init_p[1][0], init_p[1][1], init_p[1][2], mesh_size, -1)
             p3 = gmsh.model.occ.addPoint(init_p[2][0], init_p[2][1], init_p[2][2], mesh_size, -1)
@@ -28,15 +28,16 @@ class chamber_mesh_full():
             chamber_plane = gmsh.model.occ.addPlaneSurface([curve], tag=-1)
             chamber = gmsh.model.occ.revolve([(2, chamber_plane)], rot_axis[0], rot_axis[1], 
                                             rot_axis[2], rot_axis[3], rot_axis[4], rot_axis[5], 2*m.pi)
-            p1 = gmsh.model.occ.addPoint(chamber_dist, chamber_bot_radius,  0, mesh_size, -1)
-            p2 = gmsh.model.occ.addPoint( -chamber_dist, -chamber_bot_radius, 0, mesh_size, -1)
-            p3 = gmsh.model.occ.addPoint(-chamber_dist, chamber_bot_radius,  0, mesh_size, -1)
-            p4 = gmsh.model.occ.addPoint(chamber_dist,-chamber_bot_radius,  0, mesh_size, -1)
-            
+            p1 = gmsh.model.occ.addPoint(chamber_bot_radius,chamber_dist,  0, mesh_size, -1)
+            p2 = gmsh.model.occ.addPoint( -chamber_bot_radius,-chamber_dist,  0, mesh_size, -1)
+            p3 = gmsh.model.occ.addPoint(chamber_bot_radius,-chamber_dist,   0, mesh_size, -1)
+            p4 = gmsh.model.occ.addPoint(-chamber_bot_radius,chamber_dist,  0, mesh_size, -1)
+            gmsh.model.occ.synchronize()
             l1 = gmsh.model.occ.addLine(p1, p4, tag=-1)
             l2 = gmsh.model.occ.addLine(p4, p2, tag=-1)
             l3 = gmsh.model.occ.addLine(p2, p3, tag=-1)
             l4 = gmsh.model.occ.addLine(p3, p1, tag=-1)
+            gmsh.model.occ.synchronize()
             curve = gmsh.model.occ.addCurveLoop([l1, l2, l3, l4], -1)
             cut_plane = gmsh.model.occ.addPlaneSurface([curve], tag=-1)
             gmsh.model.occ.synchronize()
@@ -99,27 +100,43 @@ class chamber_mesh():
         chamber_rel_angle = 360*m.pi/(no_chamber*180)
         chamber_dist = 1.5
         if no_chamber == 2:
-            rot_axis = [0, 0, 0, 0, 0, 1]
+            # rot_axis = [0, 0, 0, 0, 0, 1]
+            # init_p = [[0,0,0],[0,chamber_bot_radius,0],[0, chamber_top_radius,chamber_height],[0, 0,chamber_height]]
+            # p1 = gmsh.model.occ.addPoint(init_p[0][0], init_p[0][1], init_p[0][2], mesh_size, -1)
+            # p2 = gmsh.model.occ.addPoint(init_p[1][0], init_p[1][1], init_p[1][2], mesh_size, -1)
+            # p3 = gmsh.model.occ.addPoint(init_p[2][0], init_p[2][1], init_p[2][2], mesh_size, -1)
+            # p4 = gmsh.model.occ.addPoint(init_p[3][0], init_p[3][1], init_p[3][2], mesh_size, -1)
+
+            # l1 = gmsh.model.occ.addLine(p1, p2, tag=-1)
+            # l2 = gmsh.model.occ.addLine(p2, p3, tag=-1)
+            # l3 = gmsh.model.occ.addLine(p3, p4, tag=-1)
+            # l4 = gmsh.model.occ.addLine(p4, p1, tag=-1)
+            # gmsh.model.occ.synchronize()
+
+            # curve = gmsh.model.occ.addCurveLoop([l1, l2, l3, l4], -1)
+            # chamber_plane = gmsh.model.occ.addPlaneSurface([curve], tag=-1)
+            # chamber = gmsh.model.occ.revolve([(1, 2),(1, 3)], rot_axis[0], rot_axis[1], 
+            #                                 rot_axis[2], rot_axis[3], rot_axis[4], rot_axis[5], 2*m.pi)
+            # gmsh.model.occ.synchronize()
+
+            p_small = gmsh.model.occ.addPoint(chamber_top_radius, 0, chamber_height, 5)  # A point on the small end
+            p_big   = gmsh.model.occ.addPoint(chamber_bot_radius, 0, 0, 5)        # A point on the big end
+
+            # Create the generating line (generatrix) between the small and big end points.
+            line = gmsh.model.occ.addLine(p_small, p_big)
+
+            chamber = gmsh.model.occ.revolve([(1, line)], 0, 0, 0, 0, 0, 1, 2*m.pi)
+            # Create a disk at the small end (centered at (0, 0, z_small)) to fill it.
+            disk = gmsh.model.occ.addDisk(0, 0, chamber_height, chamber_top_radius, chamber_top_radius)
+            rot_axis = [[0, 0, 0, 0, 0, 1]]
             init_p = [[0,0,0],[chamber_bot_radius, 0,0],[chamber_top_radius, 0,chamber_height],[0, 0,chamber_height]]
-            p1 = gmsh.model.occ.addPoint(init_p[0][0], init_p[0][1], init_p[0][2], mesh_size, -1)
-            p2 = gmsh.model.occ.addPoint(init_p[1][0], init_p[1][1], init_p[1][2], mesh_size, -1)
-            p3 = gmsh.model.occ.addPoint(init_p[2][0], init_p[2][1], init_p[2][2], mesh_size, -1)
-            p4 = gmsh.model.occ.addPoint(init_p[3][0], init_p[3][1], init_p[3][2], mesh_size, -1)
-
-            l1 = gmsh.model.occ.addLine(p1, p2, tag=-1)
-            l2 = gmsh.model.occ.addLine(p2, p3, tag=-1)
-            l3 = gmsh.model.occ.addLine(p3, p4, tag=-1)
-            l4 = gmsh.model.occ.addLine(p4, p1, tag=-1)
+            # This flips the disk's normal from (0,0,1) to (0,0,-1).
+            gmsh.model.occ.rotate([(2, disk)], 0, 0, chamber_height, 1, 0, 0, m.pi)
             gmsh.model.occ.synchronize()
-
-            curve = gmsh.model.occ.addCurveLoop([l1, l2, l3, l4], -1)
-            chamber_plane = gmsh.model.occ.addPlaneSurface([curve], tag=-1)
-            chamber = gmsh.model.occ.revolve([(1, 2),(1, 3)], rot_axis[0], rot_axis[1], 
-                                            rot_axis[2], rot_axis[3], rot_axis[4], rot_axis[5], 2*m.pi)
-            p1 = gmsh.model.occ.addPoint(chamber_dist, chamber_bot_radius,  0, mesh_size, -1)
-            p2 = gmsh.model.occ.addPoint( -chamber_dist, -chamber_bot_radius, 0, mesh_size, -1)
-            p3 = gmsh.model.occ.addPoint(-chamber_dist, chamber_bot_radius,  0, mesh_size, -1)
-            p4 = gmsh.model.occ.addPoint(chamber_dist,-chamber_bot_radius,  0, mesh_size, -1)
+            p1 = gmsh.model.occ.addPoint(chamber_bot_radius,chamber_dist,  0, mesh_size, -1)
+            p2 = gmsh.model.occ.addPoint( -chamber_bot_radius,-chamber_dist,  0, mesh_size, -1)
+            p3 = gmsh.model.occ.addPoint(chamber_bot_radius,-chamber_dist,   0, mesh_size, -1)
+            p4 = gmsh.model.occ.addPoint(-chamber_bot_radius,chamber_dist,  0, mesh_size, -1)
             
             l1 = gmsh.model.occ.addLine(p1, p4, tag=-1)
             l2 = gmsh.model.occ.addLine(p4, p2, tag=-1)
@@ -129,16 +146,17 @@ class chamber_mesh():
             cut_plane = gmsh.model.occ.addPlaneSurface([curve], tag=-1)
             gmsh.model.occ.synchronize()
             cut_body = gmsh.model.occ.extrude([(2,cut_plane)],0,0,chamber_height,recombine=0)
-            chamber = gmsh.model.occ.cut([(2,2),(2,3)], [(3,1)], tag=-1,removeObject=1, removeTool=1)
-            gmsh.model.occ.remove([(2, chamber_plane)], recursive=1)
+            chamber = gmsh.model.occ.cut([(2,1),(2,2),(2,3)], [(3,1)], tag=-1,removeObject=1, removeTool=1)
+            # gmsh.model.occ.remove([(2, chamber_plane)], recursive=1)
             gmsh.model.occ.synchronize()
-            l5 = gmsh.model.occ.addLine(6, 7, tag=-1)
-            l6 = gmsh.model.occ.addLine(9, 12, tag=-1)
-            curve1 = gmsh.model.occ.addCurveLoop([6,  15,9, 17], -1)
-            chamber_plane1 = gmsh.model.occ.addPlaneSurface([curve1], tag=-1)
-            curve2 = gmsh.model.occ.addCurveLoop([11, 16, 13,18], -1)
-            chamber_plane2 = gmsh.model.occ.addPlaneSurface([curve2], tag=-1)
-            gmsh.model.occ.synchronize()
+            # l5 = gmsh.model.occ.addLine(2, 3, tag=-1)
+            # l6 = gmsh.model.occ.addLine(10, 12, tag=-1)
+            # curve1 = gmsh.model.occ.addCurveLoop([6,  15,9, 17], -1)
+            # chamber_plane1 = gmsh.model.occ.addPlaneSurface([curve1], tag=-1)
+            # curve2 = gmsh.model.occ.addCurveLoop([11, 16, 13,18], -1)
+            # chamber_plane2 = gmsh.model.occ.addPlaneSurface([curve2], tag=-1)
+            # gmsh.model.occ.synchronize()
+            
         elif no_chamber == 3:
             rot_axis = []
             init_p = []
@@ -179,21 +197,22 @@ class chamber_mesh():
                 chamber_plane2 = gmsh.model.occ.addPlaneSurface([curve2], tag=-1)
                 gmsh.model.occ.synchronize()
         else:
-            rot_axis = [[0, 0, 0, 0, 0, 1]]
-            init_p = [[[0,0,0],[chamber_bot_radius, 0,0],[chamber_top_radius, 0,chamber_height],[0, 0,chamber_height]]]
-        
-            for i in range(no_chamber):
-                p2 = gmsh.model.occ.addPoint(init_p[i][1][0], init_p[i][1][1], init_p[i][1][2], 5, -1)
-                p3 = gmsh.model.occ.addPoint(init_p[i][2][0], init_p[i][2][1], init_p[i][2][2], 5, -1)
-                p4 = gmsh.model.occ.addPoint(init_p[i][3][0], init_p[i][3][1], init_p[i][3][2], 5, -1)
+            p_small = gmsh.model.occ.addPoint(chamber_top_radius, 0, chamber_height, 5)  # A point on the small end
+            p_big   = gmsh.model.occ.addPoint(chamber_bot_radius, 0, 0, 5)        # A point on the big end
 
-                l2 = gmsh.model.occ.addLine(p2, p3, tag=-1)
-                l3 = gmsh.model.occ.addLine(p3, p4, tag=-1)
-                gmsh.model.occ.synchronize()
-                chamber = gmsh.model.occ.revolve([(1, 1),(1, 2)], rot_axis[i][0], rot_axis[i][1], 
-                                                rot_axis[i][2], rot_axis[i][3], rot_axis[i][4], rot_axis[i][5], chamber_rel_angle)
-                gmsh.model.occ.synchronize()
-        return chamber
+            # Create the generating line (generatrix) between the small and big end points.
+            line = gmsh.model.occ.addLine(p_small, p_big)
+
+            gmsh.model.occ.revolve([(1, line)], 0, 0, 0, 0, 0, 1, chamber_rel_angle)
+            # Create a disk at the small end (centered at (0, 0, z_small)) to fill it.
+            disk = gmsh.model.occ.addDisk(0, 0, chamber_height, chamber_top_radius, chamber_top_radius)
+            rot_axis = [[0, 0, 0, 0, 0, 1]]
+            init_p = [[0,0,0],[chamber_bot_radius, 0,0],[chamber_top_radius, 0,chamber_height],[0, 0,chamber_height]]
+            # This flips the disk's normal from (0,0,1) to (0,0,-1).
+            gmsh.model.occ.rotate([(2, disk)], 0, 0, chamber_height, 1, 0, 0, m.pi)
+            gmsh.model.occ.synchronize()
+
+        # return chamber
 class whisker_body_mesh():
 
     def main_body(body_bot_radius,
@@ -211,11 +230,11 @@ class whisker_body_mesh():
                             cone_angle = cone_angle,
                             chamber_height = chamber_height,
                             mesh_size = mesh_size)
-        ## Main body
+        # Main body
         # Body construction
         p_1 = gmsh.model.occ.addPoint(0, 0, 0, 5, -1)
-        p_2 = gmsh.model.occ.addPoint(0, body_bot_radius, 0, 5, -1)
-        p_3 = gmsh.model.occ.addPoint(0, body_top_radius, body_height, 5,-1)
+        p_2 = gmsh.model.occ.addPoint(body_bot_radius, 0, 0, 5, -1)
+        p_3 = gmsh.model.occ.addPoint(body_top_radius, 0, body_height, 5,-1)
         p_4 = gmsh.model.occ.addPoint(0, 0, body_height, 5, -1)
 
         gmsh.model.occ.synchronize()
@@ -224,15 +243,18 @@ class whisker_body_mesh():
         l_2 = gmsh.model.occ.addLine(p_2, p_3, tag=-1)
         l_3 = gmsh.model.occ.addLine(p_3, p_4, tag=-1)
         l_4 = gmsh.model.occ.addLine(p_4, p_1, tag=-1)
+        gmsh.model.occ.synchronize()
         curve = gmsh.model.occ.addCurveLoop([l_1, l_2, l_3, l_4], -1)
         plane = gmsh.model.occ.addPlaneSurface([curve], tag=-1)
+        gmsh.model.occ.synchronize()
         body = gmsh.model.occ.revolve([(2, plane)], 0, 0, 0, 0, 0, 1, m.pi*2,recombine=1)
+        gmsh.model.occ.synchronize()
         gmsh.model.occ.remove([(2, plane)], recursive=1)
         gmsh.model.occ.synchronize()
-        # Cut body
+        #### Cut body
         for i in range (no_chamber):
             final_body = gmsh.model.occ.cut([(3,gmsh.model.occ.getMaxTag(3))], [(3,i+1)], tag=-1,removeObject=1, removeTool=1)
-
+        gmsh.model.occ.synchronize()
 def main():
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)
@@ -248,7 +270,7 @@ def main():
     whisker_body_mesh.main_body(body_bot_radius = 12,
                                 cone_angle = 85.5,
                                 body_height = 100,
-                                no_chamber = 1,
+                                no_chamber = 2,
                                 chamber_bot_radius = 10,
                                 chamber_height = 24,
                                 mesh_size = 4)

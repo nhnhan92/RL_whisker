@@ -28,19 +28,21 @@ import time
 if __name__ == '__main__':
     logdir = './test_coopt'
     run_id = os.path.basename(logdir)
-    total_steps = 100
-    n_steps = 10  # Total number of training steps for each sampling time
-    batch_size = 4  # Batch size for design updates
-    update_period = 4  # Number of designs before each update
-    nenv = 2  # Number of parallel environments
+    total_steps = 1000
+    n_steps = 20  # Total number of training steps for each sampling time
+    batch_size = 5  # Batch size for design updates
+    update_period = 5  # Number of designs before each update
+    nenv = 1  # Number of parallel environments
     seed = 42  # Random seed for reproducibility
-    no_int = 4
-    ent_decay_start = 1
-    ent_decay_end = 64
-    no_chamber = torch.tensor([1,2,3])
-    pressure_range = torch.tensor([0,0.001])
-    body_length = torch.tensor([100, 80, 60])
-    ins = whiskerdesignspace(body_length,no_chamber,pressure_range)
+    no_int = 5
+    ent_decay_start = 500
+    ent_decay_end = 1000
+    no_chamber = torch.tensor([1,2])
+    pressure_range = torch.tensor([0.0,0.2])
+    body_length = np.linspace(60,100,5,dtype=int).tolist()
+    thickness = torch.tensor(np.linspace(2,4,5,dtype=float))
+    chamber_length = torch.tensor(np.linspace(20,40,11,dtype=int))
+    ins = whiskerdesignspace(body_length,no_chamber,chamber_length,thickness,pressure_range)
     with wandb.init(
         project='rl_whisker',
         id=run_id+'_train', group=run_id,
@@ -60,7 +62,8 @@ if __name__ == '__main__':
                             batch_size =batch_size,
                             update_period = update_period,
                             ent_decay_start = ent_decay_start,
-                            ent_decay_end = ent_decay_end) # Wrap the environment in the DesignManager class
+                            ent_decay_end = ent_decay_end,
+                            cut_off_list = body_length) # Wrap the environment in the DesignManager class
 
         obs = env.reset()
         timer = 0
@@ -70,20 +73,16 @@ if __name__ == '__main__':
             actions = [env.action_space.sample() for _ in range(nenv)]
             obs, rewards, dones, info = env.step(actions)
             # print(obs)
-            print(rewards)
-            print(dones)
+            # print(rewards)
+            # print(dones)
             # print(info)
             env.render()
-            if timer == int(n_steps/nenv) and ite < no_int:
+            if timer == int(n_steps/nenv):
                 
                 print("Resetting")
                 env.reset()
                 timer = 0
                 ite += 1
-            elif timer == int(n_steps/nenv) and ite >= no_int:
-                print("End")
-            
-                break
 
             
             

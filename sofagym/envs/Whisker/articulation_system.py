@@ -93,18 +93,18 @@ class ServoMotor(Sofa.Prefab):
 
         articulationCenter_sys = angle.addChild('ArticulationCenter')
         translation_center = articulationCenter_sys.addChild("translation")
-        translation_center.addObject('ArticulationCenter', parentIndex=1, childIndex=2, posOnParent=[0., 0., 0.],
+        translation_center.addObject('ArticulationCenter', parentIndex=0, childIndex=1, posOnParent=[0., 0., 0.],
                                      posOnChild=[0., 0., 0.], articulationProcess = 0)
         trans_articulation = translation_center.addChild('Articulations')
         trans_articulation.addObject('Articulation', translation=True, rotation=False, axis=[0, 1, 0],
-                               articulationIndex=1)
+                               articulationIndex=0)
         
         rotation_center = articulationCenter_sys.addChild("rotation")
-        rotation_center.addObject('ArticulationCenter', parentIndex=0, childIndex=1, posOnParent=[0., 0., 0.],
+        rotation_center.addObject('ArticulationCenter', parentIndex=1, childIndex=2, posOnParent=[0., 0., 0.],
                                      posOnChild=[0., 0., 0.], articulationProcess = 0)
         rot_articulation = rotation_center.addChild('Articulations')
         rot_articulation.addObject('Articulation', translation=False, rotation=True, axis=[1, 0, 0],
-                               articulationIndex=0)
+                               articulationIndex=1)
         
 
 class ServoArm(Sofa.Prefab):

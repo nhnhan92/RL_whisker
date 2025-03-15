@@ -9,6 +9,7 @@ __date__ = "Oct 7 2020"
 
 import os
 import numpy as np
+import math as m
 from typing import Optional
 from sofagym.AbstractEnv import AbstractEnv
 from sofagym.ServerEnv import ServerEnv
@@ -28,7 +29,7 @@ class WhiskerEnv:
     # Setting a default configuration
     path = os.path.dirname(os.path.abspath(__file__))
     metadata = {'render.modes': ['human', 'rgb_array']}
-    dim_state = 5
+    dim_state = 4
     DEFAULT_CONFIG = {"scene": "Whisker",
                       "deterministic": True,
                       "source": [-220, -20, 30],
@@ -49,13 +50,12 @@ class WhiskerEnv:
                       "seed": None,
                       "start_from_history": [],  # this number represents the action of the RL environment not steps in SOFA simulation
                       "python_version": "python3",
-                      "time_before_start": 0,
+                      "time_before_start": 20,
                       "dt": 0.01,
-                      "design_params": [100,1,0,0,0],
-                      "design_index": 0,
+                      "design_params": [100,1,20,2.0,0.1,0.0],
                       "nb_actions": -1,
                       "dim_state": dim_state,
-                      "init_states": [0,0,0,0,0],
+                      "init_states": [0,0,0.1,0.1],
                       "randomize_states": True,
                       "use_server": False,
                       "goalPos": [0,0,10],
@@ -86,9 +86,9 @@ class WhiskerEnv:
     
     def initialize_states(self):
         if self.env.config["randomize_states"]:
-            # self.init_states = self.randomize_init_states()
+            self.init_states = self.randomize_init_states()
             # self.env.config.update({'init_states': list(self.init_states)})
-            self.init_states = self.env.config["init_states"]
+            self.env.config["init_states"] = self.init_states
         else:
             self.init_states = self.env.config["init_states"]
         
@@ -104,24 +104,24 @@ class WhiskerEnv:
         ----
             This method should be implemented according to needed random initialization.
         """
-        init_body_angle = self.env.np_random.uniform(low=0, high=0.05, size=None)
-        init_states = [init_body_angle,0,0,0,0]
+        init_body_angle = self.env.np_random.uniform(low=-10*m.pi/180, high=10*m.pi/180, size=None)
+        init_states = [init_body_angle,0,0,0]
         return init_states
     
     
     def design_changer(self,design_param):
-        print("********************************************************")
-        # sample = self.sampling_design()
-        # self.save_json(self.design_space[design_params])
-        # print("SAMPLE = ", design_param)
         body_length = design_param['body_length']
         no_chamber = design_param['no_chamber']
+        chamber_length = design_param['chamber_length']
+        thickness = design_param['thickness']
         pressure1= design_param['pressure1']
         pressure2= design_param['pressure2']
-        pressure3= design_param['pressure3']
 
-        self.config['design_params'] = [body_length,no_chamber,
-                                       pressure1,pressure2,pressure3]
+        self.config['design_params'] = [body_length,
+                                        no_chamber,
+                                        chamber_length,
+                                        thickness,
+                                       pressure1,pressure2]
         
 
     def reset(self):
@@ -131,7 +131,6 @@ class WhiskerEnv:
 
         if self.env.config["goal"]:
             self.init_goal()
-        # self.design_changer(design_params = design_params)
         self.env.reset()
         if self.use_server:
             obs = start_scene(self.env.config, self.nb_actions)
@@ -140,31 +139,6 @@ class WhiskerEnv:
             state = np.array(self.env._getState(self.env.root), dtype=np.float32)
         return state
     
-    
-    def sampling_design(self):
-        
-        initial_logits = torch.ones(len(self.design_space),dtype=torch.float)
-        initial_beta = 1.0  # Initial inverse temperature
-        self.sample = update_gibbs_distribution_for_categories(self.design_space, initial_logits, initial_beta)
-        return self.sample.item()
-
-    def save_json(self,data):
-        # Define the file name
-        file_name = os.path.join(path,'data.json')
-        try:
-            os.remove(file_name)
-        except:
-            print('File does not exist')
-        # Define the new data to be added
-        write_data = {
-            "body_length": data[0],
-            "no_chamber": data[1],
-            "pressure_1": data[2],
-            "pressure_2": data[3],
-            "pressure_3": data[4]
-        }
-        with open(file_name, mode='w', newline='') as file:
-            json.dump(write_data, file, indent=4)
 
     def get_available_actions(self):
         """Gives the actions available in the environment.
