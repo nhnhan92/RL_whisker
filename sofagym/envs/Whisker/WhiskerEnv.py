@@ -50,7 +50,7 @@ class WhiskerEnv:
                       "seed": None,
                       "start_from_history": [],  # this number represents the action of the RL environment not steps in SOFA simulation
                       "python_version": "python3",
-                      "time_before_start": 20,
+                      "time_before_start": 0,
                       "dt": 0.01,
                       "design_params": [100,1,20,2.0,0.1,0.0],
                       "nb_actions": -1,
@@ -104,7 +104,7 @@ class WhiskerEnv:
         ----
             This method should be implemented according to needed random initialization.
         """
-        init_body_angle = self.env.np_random.uniform(low=-10*m.pi/180, high=10*m.pi/180, size=None)
+        init_body_angle = self.env.np_random.uniform(low=-2*m.pi/180, high=2*m.pi/180, size=None)
         init_states = [init_body_angle,0,0,0]
         return init_states
     
@@ -127,7 +127,7 @@ class WhiskerEnv:
     def reset(self):
         """Reset simulation.
         """
-        self.initialize_states()
+        # self.initialize_states()
 
         if self.env.config["goal"]:
             self.init_goal()

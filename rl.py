@@ -14,17 +14,16 @@ __date__ = "Nov 10 2020"
 
 
 import argparse
-import wandb
 from agents.RLberryAgent import RLberryAgent
 from agents.SB3Agent import SB3Agent
-
 from agents.utils import args_check
-
 import sofagym
 from sofagym.envs import *
-
-
-results_dir = "./Results"
+import wandb
+import os
+from sofagym.envs.Whisker.design_space.design_space import whiskerdesignspace
+import torch
+import numpy as np
 
 envs = {
         1: 'bubblemotion-v0',
@@ -67,10 +66,10 @@ if __name__ == '__main__':
                         type=str, required=True)
     parser.add_argument("-a", "--algorithm", help = "RL algorithm",
                         type=str, required=True)
-    parser.add_argument("-fr", "--framework", help = "RL framework",
-                        type=str, required=False, default='SB3')
     parser.add_argument("-ne", "--env_num", help = "Number of parallel envs",
                         type=int, required=False, default=1)
+    parser.add_argument("-fr", "--framework", help = "RL framework",
+                        type=str, required=False, default='SB3')
     parser.add_argument("-s", "--seed", help = "Seed",
                         type=int, required=False, default=0)
     parser.add_argument("-st", "--total_timesteps", help = "Number of training timesteps",
@@ -96,15 +95,29 @@ if __name__ == '__main__':
     args_check(framework, frameworks, 'framework')
 
     n_envs = args.env_num
-    seed = args.seed
-    total_timesteps = args.total_timesteps
-    max_episode_steps = args.max_steps
+    seed = args.seed # Random seed for reproducibility
     train = args.train
     test = args.test
     n_tests = args.num_test
     model_dir = args.model_dir
+    model_name = 'whisker_rl'
     logdir = './test_coopt'
+    results_dir = "./Results"
+    params_path = "/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/whisker_params.yml"
     run_id = os.path.basename(logdir)
+    total_steps = args.total_timesteps
+    max_episode_steps = args.max_steps  # Total number of training steps for each sampling time (episode)
+    batch_size_for_distupdate = 5  # Batch size for design updates
+    dist_update_period = 5  # Number of designs before each update
+    ent_decay_start = 500
+    ent_decay_end = 1000
+    no_chamber = torch.tensor([1,2])
+    pressure_range = torch.tensor([0.0,0.2])
+    body_length = np.linspace(60,100,5,dtype=int).tolist()
+    thickness = torch.tensor(np.linspace(2,4,5,dtype=float))
+    chamber_length = torch.tensor(np.linspace(20,40,11,dtype=int))
+    ins = whiskerdesignspace(body_length,no_chamber,chamber_length,thickness,pressure_range)
+    design_space = ins.design_space()
     with wandb.init(project='rl_whisker',
                     id=run_id+'_train', group=run_id,
                     job_type='train', resume='allow'):
@@ -113,15 +126,28 @@ if __name__ == '__main__':
                 parser.error("Valid argument --model_dir must be provided where previous model training files are saved")
         
         Agent = eval(framework + "Agent")
-
         if train == 'new':
-            agent = Agent(env_name, algo_name, seed, results_dir, max_episode_steps, n_envs)
-            agent.fit(total_timesteps)
+            agent = Agent(env_id = env_name,
+                            algo_name = algo_name,
+                            seed=seed, 
+                            output_dir = results_dir, 
+                            max_episode_steps=max_episode_steps, 
+                            n_envs = n_envs,
+                            model_name = model_name,
+                            design_space=design_space,
+                            batch_size_for_distupdate =batch_size_for_distupdate,
+                            dist_update_period = dist_update_period,
+                            ent_decay_start = ent_decay_start,
+                            ent_decay_end = ent_decay_end,
+                            cut_off_list = body_length,
+                            params_path = params_path
+                            )
+            agent.fit(total_steps)
         else:
             agent = Agent.load(model_dir)
             
             if train == 'continue':
-                agent.fit(total_timesteps)
+                agent.fit(total_steps)
 
         if test:
             agent.eval(n_tests, model_timestep='best_model', render=True, record=True)

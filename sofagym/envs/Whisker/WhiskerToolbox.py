@@ -132,8 +132,9 @@ class rewardShaper(Sofa.Core.Controller):
         self.rootNode = None
         if kwargs["rootNode"]:
             self.rootNode = kwargs["rootNode"]
+        self.scale_factor = kwargs["scale_factor"]
         self.cost = None
-        self.force_thres = 0.2
+        self.force_thres = 0.1
         self.dt = self.rootNode.findData("dt").value
 
         self.whisker = self.rootNode.Whisker_node.Whisker.getChild("MechanicalModel")
@@ -154,7 +155,7 @@ class rewardShaper(Sofa.Core.Controller):
         self.ele_indices = self.strain_box.tetrahedraInROI.value
         self.point_idx = self.strain_box.indices.value
         self.point_pos = self.strain_box.pointsInROI.value
-        
+        self.volume = np.array([1])
         ### Articulation system node
         self.arti_sys = self.rootNode.Whisker_node.getChild("Articulation_system")
         self.servo_arti = self.arti_sys.ServoMotor.Articulation.dofs
@@ -185,9 +186,11 @@ class rewardShaper(Sofa.Core.Controller):
     def onAnimateBeginEvent(self, event):
 
         self.angleIn_prev = self.arti_sys.angleIn.value[1]
+        
         self.time += 1
-        if self.time == 1:
+        if self.time <= 1:
             self.volume = np.array([])
+            
             # self.mecawhisker.position.value[self.ele_indices[0]]
             for i,j in zip(self.measured_elemennt,self.ele_indices):
                 self.volume = np.append(self.volume,self.tetrahedron_volume(self.mecawhisker.position.value[j[0]],
@@ -198,15 +201,15 @@ class rewardShaper(Sofa.Core.Controller):
             # self.arti_sys.angleIn[1] = -10*m.pi/180
             # self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value[0] = 0.05
             # self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity1.pressure_input.value[0] = 0.05 # real pressure is input_value / dt [kPa]
-        self.strain_zz = np.array([item[2] for item in self.fem.totalstrain.value])
+        self.strain_zz = np.array([item[0] for item in self.fem.totalstrain.value])
         average_strain = np.sum(self.strain_zz*self.volume)/np.sum(self.volume)
         self.fem.ave_strain.value = average_strain
-        
     def onAnimateEndEvent(self, event):
         
         self.initiated_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
-        if self.time == 20:
-            self.arti_sys.angleIn[0] = self.original_min_pos - self.initiated_min_pos        
+        if self.time <= 1:
+            self.arti_sys.angleIn[0] = self.original_min_pos - self.initiated_min_pos               
+        ### Force calculation
         constraint = self.mecawhisker.constraint.value
         constraintMatrixInline = np.fromstring(constraint, sep='  ')
         pointId = []
@@ -230,46 +233,44 @@ class rewardShaper(Sofa.Core.Controller):
         contactforce_x = 0
         contactforce_y = 0
         contactforce_z = 0
-        contactforce_x_57 = 0
-        contactforce_y_57 = 0
-        contactforce_z_57 = 0
         for i in range(len(pointId)):
-            contactforce_x += constraintDirections[i][0] * forcesNorm[constraintId[i]]/self.dt*10**(-3) #Unit mN
-            contactforce_y += constraintDirections[i][1] * forcesNorm[constraintId[i]]/self.dt*10**(-3)  #Unit mN
-            contactforce_z += constraintDirections[i][2] * forcesNorm[constraintId[i]]/self.dt *10**(-3) #Unit mN
-            if pointId[i] == 58:
-                contactforce_x_57 += constraintDirections[i][0] * forcesNorm[constraintId[i]] /self.dt
-                contactforce_y_57 += constraintDirections[i][1] * forcesNorm[constraintId[i]]/self.dt
-                contactforce_z_57 += constraintDirections[i][2] * forcesNorm[constraintId[i]]/self.dt
-        # print("Force node 57 = ",[contactforce_x_57,contactforce_y_57,contactforce_z_57])
-        
+            contactforce_x += constraintDirections[i][0] * forcesNorm[constraintId[i]]/self.dt*10**(-3) #Unit mN *10**(-3) => N
+            contactforce_y += constraintDirections[i][1] * forcesNorm[constraintId[i]]/self.dt*10**(-3)  #Unit mN *10**(-3) => N
+            contactforce_z += constraintDirections[i][2] * forcesNorm[constraintId[i]]/self.dt *10**(-3) #Unit mN *10**(-3) => N
         force_value = [float(contactforce_x),float(contactforce_y),float(contactforce_z)]
-        
-        if self.time <=20:
+        number_of_valid_constraint = sum(1 for x in forcesNorm if x != 0)
+        if self.time <=1:
             self.force_by_initiated_pressure = force_value
-        self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
+
+        if number_of_valid_constraint <= 2:
+            self.force_value = [0 for _ in range(len(force_value))]
+        else:
+            self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
+        # self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
         self.angleIn_after = self.arti_sys.angleIn.value[1]
-
+        self.angleIn_diff = self.angleIn_after - self.angleIn_prev
     def getReward(self):
-        """Compute the reward.
 
-        Parameters:
-        ----------
-            None.
-
-        Returns:
-        -------
-            The reward and the cost.
-
-        # """ 
         alpha = 1
         beta = 0.5
-        scale_factor = 10**(5)
-        force_penalty = np.maximum(0, self.force_value[2] - self.force_thres) ** 2
-        rot_angle_penalty = (self.angleIn_after - self.angleIn_prev)**2
+        self.max_incr = 10*m.pi/180
+        scale_factor_force = 10**(4)
+        scale_factor_angle = 10**(2)
+        # print(f"self.force_value[2] = {self.force_value[2]}")
+        if self.force_value[2] == 0:
+            self.reward = 0
+        else:
+            force_penalty = np.maximum(0, (abs(self.force_value[2]) - self.force_thres)/self.force_thres)
+            base_reward_force = alpha - alpha*force_penalty
+            # print(f"force_penalty = {force_penalty} => base_reward_force = {base_reward_force}")
+            rot_angle_penalty = abs(self.angleIn_diff)*self.scale_factor/self.rootNode.applyAction.max_incr
+            # print(f"self.rootNode.applyAction.max_incr = {self.rootNode.applyAction.max_incr}")
+            base_reward_angle = beta * rot_angle_penalty
+            # print(f"rot_angle_penalty = {rot_angle_penalty} => base_reward_force = {base_reward_angle}")
+            self.reward = np.maximum(0,base_reward_force + base_reward_angle)
 
-        reward = (alpha * force_penalty + beta * rot_angle_penalty)*scale_factor
-        return reward, self.cost
+        print("reward = ", self.reward)
+        return self.reward, self.cost
 
     def update(self,goal=None):
         pass
@@ -298,11 +299,11 @@ class applyAction(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = kwargs["root"]
         self.whisker_node = self.root.Whisker_node
-        self.max_incr = 50*m.pi/180
+        self.max_incr = 10*m.pi/180
         self.arti_sys = self.root.Whisker_node.getChild("Articulation_system")
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value
-        new_angleIn = current_angleIn[1]*m.pi/180 + incr
+        new_angleIn = current_angleIn[1] + incr
         # with self.arti_sys.angleIn.writeable() as arti_input:
         self.arti_sys.angleIn.value = [current_angleIn[0],new_angleIn]
     def _normalizedAction_to_action(self, action):
@@ -310,7 +311,6 @@ class applyAction(Sofa.Core.Controller):
 
     def compute_rot_action(self, action, nb_step):
         incr= self._normalizedAction_to_action(action)/nb_step
-        # incr = (goal_angleIn - current_angleIn)/nb_step
         return incr
 
     def apply_action(self, incr):
@@ -406,6 +406,7 @@ def getState(root):
     """
     chamber_node = root.Whisker_node.Whisker.MechanicalModel.Chamber
     no_chamber = root.Whisker_node.Whisker.MechanicalModel.Chamber.no_chamber.value
+    
     pressure = []
     for i in range(2):
         if i <= no_chamber-1:
@@ -414,7 +415,7 @@ def getState(root):
             pressure.append(0.0)
 
     rot_angle = root.Whisker_node.Articulation_system.angleIn.value[1].tolist()
-    strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.ave_strain.value.tolist()
+    strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.ave_strain.value
     
     state = [rot_angle] + [strain_zz] + pressure
     # print("State = ", state)

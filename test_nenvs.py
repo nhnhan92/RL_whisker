@@ -32,13 +32,13 @@ if __name__ == '__main__':
     n_steps = 20  # Total number of training steps for each sampling time
     batch_size = 5  # Batch size for design updates
     update_period = 5  # Number of designs before each update
-    nenv = 1  # Number of parallel environments
+    nenv = 5  # Number of parallel environments
     seed = 42  # Random seed for reproducibility
     no_int = 5
-    ent_decay_start = 500
+    ent_decay_start = 200
     ent_decay_end = 1000
     no_chamber = torch.tensor([1,2])
-    pressure_range = torch.tensor([0.0,0.2])
+    pressure_range = torch.tensor([0.00001,0.2])
     body_length = np.linspace(60,100,5,dtype=int).tolist()
     thickness = torch.tensor(np.linspace(2,4,5,dtype=float))
     chamber_length = torch.tensor(np.linspace(20,40,11,dtype=int))
@@ -46,14 +46,14 @@ if __name__ == '__main__':
     with wandb.init(
         project='rl_whisker',
         id=run_id+'_train', group=run_id,
-        job_type='train', resume='allow'
+        job_type='train', resume='allow',reinit = True
     ):
         env_id = "whisker-v0"
         # Create the vectorized environment
         design_space = ins.design_space()
         env = SubprocVecEnv([make_env(env_id = env_id,
                                       rank = i, 
-                                      seed = 1,
+                                    #   seed = 1,
                                       max_episode_steps = n_steps,
                                         config={"render": 1}) for i in range(nenv)])
         env = DesignManager(env,design_space=design_space,
@@ -76,7 +76,7 @@ if __name__ == '__main__':
             # print(rewards)
             # print(dones)
             # print(info)
-            env.render()
+            # env.render()
             if timer == int(n_steps/nenv):
                 
                 print("Resetting")

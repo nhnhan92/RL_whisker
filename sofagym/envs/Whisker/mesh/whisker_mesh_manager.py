@@ -100,25 +100,6 @@ class chamber_mesh():
         chamber_rel_angle = 360*m.pi/(no_chamber*180)
         chamber_dist = 1.5
         if no_chamber == 2:
-            # rot_axis = [0, 0, 0, 0, 0, 1]
-            # init_p = [[0,0,0],[0,chamber_bot_radius,0],[0, chamber_top_radius,chamber_height],[0, 0,chamber_height]]
-            # p1 = gmsh.model.occ.addPoint(init_p[0][0], init_p[0][1], init_p[0][2], mesh_size, -1)
-            # p2 = gmsh.model.occ.addPoint(init_p[1][0], init_p[1][1], init_p[1][2], mesh_size, -1)
-            # p3 = gmsh.model.occ.addPoint(init_p[2][0], init_p[2][1], init_p[2][2], mesh_size, -1)
-            # p4 = gmsh.model.occ.addPoint(init_p[3][0], init_p[3][1], init_p[3][2], mesh_size, -1)
-
-            # l1 = gmsh.model.occ.addLine(p1, p2, tag=-1)
-            # l2 = gmsh.model.occ.addLine(p2, p3, tag=-1)
-            # l3 = gmsh.model.occ.addLine(p3, p4, tag=-1)
-            # l4 = gmsh.model.occ.addLine(p4, p1, tag=-1)
-            # gmsh.model.occ.synchronize()
-
-            # curve = gmsh.model.occ.addCurveLoop([l1, l2, l3, l4], -1)
-            # chamber_plane = gmsh.model.occ.addPlaneSurface([curve], tag=-1)
-            # chamber = gmsh.model.occ.revolve([(1, 2),(1, 3)], rot_axis[0], rot_axis[1], 
-            #                                 rot_axis[2], rot_axis[3], rot_axis[4], rot_axis[5], 2*m.pi)
-            # gmsh.model.occ.synchronize()
-
             p_small = gmsh.model.occ.addPoint(chamber_top_radius, 0, chamber_height, 5)  # A point on the small end
             p_big   = gmsh.model.occ.addPoint(chamber_bot_radius, 0, 0, 5)        # A point on the big end
 
@@ -149,13 +130,13 @@ class chamber_mesh():
             chamber = gmsh.model.occ.cut([(2,1),(2,2),(2,3)], [(3,1)], tag=-1,removeObject=1, removeTool=1)
             # gmsh.model.occ.remove([(2, chamber_plane)], recursive=1)
             gmsh.model.occ.synchronize()
-            # l5 = gmsh.model.occ.addLine(2, 3, tag=-1)
-            # l6 = gmsh.model.occ.addLine(10, 12, tag=-1)
-            # curve1 = gmsh.model.occ.addCurveLoop([6,  15,9, 17], -1)
-            # chamber_plane1 = gmsh.model.occ.addPlaneSurface([curve1], tag=-1)
-            # curve2 = gmsh.model.occ.addCurveLoop([11, 16, 13,18], -1)
-            # chamber_plane2 = gmsh.model.occ.addPlaneSurface([curve2], tag=-1)
-            # gmsh.model.occ.synchronize()
+            l5 = gmsh.model.occ.addLine(2, 3, tag=-1)
+            l6 = gmsh.model.occ.addLine(7, 8, tag=-1)
+            curve1 = gmsh.model.occ.addCurveLoop([ l5,3, 10,1], -1)
+            chamber_plane1 = gmsh.model.occ.addPlaneSurface([curve1], tag=-1)
+            curve2 = gmsh.model.occ.addCurveLoop([12, 6, 9,8], -1)
+            chamber_plane2 = gmsh.model.occ.addPlaneSurface([curve2], tag=-1)
+            gmsh.model.occ.synchronize()
             
         elif no_chamber == 3:
             rot_axis = []

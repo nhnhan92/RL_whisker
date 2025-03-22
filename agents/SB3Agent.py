@@ -183,7 +183,6 @@ class SB3Agent(SofaBaseAgent):
         self.algo = eval(self.algo_name)
         self.model_name = model_name
         self.params = kwargs
-
         self.init_model()
 
     def init_dirs(self):
@@ -220,8 +219,19 @@ class SB3Agent(SofaBaseAgent):
     def load_params(self):
         """Load hyperparameters and preprocesses them.
         """
+        self.design_space = self.params["design_space"]
+        self.batch_size_for_distupdate = self.params["batch_size_for_distupdate"]
+        self.dist_update_period = self.params["dist_update_period"]
+        self.ent_decay_start = self.params["ent_decay_start"]
+        self.ent_decay_end = self.params["ent_decay_end"]
+        self.cut_off_list = self.params["cut_off_list"]
+
         if not self.params:
             self.params_path = "./agents/hyperparameters/stable_baselines_params.yml"
+            config = yaml.safe_load(Path(self.params_path).read_text())
+            self.params = config[self.algo_name]
+        else:
+            self.params_path = self.params['params_path']
             config = yaml.safe_load(Path(self.params_path).read_text())
             self.params = config[self.algo_name]
 
@@ -435,10 +445,29 @@ class SB3Agent(SofaBaseAgent):
         vec_env : object
             The wrapped training environment.
         """
+
         vec_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps) for i in range(n_envs)])
         self.test_env = SubprocVecEnv([make_env(self.env_id, 0, self.seed, self.max_episode_steps, config={"render": 1})])
-        vec_env = DesignManager(venv=vec_env,design_space=None,n_steps = self.init_kwargs['n_steps'])
-        self.test_env = DesignManager(venv=self.test_env,design_space=None,n_steps = self.init_kwargs['n_steps'])
+        vec_env = DesignManager(venv=vec_env,
+                                design_space=self.design_space,
+                                n_steps = self.max_episode_steps,
+                                n_env = n_envs,
+                                batch_size = self.batch_size_for_distupdate,
+                                update_period = self.dist_update_period,
+                                ent_decay_start = self.ent_decay_start,
+                                ent_decay_end = self.ent_decay_end,
+                                cut_off_list = self.cut_off_list
+                                )
+        self.test_env = DesignManager(venv=vec_env,
+                                design_space=self.design_space,
+                                n_steps = self.max_episode_steps,
+                                n_env = n_envs,
+                                batch_size = self.batch_size_for_distupdate,
+                                update_period = self.dist_update_period,
+                                ent_decay_start = self.ent_decay_start,
+                                ent_decay_end = self.ent_decay_end,
+                                cut_off_list = self.cut_off_list
+                                )
         if normalize:
             if self.model_timestep is None:
                 vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True)

@@ -1,221 +1,246 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 import csv
-import math as m
-# import pylustrator
-# activate pylustrator
-# pylustrator.start()
-def fibers(number_chambers = 2,r = 11, p = 2, H = 142.3862887, cutting_plane = None,
-		coarse_points = 3000, fine_points = 80000, h = 25, draw = False):
-	final_helix = []
-	for i in range(number_chambers):
-		final_helix.append([])
 
-	def init_helix_path(r = r, p = p, H = H, number_points=None, h = h, draw = False, save = False):
-		# r: bán kính của đường xoắn ốc ở mặt phẳng đáy
-		# h: chiều cao của đường xoắn ốc cụt (chamber)
-		# H: chiều cao của đường xoắn ốc (khoảng cách từ điểm đầu đến điểm cuối) 
-		# number_points: số lượng các node hình thành nên đường cong (init: coarse)
-		# p: thread
-		idx_z_limit = int(h*number_points/H)
-		# Tính toán tọa độ của các điểm trên đường xoắn ốc
-		z = np.linspace(0, H, number_points)
-		x = ((H-z)/H)*r*np.sin((2*np.pi)*z/p+np.pi)
-		y = ((H-z)/H)*r*np.cos((2*np.pi)*z/p+np.pi)
-		init_curve1 = [[x[i], y[i], z[i]] for i in range(number_points)]
 
-		z2 = np.linspace(0, H, number_points)
-		x2 = -((H-z2)/H)*r*np.sin(-(2*np.pi)*z2/p-np.pi)
-		y2 = -((H-z2)/H)*r*np.cos(-(2*np.pi)*z2/p-np.pi)
-		init_curve2 = [[x2[i], y2[i], z2[i]] for i in range(number_points)]
-		init_curve = [init_curve1,init_curve2]
-		if draw:
-			### Draw Figures
-			# Vẽ đường xoắn ốc
-			fig = plt.figure()
-			ax = fig.add_subplot(111,projection='3d')
-			ax.plot(x, y, z, label='fiber 1')
-			ax.plot(x2, y2, z2, label='fiber 2')
-			ax.set_xlabel('X')
-			ax.set_ylabel('Y')
-			ax.set_zlabel('Z')
-			ax.set_zlim([0, h])
-			ax.legend()
-		if save:
-			for i in range(2):
-				filePath_node = os.getcwd()+"/fiber"+str(i+1)+"_info.csv"
-				try:
-					os.remove(filePath_node)
-				except:
-					print("Error while deleting file ", filePath_node)
-				header = ["Fiber "+ str(i+1)+": Spring Idx", "x (mm)", "y (mm)", "z (mm)"]
-				with open(filePath_node, "w", newline="") as file_open:
-					writer = csv.writer(file_open, delimiter=",")
-					writer.writerow(header)
-					for j in range(idx_z_limit):
-						if i == 0 and init_curve[i][j][2]<h:
-							writer.writerow([j,x[j],y[j],z[j]])
-						elif i == 1 and init_curve[i][j][2]<h:
-							writer.writerow([j,x2[j],y2[j],z2[j]])
-		
-		return init_curve
+def generate_inverted_truncated_conical_double_helix(H=25.0,       # "design" cone height
+                                                    R=11.0,       # big-end radius at z=0
+                                                    alpha=85.5,   # cone half-angle in degrees
+                                                    pitch=4.0,    # vertical distance per 2π turn
+                                                    num_points=1000,    
+                                                    no_chamber = 2,
+                                                    offset = 1,
+                                                    plot = False,
+                                                    save_data = False):
+    """
+    Generate two strands of a double helix on an inverted truncated cone:
+      - At z=0, radius=R (the big end).
+      - Radius shrinks linearly: r(z)=R - z*tan(alpha_rad).
+      - If H < H, we truncate the vertical extent at z=H.
+      - pitch sets the vertical distance per 2π revolution of the helix.
+    """
 
-	def trimming_helix(number_points = coarse_points, cutting_plane = cutting_plane, draw = False):
-		# cutting_plane  # Plane parallel to xoz plane
-		# Initialize lists to store trimmed points
-		
-		init_fine_curve = init_helix_path(number_points = number_points)
+    alpha_rad = np.radians(alpha)
 
-		# Trim the first curve by the yoz plane
-		trimmed_points_curve = []
-		trimming = []
-		for i in range(len(init_fine_curve)):
-			trimming.append([])
-			for j in range(number_points):
-				if init_fine_curve[i][j][0] >= cutting_plane and cutting_plane>0:
-					trimming[-1].append(init_fine_curve[i][j])
-				if init_fine_curve[i][j][0] <= cutting_plane and cutting_plane<0:
-					trimming[-1].append(init_fine_curve[i][j])
-		if len(trimming[0]) - len(trimming[1]) > 0:
-			trimmed_points_curve = (trimming[0][:-(len(trimming[0]) - len(trimming[1]))], trimming[1])
-		elif len(trimming[0]) - len(trimming[1]) < 0:
-			trimmed_points_curve = (trimming[0], trimming[1][:len(trimming[0]) - len(trimming[1])])
-		else:
-			trimmed_points_curve = trimming
+    # z from 0..H
+    z_vals = np.linspace(0, H, num_points)
+    # radius from R at z=0 down to R - H*tan(alpha) at z=H
+    r_vals = R - z_vals * np.tan(alpha_rad)
 
-		trimmed_points_curve= np.array(trimmed_points_curve)
+    # total number of turns from z=0..H
+    total_turns = (H / pitch) if pitch != 0 else 0.0
 
-		
-		if draw:
-			### Draw Figures
-			# Vẽ đường xoắn ốc
-			fig = plt.figure()
-			ax = fig.add_subplot(111,projection='3d')
-			ax.plot(trimmed_points_curve[0][:,0], trimmed_points_curve[0][:,1], trimmed_points_curve[0][:,2], label='fiber 1')
-			# ax.plot(trimmed_points_curve[1][:,0], trimmed_points_curve[1][:,1], trimmed_points_curve[1][:,2], label='fiber 2')
-			ax.set_xlabel('X')
-			ax.set_ylabel('Y')
-			ax.set_zlabel('Z')
-			ax.set_zlim([0, h])
-			ax.legend()
-		return trimmed_points_curve
+    # param t in [0..1], angle in [0..2π*total_turns]
+    if H > 0:
+        t = z_vals / H
+    else:
+        t = np.zeros_like(z_vals)
+    theta = 2.0 * np.pi * total_turns * t
 
-	def sort_trimmed_curves(trimmed_points_curve,cutting_plane = cutting_plane):
-		point_in_plane = []
-		for i in range(2):	
-			point_in_plane.append([])
-			for j in range(int(h/2)):
-				if cutting_plane > 0:
-					if i == 0:
-						max_y = [max(trimmed_points_curve[i][:, 1]),min(trimmed_points_curve[i][:, 2])]
-						min_y = [min(trimmed_points_curve[i][:, 1])]
-						for sorted_indices in range(len(trimmed_points_curve[i])):
-							if trimmed_points_curve[i][sorted_indices][1] == min_y[0]:
-								min_y.append(trimmed_points_curve[i][sorted_indices][2])
-						point_in_plane[i].append([cutting_plane, max_y[0]-(2*j)/m.tan(85.5*m.pi/180), max_y[1]+2*j])
-						point_in_plane[i].append([cutting_plane, min_y[0]+(2*j)/m.tan(85.5*m.pi/180), min_y[1]+2*j])
-					if i == 1:
-						max_y = [min(trimmed_points_curve[i][:, 1]),min(trimmed_points_curve[i][:, 2])]
-						min_y = [max(trimmed_points_curve[i][:, 1])]
-						for sorted_indices in range(len(trimmed_points_curve[i])):
-							if trimmed_points_curve[i][sorted_indices][1] == min_y[0]:
-								min_y.append(trimmed_points_curve[i][sorted_indices][2])
-						point_in_plane[i].append([cutting_plane, max_y[0]+(2*j)/m.tan(85.5*m.pi/180), max_y[1]+2*j])
-						point_in_plane[i].append([cutting_plane, min_y[0]-(2*j)/m.tan(85.5*m.pi/180), min_y[1]+2*j])	
-				if cutting_plane < 0:
-					if i == 0:
-							max_y = [min(trimmed_points_curve[i][:, 1]),min(trimmed_points_curve[i][:, 2])]
-							min_y = [max(trimmed_points_curve[i][:, 1])]
-							for sorted_indices in range(len(trimmed_points_curve[i])):
-								if trimmed_points_curve[i][sorted_indices][1] == min_y[0]:
-									min_y.append(trimmed_points_curve[i][sorted_indices][2])
-							point_in_plane[i].append([cutting_plane, max_y[0]+(2*j)/m.tan(85.5*m.pi/180), max_y[1]+2*j])
-							point_in_plane[i].append([cutting_plane, min_y[0]-(2*j)/m.tan(85.5*m.pi/180), min_y[1]+2*j])
-					if i == 1:
-						max_y = [max(trimmed_points_curve[i][:, 1]),min(trimmed_points_curve[i][:, 2])]
-						min_y = [min(trimmed_points_curve[i][:, 1])]
-						for sorted_indices in range(len(trimmed_points_curve[i])):
-							if trimmed_points_curve[i][sorted_indices][1] == min_y[0]:
-								min_y.append(trimmed_points_curve[i][sorted_indices][2])
-						point_in_plane[i].append([cutting_plane, max_y[0]-(2*j)/m.tan(85.5*m.pi/180), max_y[1]+2*j])
-						point_in_plane[i].append([cutting_plane, min_y[0]+(2*j)/m.tan(85.5*m.pi/180), min_y[1]+2*j])			
-		point_in_plane = np.array(point_in_plane)
-		return point_in_plane
+    # Strand 1
+    x1 = r_vals * np.cos(theta)
+    y1 = r_vals * np.sin(theta)
+    fiber1 = np.column_stack((x1, y1, z_vals))
 
-	def save_csv(final_helix, cutting_plane = cutting_plane):
-		# Save node information of original curves
-		if cutting_plane > 0:
-			name = "right"
-		else:
-			name = "left"
-		for i in range(2):
-			filePath_node = os.getcwd()+"/fiber"+str(i+1)+name+"_info.csv"
-			try:
-				os.remove(filePath_node)
-			except:
-				print("Error while deleting file ", filePath_node)
-			header = ["Fiber "+ str(i+1)+"_"+name+": Idx", "x (mm)", "y (mm)", "z (mm)", "Cutting plane x"]
-			with open(filePath_node, "w", newline="") as file_open:
-				writer = csv.writer(file_open, delimiter=",")
-				writer.writerow(header)
-				data_limit = int((h/2)*coarse_points/H)+len(point_in_plane[i])
-				for j in range(len(final_helix[i])):
-					if final_helix[i][j][2]<h:
-						writer.writerow([j,final_helix[i][j][0],final_helix[i][j][1],final_helix[i][j][2],cutting_plane])
-	
-	init_helix_path(number_points= coarse_points, draw=0, save=0)
-	init_curve = trimming_helix(number_points=coarse_points, draw=0)
-	trimmed_points_curve = trimming_helix(number_points=fine_points, draw=0)
-	point_in_plane = sort_trimmed_curves(trimmed_points_curve=trimmed_points_curve)
-	final_helix = []
-	for i in range(len(init_curve)):
-		revised_helix = init_curve[i]
-		final_helix.append([])
-		data_limit = int((h/2)*coarse_points/H)+len(point_in_plane[i])
-		for j in range(0,len(point_in_plane[i])):
-			# Find the index to insert the new point
-			insert_index_z = np.searchsorted(revised_helix[:, 2], point_in_plane[i][j][2],side='right')
-			# fix odd points
-			if abs(revised_helix[insert_index_z][2] - revised_helix[insert_index_z-1][2]) < 0.3:
-				insert_index_z -= 1
-			# Insert the new point at the calculated index
-			revised_helix = np.insert(revised_helix, insert_index_z, point_in_plane[i][j], axis=0)	
-		for k in range(0,int(len(point_in_plane[i])/2)-1):
-			n = 12  # Change this to the desired number of points
-			step_size = 1.0 / (n - 1)
-			intermediate_points = []
-			for g in range(n):
-				interpolated_point = (1 - g * step_size) * point_in_plane[i][2*k+1] + g * step_size * point_in_plane[i][2*k+2]
-				intermediate_points.append(interpolated_point)
-			for j in range(len(revised_helix)-1):
-				if np.array_equal(revised_helix[j], intermediate_points[0]):
-					revised_helix = np.insert(revised_helix, j+1, intermediate_points[1:n-1], axis=0)
-					break
-		for j in range(len(revised_helix)):
-			if revised_helix[j][2]<h:
-				final_helix[-1].append(revised_helix[j])
+    # Strand 2, offset by π
+    x2 = r_vals * np.cos(-theta + np.pi)
+    y2 = r_vals * np.sin(-theta + np.pi)
+    fiber2 = np.column_stack((x2, y2, z_vals))
 
-	final_helix = np.array(final_helix)
-	# save csv
-	save_csv(final_helix=final_helix)
-	if draw:
-	### Draw Figures
-	# Vẽ đường xoắn ốc 
-		fig = plt.figure()
-		ax = fig.add_subplot(111,projection='3d')
-		no = 400
-		ax.plot(final_helix[0][0:no,0], final_helix[0][0:no,1], final_helix[0][0:no,2], marker='o', label='fiber 1')
-		ax.plot(final_helix[1][0:no,0], final_helix[1][0:no,1], final_helix[1][0:no,2], marker='*', label='fiber 2')
-		ax.set_xlabel('X')
-		ax.set_ylabel('Y')
-		ax.set_zlabel('Z')
-		ax.set_zlim([0, h])
-		ax.legend()    
-		plt.show()
-	return final_helix
+    if no_chamber > 1:
+        # 2) Cut each fiber by the plane y=offset + insert intersection points
+        fiber1_cut = cut_fiber_and_insert_intersections(fiber1, offset)
+        fiber2_cut = cut_fiber_and_insert_intersections(fiber2, offset)
 
-# Function used only if this script is called from a python environment
-if __name__ == '__main__':	
-	final_helix = fibers(cutting_plane = 1.1, draw=1)
-	# final_helix = fibers(cutting_plane = -1, draw=1)
+        # 3) Further subdivide line segments that lie entirely in the plane y=offset
+        #    so we have multiple points instead of just a single straight line.
+        #    e.g. n_subdiv=5 => 4 additional points along any in-plane segment.
+        fiber1 = subdivide_in_plane_segments(fiber1_cut, offset, n_subdiv=5)
+        fiber2 = subdivide_in_plane_segments(fiber2_cut, offset, n_subdiv=5)
+        if plot:
+            # 4) Plot final geometry
+            plot_3d_curves(
+                fiber1, fiber2,
+                title=f"Double Helix, cut y>={offset}, with plane segments subdivided"
+            )
+        if save_data:
+            # 5) Save final data (optional)
+            save_helix_points(fiber1, "fiber1.csv")
+            save_helix_points(fiber2, "fiber2.csv")
+
+    return fiber1, fiber2
+
+def cut_fiber_and_insert_intersections(fiber, offset):
+    """
+    Cut 'fiber' by the plane y=offset and insert intersection points 
+    so that the resulting fiber is continuous and includes boundary points.
+    
+    We keep:
+      - If offset >= 0, keep y >= offset.
+      - If offset < 0,  keep y <= offset.
+      
+    For each segment p1->p2 in the original fiber:
+      1) If p1 is inside the cut region, add p1 to new_fiber.
+      2) If the segment crosses the plane (one side in, other out), 
+         compute the intersection point, add it if it lies in the keep side.
+      3) If p2 is inside, add p2.
+      
+    This ensures that if the helix crosses y=offset, we get 
+    an intersection node in the final cut geometry.
+    """
+    new_fiber = []
+    n = len(fiber)
+    if n < 2:
+        return fiber  # nothing to cut or interpolate
+
+    # Decide which side is "inside" based on offset's sign
+    # offset >= 0 => keep y >= offset
+    # offset < 0  => keep y <= offset
+    def inside(y_val):
+        return (y_val >= offset) if (offset >= 0) else (y_val <= offset)
+
+    for i in range(n - 1):
+        p1 = fiber[i]
+        p2 = fiber[i + 1]
+        y1, y2 = p1[1], p2[1]
+
+        in1 = inside(y1)
+        in2 = inside(y2)
+
+        # If p1 is inside, we add it to new_fiber
+        if in1:
+            new_fiber.append(p1)
+
+        # Check segment crossing: (y1 - offset)*(y2 - offset) < 0
+        # => p1 and p2 lie on opposite sides of plane
+        side1 = y1 - offset
+        side2 = y2 - offset
+        if side1 * side2 < 0.0:
+            # We have a crossing -> find intersection by linear interpolation
+            alpha_t = (offset - y1) / (y2 - y1)  # fraction along p1->p2
+            x_int = p1[0] + alpha_t*(p2[0] - p1[0])
+            z_int = p1[2] + alpha_t*(p2[2] - p1[2])
+            # y_int = offset
+            intersection = np.array([x_int, offset, z_int])
+            
+            # Now, figure out if we keep that intersection
+            # If p2 is inside, that means we are crossing from out->in
+            # => intersection is in. Similarly, if p1 is inside, we cross from in->out
+            # => intersection might be the last point in new_fiber for that segment.
+            # In typical "cut" logic, we always include the boundary intersection 
+            # if p1 or p2 is inside:
+            new_fiber.append(intersection)
+
+        # If p2 is inside, add it
+        if in2:
+            new_fiber.append(p2)
+
+    # Handle the very last point if not processed
+    # The loop uses i in [0..n-2], so the last point is p2 at i=n-2
+    # but we might not have added fiber[-1] if it wasn't inside or 
+    # if the second to last segment didn't keep it. 
+    # Let's do a simpler approach: check if last point is inside 
+    # and not already appended
+    last_pt = fiber[-1]
+    if inside(last_pt[1]):
+        if len(new_fiber) == 0 or not np.allclose(new_fiber[-1], last_pt):
+            new_fiber.append(last_pt)
+
+    return np.array(new_fiber)
+
+def plot_3d_curves(fiber1, fiber2, title="Cut + Intersection Helix"):
+    """
+    Plot two 3D curves on a single figure.
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(fiber1[:,0], fiber1[:,1], fiber1[:,2], marker = 'o', label='Fiber 1')
+    ax.plot(fiber2[:,0], fiber2[:,1], fiber2[:,2], marker = '*', label='Fiber 2')
+    
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.legend()
+    ax.set_title(title)
+    plt.show()
+
+def save_helix_points(fiber, filename):
+    """
+    Save (x, y, z) of a single helix fiber to CSV.
+    """
+    header = ['Index', 'X', 'Y', 'Z']
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        for i, (x, y, z) in enumerate(fiber):
+            writer.writerow([i, x, y, z])
+
+def cut_by_y_plane_offset(fiber, offset):
+    """
+    Keep only points on one side of y=offset:
+      - If offset > 0 => keep y > offset
+      - If offset < 0  => keep y <= offset
+    """
+    if offset >= 0:
+        mask = (fiber[:,1] >= offset)
+    else:
+        mask = (fiber[:,1] <= offset)
+    return fiber[mask]
+
+def subdivide_in_plane_segments(fiber, offset, n_subdiv=5):
+    """
+    After cutting, we might find consecutive points (p1->p2) 
+    both on the plane y=offset. If so, we subdivide that segment 
+    into 'n_subdiv' pieces (including endpoints), inserting 
+    intermediate points along the line from p1->p2.
+    """
+    new_fiber = []
+    n = len(fiber)
+    if n < 2:
+        return fiber
+
+    for i in range(n - 1):
+        p1 = fiber[i]
+        p2 = fiber[i+1]
+        new_fiber.append(p1)  # always keep p1
+
+        # Check if p1, p2 both exactly on the plane
+        # i.e. y1==offset and y2==offset
+        # (use a small tolerance if floating precision is a concern)
+        eps = 1e-12
+        if abs(p1[1] - offset) < eps and abs(p2[1] - offset) < eps:
+            # subdivide in-plane segment
+            for k in range(1, n_subdiv):
+                alpha = k / n_subdiv
+                x_int = p1[0] + alpha*(p2[0] - p1[0])
+                y_int = offset  # exactly in plane
+                z_int = p1[2] + alpha*(p2[2] - p1[2])
+                new_fiber.append([x_int, y_int, z_int])
+
+    new_fiber.append(fiber[-1])
+    return np.array(new_fiber)
+
+def main():
+    # Example usage
+    H = 30.0
+    R = 11.0
+    alpha = 90 - 85.5  # i.e. 4.5 deg
+    pitch = 4
+    offset = -2.0  # y=2 => keep y >= 2
+
+    # 1) Generate the original double helix
+    fiber1, fiber2 = generate_inverted_truncated_conical_double_helix(
+        H=H, 
+        R=R, 
+        alpha=alpha, 
+        pitch=pitch, 
+        num_points=200,
+        no_chamber=2,
+        offset= 1,
+        plot=True,
+        save_data=False
+    )
+    print(fiber1.shape)
+
+if __name__ == "__main__":
+    main()

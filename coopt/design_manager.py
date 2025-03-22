@@ -110,7 +110,8 @@ class DesignManager(VecEnvWrapper):
         for i in self.cut_off_list:
             self.last_design_update[i] = 0
             # space_idx = list(self.design_space.keys())[i]
-            self.design_optimizer[i] = RobotDesignOptimizer(self.design_space[i],
+            self.design_optimizer[i] = RobotDesignOptimizer(i,
+                                                            self.design_space[i],
                                                             self.ent_decay_start, 
                                                             self.ent_decay_end)
         self.ckptr = Checkpointer(os.path.join(logdir, 'ckpts_design_params'))

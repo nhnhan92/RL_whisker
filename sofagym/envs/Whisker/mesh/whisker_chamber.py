@@ -35,8 +35,8 @@ def mesh_generator(no_chamber = 2,
     gmsh.model.mesh.generate(2)
 
     if no_chamber > 1:
-        surfaces_removed = {1: [2,3],  #idx of this dict is the idx of cavity remained from removing
-                        2: [1,4]}
+        surfaces_removed = {1: [2,3,6],  #idx of this dict is the idx of cavity remained from removing
+                        2: [1,4,5]}
 
         for i in surfaces_removed[cavity_idx]:
             gmsh.model.removeEntities([(2, i)], recursive=True)
@@ -63,7 +63,7 @@ if __name__ == '__main__':
                                     mesh_size = 4,
                                     cavity_idx = l+1)
         
-    # mesh_generator(no_chamber = 1,
+    # mesh_generator(no_chamber = 2,
     #                 chamber_bot_radius = 10,
     #                 cone_angle = 85.5,
     #                 chamber_height = 24,

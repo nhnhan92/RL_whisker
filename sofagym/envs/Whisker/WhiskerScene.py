@@ -54,7 +54,7 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
             name="strain_measuring_Box",
             translation=[0,gauge_y_offset,gauge_z_offset],
             eulerRotation=eulerRotation,
-            scale=[6, 4, 8],
+            scale=[8, 6, 10],
             drawBoxes=1,
         )
         strain_measuring_box.tetrahedra.value = self.Whisker.MechanicalModel.container.tetrahedra.value
@@ -100,22 +100,6 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
     __attachToSkin(self)
     return self
 
-
-def add_goal_node(root):
-    goal = root.addChild("Goal")
-    goal_mo = goal.addObject('MechanicalObject', name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
-                             showColor="green", position=[0.0, 0.0, 100.0])
-
-    return goal_mo
-
-def add_rand_node(root):
-    goal = root.addChild("test")
-    goal.addObject('EulerImplicitSolver', name='odesolver', rayleighStiffness='0.1', rayleighMass='0.1')
-    goal.addObject('SparseLDLSolver', name='preconditioner', template="CompressedRowSparseMatrixMat3x3d")
-    goal.addObject('MechanicalObject', template="Vec3d", name='GoalMO', showObject=True, drawMode="1", showObjectScale=3,
-                             showColor="green", position = [20, 0, 0])
-    goal.addObject('UniformMass', name="m2",totalMass='0.00012')
-    # goal.addObject('OscillatorConstraint', template="Vec3d", name="OscillatingConstraint", oscillators="0 25 0 0 20 0 0 2 10")
     
 precontact_distance = 1+2+3# 1:precontact plus radius of the pole, 1: contactdistance, 3: pole radius. 
 pole_init_pos = contact_pos[0]
@@ -125,9 +109,10 @@ pole_simu_pos = [pole_init_pos[0]+precontact_distance,
 def createScene(root, config={"source": [0, 0, 160],
                                 "target": [0, 1, 0],
                               "goalPos": [0, 0, 100],
-                                "init_states": [70,0,0,0],
+                                "init_states": [0,0,0,0],
                                 "zFar":4000,
-                                "design_params": [60, 2,20,2,0.01,0.02]
+                                "design_params": [100, 1,20,3,0.2,0.05],
+                                "scale_factor": 10
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
     from splib3.animation import animate
@@ -205,7 +190,7 @@ def createScene(root, config={"source": [0, 0, 160],
                      "pressure_1": float(config["design_params"][4]),
                     "pressure_2": float(config["design_params"][5])
                     }
-    init_whisker_angle = 70
+    init_whisker_angle = 65
     whisker_rot = [init_whisker_angle,0,0]
     a = Whisker_node(design_params=design_params,
                     translation=[0,0,0],
@@ -218,7 +203,7 @@ def createScene(root, config={"source": [0, 0, 160],
     amp = [0,5,0,0,0,0]
     plane_offset = m.cos(init_whisker_angle*m.pi/180)*(12-design_params['body_length']/m.tan(85.5*m.pi/180))
     oscilater_plane_trans = [0,
-                             -m.sin(init_whisker_angle*m.pi/180)*design_params['body_length'] - contactDistance + plane_offset+0.5,
+                             -m.sin(init_whisker_angle*m.pi/180)*design_params['body_length'] - contactDistance + plane_offset+2,
                              0]
     
     oscilater_plane_rot = [90,90,0]
@@ -230,7 +215,7 @@ def createScene(root, config={"source": [0, 0, 160],
 
     # SofaGym Env Components
     root.addObject(StateInitializer(name="StateInitializer", rootNode=root, init_states=config['init_states']))
-    root.addObject(rewardShaper(name="Reward", rootNode=root, goalPos=config['goalPos']))
+    root.addObject(rewardShaper(name="Reward", rootNode=root, scale_factor=config['scale_factor']))
     root.addObject(applyAction(name="applyAction", root=root,config = config))
     # setData(whisker_model.Articulation_system.ServoMotor.Articulation.ServoWheel.dofs, showObject=1, showObjectScale=20,
     # drawMode=2, showColor=[1., 1., 0., 1.])
