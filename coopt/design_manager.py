@@ -10,22 +10,28 @@ import os
 from dl.ckptr import Checkpointer
 from coopt.discrete_robot_optimizer import DiscreteDesignOptimizer
 from coopt.robot_optimizer import RobotDesignOptimizer
-
+from itertools import product
 class DesignLogger:
     """Records and keeps the history of designs and refwards."""
 
-    def __init__(self, maxlen,cut_off_list):
+    def __init__(self, maxlen,cut_off_list,discrete_combinations):
         self.maxlen = maxlen
+        self.discrete_combinations = discrete_combinations
         self.designs = {}
         self.rewards = {}
         self.count = {}
         self.data = {}
+        self.average_discrete_design = {}
         for i in cut_off_list:
             self.designs[i] = deque([], maxlen=maxlen)
             self.rewards[i] = deque([], maxlen=maxlen)
             self.count[i] = 0
             self.data[i] = []
+            self.average_discrete_design[i] = {}
+            for j in range(len(self.discrete_combinations)):
+                self.average_discrete_design[i][j] = 0
             wandb.define_metric(f"designs_{i}", step_metric="train/design_count")
+
         wandb.define_metric("train/design_count", step_metric="train/step")
         self.columns = ['count', 'design', 'reward']
         
@@ -36,10 +42,18 @@ class DesignLogger:
             self.designs[body_length].append(design)
             self.rewards[body_length].append(reward)
             self.count[body_length] += 1
-            
         else:
             raise ValueError(f"body_length value {body_length} not found in {self.designs}")
-        if self.count[body_length] % 3 == 0:  
+        
+        d_val = (design['no_chamber'], design['chamber_length'], design['thickness'])
+        idx = self.discrete_combinations.index(d_val)
+        if self.average_discrete_design[body_length][idx] != 0:
+            self.average_discrete_design[body_length][idx] += reward
+            self.average_discrete_design[body_length][idx] = self.average_discrete_design[body_length][idx]/2
+        else:
+            self.average_discrete_design[body_length][idx] = reward
+        
+        if self.count[body_length] % 5 == 0:  
             # Check the type of design.
             if isinstance(design, dict):
                 # Convert dictionary into a string: "key1=value1, key2=value2, ..."
@@ -49,15 +63,24 @@ class DesignLogger:
             else:
                 design_str = str(int(design))
             self.data[body_length].append([self.count[body_length], design_str, float(reward)])
-
-        if self.count[body_length] % 3 == 0:
+        if self.count[body_length] % 5 == 0:
             table = wandb.Table(data=self.data[body_length], columns=self.columns)
             wandb.log({f"designs_{body_length}": table, "train/design_count": self.count[body_length]})
     def state_dict(self):
+        sums = {}
+        for body_length, inner in self.average_discrete_design.items():
+            for key, value in inner.items():
+                # Here, key is the "second item" (e.g., '1', '2', '3').
+                sums[key] = sums.get(key, 0) + value
+        max_sum = max(sums.values())
+        min_sum = min(sums.values())
+        range = max_sum - min_sum
+        extra_rewards = {k: (v - min_sum) / range for k, v in sums.items()}
         return {
             'designs': list(self.designs),
             'rewards': list(self.rewards),
-            'count': self.count
+            'count': self.count,
+            'extra_rewards': extra_rewards
         }
 
     def load_state_dict(self, state_dict):
@@ -70,7 +93,21 @@ class DesignLogger:
 
     def get_design_count(self):
         return self.count
+# --- LinearSchedule Class (as before) ---
+class LinearSchedule():
+    def __init__(self, start_val, end_val, start_step, end_step):
+        self.sv = start_val
+        self.ev = end_val
+        self.ss = start_step
+        self.es = end_step
 
+    def __call__(self, t):
+        if t <= self.ss:
+            return self.sv
+        if t >= self.es:
+            return self.ev
+        frac = (t - self.ss) / (self.es - self.ss)
+        return self.ev * frac + self.sv * (1 - frac)
 
 class DesignManager(VecEnvWrapper):
     """Environment wrapper to handle design sampling/logging.
@@ -107,6 +144,10 @@ class DesignManager(VecEnvWrapper):
         logdir = './test_coopt'
         self.design_optimizer = {}
         self.last_design_update = {}
+        self.design_avg_extra_reward = LinearSchedule(0, 1, ent_decay_start, ent_decay_end)
+        self.discrete_combinations = list(product(self.design_space[100]['no_chamber'], 
+                                                  self.design_space[100]['chamber_length'],
+                                                  self.design_space[100]['thickness']))
         for i in self.cut_off_list:
             self.last_design_update[i] = 0
             # space_idx = list(self.design_space.keys())[i]
@@ -129,7 +170,8 @@ class DesignManager(VecEnvWrapper):
     def configure_design_manager(self, steps_per_design, maxlen):
         self.steps_per_design = steps_per_design
         self.logger = DesignLogger(maxlen = maxlen,
-                                   cut_off_list=self.cut_off_list)
+                                   cut_off_list=self.cut_off_list,
+                                   discrete_combinations = self.discrete_combinations)
 
     def get_designs_and_rewards(self, n,cut_off_length):
         return self.logger.get_designs_and_rewards(n,cut_off_length)
@@ -181,15 +223,39 @@ class DesignManager(VecEnvWrapper):
             self.init_scene()
         return self.venv.reset()
 
+    # def trigger_dist_update(self):
+    #     # Update the design distribution
+    #     design_count = self.get_design_count()
+    #     print("Design Count =", design_count)
+    #     for i in self.cut_off_list:
+    #         designs_since_update = design_count[i] - self.last_design_update[i]
+    #         if designs_since_update >= self.update_period:
+    #             designs, rewards = self.get_designs_and_rewards(self.batch_size,i)
+    #             print("DESIGNS USED FOR UPDATE", designs)
+    #             self.design_optimizer[i].update(designs, rewards,
+    #                                         self.t)
+    #             self.design_optimizer[i].log(self.t)
+    #             self.last_design_update[i] = design_count[i]
+
     def trigger_dist_update(self):
         # Update the design distribution
         design_count = self.get_design_count()
         print("Design Count =", design_count)
+        extra_reward_rate = np.zeros(len(self.discrete_combinations))
+        state_dict = self.state_dict()
+        extra_rewards = state_dict['extra_rewards']
+        # print(extra_rewards)
+        base_extra_reward = self.design_avg_extra_reward(self.t)
+        print(f'base_extra_reward = {base_extra_reward}')
         for i in self.cut_off_list:
             designs_since_update = design_count[i] - self.last_design_update[i]
             if designs_since_update >= self.update_period:
                 designs, rewards = self.get_designs_and_rewards(self.batch_size,i)
-                print("DESIGNS USED FOR UPDATE", designs)
+                for j, (sample,reward) in enumerate(zip(designs, rewards)):
+                    d_val = (sample['no_chamber'], sample['chamber_length'], sample['thickness'])
+                    idx = self.discrete_combinations.index(d_val)
+                    rewards[j] += base_extra_reward * extra_rewards[idx]
+                    print(f'extra_rewards[{idx}] = {extra_rewards[idx]}')
                 self.design_optimizer[i].update(designs, rewards,
                                             self.t)
                 self.design_optimizer[i].log(self.t)
@@ -217,7 +283,7 @@ class DesignManager(VecEnvWrapper):
             dones[:] = True  # Force reset after a design interval
         return obs, rewards, dones, infos
     def state_dict(self):
-        return {'designs': self.logger.state_dict()}
+        return self.logger.state_dict()
 
     def load_state_dict(self, state_dict):
         self.logger.load_state_dict(state_dict['designs'])

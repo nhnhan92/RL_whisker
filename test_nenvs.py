@@ -31,11 +31,11 @@ if __name__ == '__main__':
     total_steps = 1000
     n_steps = 20  # Total number of training steps for each sampling time
     batch_size = 5  # Batch size for design updates
-    update_period = 5  # Number of designs before each update
+    update_period = 3  # Number of designs before each update
     nenv = 5  # Number of parallel environments
     seed = 42  # Random seed for reproducibility
     no_int = 5
-    ent_decay_start = 200
+    ent_decay_start = 20
     ent_decay_end = 1000
     no_chamber = torch.tensor([1,2])
     pressure_range = torch.tensor([0.00001,0.2])

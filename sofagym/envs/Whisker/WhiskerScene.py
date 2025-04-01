@@ -43,18 +43,18 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
             scale=scale,
             drawBoxes=1,
         )
-        cross_section_radius = 12-strain_gauge[0]/m.tan(85.5*m.pi/180)+0.5
+        cross_section_radius = 12-strain_gauge[0]/m.tan(85.5*m.pi/180)
         nominal_offset = m.sqrt(cross_section_radius**2 + strain_gauge[0]**2)
         alpha = rotation[0]*m.pi/180 - m.atan(cross_section_radius/strain_gauge[0])
         gauge_y_offset = -nominal_offset*m.cos(alpha)
-        gauge_z_offset = -nominal_offset*m.sin(alpha)
+        gauge_z_offset = -nominal_offset*m.sin(alpha)-1.25
         strain_measuring_box = addOrientedBoxRoi(
             self,
             position=[j for j in deformableObject.dofs.rest_position.value],
             name="strain_measuring_Box",
             translation=[0,gauge_y_offset,gauge_z_offset],
             eulerRotation=eulerRotation,
-            scale=[8, 6, 10],
+            scale=[8, 2, 10],
             drawBoxes=1,
         )
         strain_measuring_box.tetrahedra.value = self.Whisker.MechanicalModel.container.tetrahedra.value
@@ -111,7 +111,7 @@ def createScene(root, config={"source": [0, 0, 160],
                               "goalPos": [0, 0, 100],
                                 "init_states": [0,0,0,0],
                                 "zFar":4000,
-                                "design_params": [100, 1,20,3,0.2,0.05],
+                                "design_params": [90, 2,30,2,0,0.0],
                                 "scale_factor": 10
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
@@ -169,7 +169,7 @@ def createScene(root, config={"source": [0, 0, 160],
     root.addObject('BruteForceBroadPhase')
     root.addObject('BVHNarrowPhase')
     root.addObject('FreeMotionAnimationLoop')
-    root.addObject('RuleBasedContactManager', responseParams="mu="+str(0.1), name='Response',
+    root.addObject('RuleBasedContactManager', responseParams="mu="+str(0.00001), name='Response',
                            response='FrictionContactConstraint')
     root.addObject('GenericConstraintSolver', name='GCS', tolerance=1e-4, maxIterations=1000,
                        computeConstraintForces=1)
@@ -190,7 +190,7 @@ def createScene(root, config={"source": [0, 0, 160],
                      "pressure_1": float(config["design_params"][4]),
                     "pressure_2": float(config["design_params"][5])
                     }
-    init_whisker_angle = 65
+    init_whisker_angle = 50
     whisker_rot = [init_whisker_angle,0,0]
     a = Whisker_node(design_params=design_params,
                     translation=[0,0,0],
@@ -203,7 +203,7 @@ def createScene(root, config={"source": [0, 0, 160],
     amp = [0,5,0,0,0,0]
     plane_offset = m.cos(init_whisker_angle*m.pi/180)*(12-design_params['body_length']/m.tan(85.5*m.pi/180))
     oscilater_plane_trans = [0,
-                             -m.sin(init_whisker_angle*m.pi/180)*design_params['body_length'] - contactDistance + plane_offset+2,
+                             -m.sin(init_whisker_angle*m.pi/180)*design_params['body_length'] - plane_offset,
                              0]
     
     oscilater_plane_rot = [90,90,0]

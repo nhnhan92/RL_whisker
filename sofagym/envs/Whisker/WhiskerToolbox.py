@@ -69,7 +69,6 @@ class StateInitializer(Sofa.Core.Controller):
         self.fem = self.whisker.getObject("FEM")
         self.measured_ele = self.fem.strainmeasuringelements.value
         self.chambers = self.whisker.getObject("Chamber")
-        self.no_chamber = self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.no_chamber.value
         ### Articulation system node
         self.arti_sys = self.rootNode.Whisker_node.getChild("Articulation_system")
         self.servo_arti = self.arti_sys.ServoMotor.Articulation.dofs
@@ -86,7 +85,7 @@ class StateInitializer(Sofa.Core.Controller):
     def init_state(self, init_states):
         self.init_states = init_states
         print("init_states = ", self.init_states)
-        rot,strain,pressure1,pressure2 = self.init_states
+        rot,_,_,_,_,_,_,_ = self.init_states
         with self.arti_sys.angleIn.writeable() as arti_input:
             arti_input[1] = rot
         
@@ -140,8 +139,7 @@ class rewardShaper(Sofa.Core.Controller):
         self.whisker = self.rootNode.Whisker_node.Whisker.getChild("MechanicalModel")
         self.mecawhisker = self.whisker.getObject("dofs")
         self.fem = self.whisker.getObject("FEM")
-        self.fem.strainmeasuringelements.value = [0,0,0,0,0]
-        self.whisker_topo = self.whisker.getObject("loader")
+        self.whisker_container = self.whisker.getObject("container")
         self.current_strain = []
         self.time = 0
         self.rootNode.Whisker_node.Whisker.addData(name='force', type='vector<float>', help='Reaction Force',
@@ -150,11 +148,16 @@ class rewardShaper(Sofa.Core.Controller):
         
         ### Strain BOXROI
         self.strain_box = self.rootNode.Whisker_node.strain_measuring_Box
-        self.measured_elemennt = self.strain_box.tetrahedronIndices.value
+        self.indices_in_box = self.strain_box.indices.value
+        self.tetrahedra_list = self.whisker_container.tetrahedra.value
+        self.measured_elemennt = []
+        for i, tetra in enumerate(self.tetrahedra_list):
+            common_nodes = set(tetra).intersection(self.indices_in_box)
+            if len(common_nodes) >= 3:
+                self.measured_elemennt.append(i)
         self.fem.strainmeasuringelements.value = self.measured_elemennt
-        self.ele_indices = self.strain_box.tetrahedraInROI.value
-        self.point_idx = self.strain_box.indices.value
-        self.point_pos = self.strain_box.pointsInROI.value
+        # print(f"self.measured_elemennt = {self.measured_elemennt}")
+        self.ele_indices = [self.tetrahedra_list[i] for i in self.measured_elemennt]
         self.volume = np.array([1])
         ### Articulation system node
         self.arti_sys = self.rootNode.Whisker_node.getChild("Articulation_system")
@@ -183,29 +186,99 @@ class rewardShaper(Sofa.Core.Controller):
         # Compute volume
         volume = abs(det_J) / 6.0
         return volume
-    def onAnimateBeginEvent(self, event):
+    def compute_strain(self,alpha,node0, node1, node2, node3,strain_local):
+        E_local = np.zeros((3,3), dtype=float)
+        E_local[0,0] = strain_local[0]  # E_xx
+        E_local[1,1] = strain_local[1]  # E_yy
+        E_local[2,2] = strain_local[2]  # E_zz
 
-        self.angleIn_prev = self.arti_sys.angleIn.value[1]
+        # off-diagonal: yz = E_local_voigt[3], xz = E_local_voigt[4], xy = E_local_voigt[5]
+        E_local[1,2] = strain_local[3]  # yz
+        E_local[2,1] = strain_local[3]
         
+        E_local[0,2] = strain_local[4]  # xz
+        E_local[2,0] = strain_local[4]
+        
+        E_local[0,1] = strain_local[5]  # xy
+        E_local[1,0] = strain_local[5]
+        # 1) Build local->global rotation R
+        # Vectors in global coords
+        x_axis = node1 - node0
+        x_axis /= np.linalg.norm(x_axis)
+
+        w = np.cross(x_axis, (node2 - node0))
+        z_axis = w / np.linalg.norm(w)
+
+        y_axis = np.cross(z_axis, x_axis)
+
+        # local->global rotation matrix (3x3)
+        R_local_to_global = np.column_stack((x_axis, y_axis, z_axis))
+
+        # 2) Build the global direction n_global:
+        #    "Z-axis rotated by alpha around X-axis"
+        alpha = np.radians(alpha)
+        # Rotation matrix around global X:
+        R_x_alpha = np.array([
+            [1,           0,            0],
+            [0, np.cos(alpha), -np.sin(alpha)],
+            [0, np.sin(alpha),  np.cos(alpha)]
+        ], dtype=float)
+
+        # The original global Z is (0,0,1):
+        z_global = np.array([0.0, 0.0, 1.0], dtype=float)
+        n_global = R_x_alpha @ z_global  # shape (3,)
+        # -------------------------------------------------------------------------
+        # 3) Convert n_global to local coords:
+        #    n_local = R_local_to_global^T * n_global
+        #    because v_local = R^T * v_global  (if R is local->global)
+        # -------------------------------------------------------------------------
+        n_local = R_local_to_global.T @ n_global
+        length = np.linalg.norm(n_local)
+        if length > 1e-12:
+            n_local /= length
+        # -------------------------------------------------------------------------
+        # 4) The normal strain along n_local in E_local is:
+        #    ε = n_local^T * E_local * n_local
+        # -------------------------------------------------------------------------
+        # E_local is a 3x3 matrix in local coords
+        # n_local is shape (3,). So we do standard matrix multiply
+        nE = E_local @ n_local         # shape (3,) -> E_local * n_local
+        normal_strain = n_local.dot(nE)  # = n_local^T * (E_local * n_local)
+        return normal_strain
+    def onAnimateBeginEvent(self, event):
+        self.angleIn_prev = self.arti_sys.angleIn.value[1]
+        self.vonMises_stress = self.fem.vonMisesPerElement.value        
         self.time += 1
         if self.time <= 1:
-            self.volume = np.array([])
             
-            # self.mecawhisker.position.value[self.ele_indices[0]]
-            for i,j in zip(self.measured_elemennt,self.ele_indices):
-                self.volume = np.append(self.volume,self.tetrahedron_volume(self.mecawhisker.position.value[j[0]],
-                                                        self.mecawhisker.position.value[j[1]],
-                                                        self.mecawhisker.position.value[j[2]],
-                                                        self.mecawhisker.position.value[j[3]]))
+                
             self.original_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
             # self.arti_sys.angleIn[1] = -10*m.pi/180
             # self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value[0] = 0.05
             # self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity1.pressure_input.value[0] = 0.05 # real pressure is input_value / dt [kPa]
-        self.strain_zz = np.array([item[0] for item in self.fem.totalstrain.value])
+        self.strain_zz = np.array([])
+        self.volume = np.array([])
+        for idx,(i,j) in enumerate(zip(self.measured_elemennt,self.ele_indices)):
+            strain_converted = self.compute_strain(0,self.mecawhisker.position.value[j[0]],
+                                                        self.mecawhisker.position.value[j[1]],
+                                                        self.mecawhisker.position.value[j[2]],
+                                                        self.mecawhisker.position.value[j[3]],self.fem.totalstrain.value[idx])
+            if strain_converted > 0:
+                self.strain_zz = np.append(self.strain_zz,strain_converted)
+
+                self.volume = np.append(self.volume,self.tetrahedron_volume(self.mecawhisker.position.value[j[0]],
+                                                        self.mecawhisker.position.value[j[1]],
+                                                    self.mecawhisker.position.value[j[2]],
+                                                    self.mecawhisker.position.value[j[3]]))
+        
+        # print(f"strain_zz = {self.strain_zz}")
+        # stress = [self.vonMises_stress[i] for i in self.measured_elemennt]
+        # print(f"stress = {sum(stress)}")
         average_strain = np.sum(self.strain_zz*self.volume)/np.sum(self.volume)
         self.fem.ave_strain.value = average_strain
+        # print(f"Strain max = {max(self.strain_zz)}")
+        # print(f"Strain ave = {average_strain:.5f}")
     def onAnimateEndEvent(self, event):
-        
         self.initiated_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
         if self.time <= 1:
             self.arti_sys.angleIn[0] = self.original_min_pos - self.initiated_min_pos               
@@ -241,7 +314,6 @@ class rewardShaper(Sofa.Core.Controller):
         number_of_valid_constraint = sum(1 for x in forcesNorm if x != 0)
         if self.time <=1:
             self.force_by_initiated_pressure = force_value
-
         if number_of_valid_constraint <= 2:
             self.force_value = [0 for _ in range(len(force_value))]
         else:
@@ -269,7 +341,7 @@ class rewardShaper(Sofa.Core.Controller):
             # print(f"rot_angle_penalty = {rot_angle_penalty} => base_reward_force = {base_reward_angle}")
             self.reward = np.maximum(0,base_reward_force + base_reward_angle)
 
-        print("reward = ", self.reward)
+        # print("reward = ", self.reward)
         return self.reward, self.cost
 
     def update(self,goal=None):
@@ -356,21 +428,6 @@ def action_to_command(root,action,nb_step):
 
 def startCmd_Whisker(rootNode, whisker,incr, duration):
     """Initialize the command.
-
-    Parameters:
-    ----------
-        rootNode: <Sofa.Core>
-            The scene.
-        fingers: list
-            The fingers.
-        rotation, pressure, displacement: float
-            The elements of the commande.
-        duration: float
-            Duration of the animation.
-
-    Returns:
-    -------
-        None.
     """
 
     # Definition of the elements of the animation
@@ -388,25 +445,12 @@ def startCmd_Whisker(rootNode, whisker,incr, duration):
 
 
 def getState(root):
-    """Compute the state of the environment/agent.
 
-    Note:
-    ----
-        The state is normalized.
-
-    Parameters:
-    ----------
-        rootNode: <Sofa.Core>
-            The scene.
-
-    Returns:
-    -------
-        State: list of float
-            The state of the environment/agent.
-    """
     chamber_node = root.Whisker_node.Whisker.MechanicalModel.Chamber
-    no_chamber = root.Whisker_node.Whisker.MechanicalModel.Chamber.no_chamber.value
-    
+    body_length = root.Whisker_node.Whisker.body_length.value
+    no_chamber = root.Whisker_node.Whisker.no_chamber.value
+    chamber_length = root.Whisker_node.Whisker.chamber_length.value
+    thickness = root.Whisker_node.Whisker.thickness.value
     pressure = []
     for i in range(2):
         if i <= no_chamber-1:
@@ -417,90 +461,86 @@ def getState(root):
     rot_angle = root.Whisker_node.Articulation_system.angleIn.value[1].tolist()
     strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.ave_strain.value
     
-    state = [rot_angle] + [strain_zz] + pressure
+    state = [rot_angle] + [strain_zz] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
     # print("State = ", state)
     return state
 
 
 def getPos(root):
-    """Return the position of the mechanical object of interest.
-
-    Parameters:
-    ----------
-        root: <Sofa root>
-            The root of the scene.
-
-    Returns:
-    -------
-        The position(s) of the object(s) of the scene.
-    """
-
+    no_chamber = root.Whisker_node.Whisker.no_chamber.value
     whisker_pos = root.Whisker_node.Whisker.MechanicalModel.dofs.position.value.tolist()
     deformable_pos = root.Whisker_node.RigidifiedBase.DeformableParts.dofs.position.value.tolist()
     rigid_pos = root.Whisker_node.RigidifiedBase.RigidParts.dofs.position.value.tolist()
-    
-    # fiber1_right_pos = root.Whisker_node.Whisker.MechanicalModel.fiber.fiber1_right.dofs.position.value.tolist()
-    # fiber1_left_pos = root.Whisker_node.Whisker.MechanicalModel.fiber.fiber1_left.dofs.position.value.tolist()
-    # fiber2_right_pos = root.Whisker_node.Whisker.MechanicalModel.fiber.fiber2_right.dofs.position.value.tolist()
-    # fiber2_left_pos = root.Whisker_node.Whisker.MechanicalModel.fiber.fiber2_right.dofs.position.value.tolist()
-
-    # arm_pos = root.Whisker_node.Articulation_system.ServoArm.dofs.position.value.tolist()
     arti_pos = root.Whisker_node.Articulation_system.ServoMotor.Articulation.dofs.rest_position.value.tolist()
     body_pos = root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value.tolist()
     
-    return [
-            whisker_pos,
-            deformable_pos,
-            rigid_pos,
-            # fiber1_right_pos,
-            # fiber1_left_pos,
-            # fiber2_right_pos,
-            # fiber2_left_pos,
-            # arm_pos,
-            arti_pos,
-            body_pos, 
-            ]
-
-def setPos(root, pos):
-    """Set the position of the mechanical object of interest.
-
-    Parameters:
-    ----------
-        root: <Sofa root>
-            The root of the scene.
-        pos: list
-            The position(s) of the object(s) of the scene.
-
-    Returns:
-    -------
-        None.
-
-    Note:
-    ----
-        Don't forget to init the new value of the position.
-
-    """
-    [
-    whisker_pos,
-     deformable_pos,
-     rigid_pos,
-    # fiber1_right_pos,
-    # fiber1_left_pos,
-    # fiber2_right_pos,
-    # fiber2_left_pos,
-    #  arm_pos,
-     arti_pos,
-     body_pos,
-    ] = pos
-    root.Whisker_node.Whisker.MechanicalModel.dofs.position.value = np.array(whisker_pos)
-    root.Whisker_node.RigidifiedBase.DeformableParts.dofs.position.value = np.array(deformable_pos)
-    root.Whisker_node.RigidifiedBase.RigidParts.dofs.position.value = np.array(rigid_pos)
+    if no_chamber == 1:
+        chamber1_fiber1 = root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber1.dofs.position.value.tolist()
+        chamber1_fiber2 = root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber2.dofs.position.value.tolist()     
     
-    # root.Whisker_node.Whisker.MechanicalModel.fiber.fiber1_right.dofs.position.value = np.array(fiber1_right_pos)
-    # root.Whisker_node.Whisker.MechanicalModel.fiber.fiber1_left.dofs.position.value = np.array(fiber1_left_pos)
-    # root.Whisker_node.Whisker.MechanicalModel.fiber.fiber2_right.dofs.position.value = np.array(fiber2_right_pos)
-    # root.Whisker_node.Whisker.MechanicalModel.fiber.fiber2_right.dofs.position.value = np.array(fiber2_left_pos)
+        return [
+                whisker_pos,
+                deformable_pos,
+                rigid_pos,
+                chamber1_fiber1,
+                chamber1_fiber2,
+                arti_pos,
+                body_pos
+                ]
+    else:
+        chamber1_fiber1 = root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber1.dofs.position.value.tolist()
+        chamber1_fiber2 = root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber2.dofs.position.value.tolist()     
+        chamber2_fiber1 = root.Whisker_node.Whisker.MechanicalModel.fiber.chamber2_fiber1.dofs.position.value.tolist()
+        chamber2_fiber2 = root.Whisker_node.Whisker.MechanicalModel.fiber.chamber2_fiber2.dofs.position.value.tolist()         
+        return [
+                whisker_pos,
+                deformable_pos,
+                rigid_pos,
+                chamber1_fiber1,
+                chamber1_fiber2,
+                chamber2_fiber1,
+                chamber2_fiber2,
+                arti_pos,
+                body_pos 
+                ]
+def setPos(root, pos):
+    no_chamber = root.Whisker_node.Whisker.no_chamber.value
+    if no_chamber == 1:
+        [
+        whisker_pos,
+        deformable_pos,
+        rigid_pos,
+        chamber1_fiber1,
+        chamber1_fiber2,
+        arti_pos,
+        body_pos
+        ] = pos
+        root.Whisker_node.Whisker.MechanicalModel.dofs.position.value = np.array(whisker_pos)
+        root.Whisker_node.RigidifiedBase.DeformableParts.dofs.position.value = np.array(deformable_pos)
+        root.Whisker_node.RigidifiedBase.RigidParts.dofs.position.value = np.array(rigid_pos)
+        root.Whisker_node.Articulation_system.ServoMotor.Articulation.dofs.rest_position.value = np.array(arti_pos)
+        root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value = np.array(body_pos)
+        root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber1.dofs.position.value = np.array(chamber1_fiber1)
+        root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber2.dofs.position.value = np.array(chamber1_fiber2)
 
-    # root.Whisker_node.Articulation_system.ServoArm.dofs.position.value = np.array(arm_pos)
-    root.Whisker_node.Articulation_system.ServoMotor.Articulation.dofs.rest_position.value = np.array(arti_pos)
-    root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value = np.array(body_pos)
+    else:
+        [
+        whisker_pos,
+        deformable_pos,
+        rigid_pos,
+        chamber1_fiber1,
+        chamber1_fiber2,
+        chamber2_fiber1,
+        chamber2_fiber2,
+        arti_pos,
+        body_pos
+        ] = pos
+        root.Whisker_node.Whisker.MechanicalModel.dofs.position.value = np.array(whisker_pos)
+        root.Whisker_node.RigidifiedBase.DeformableParts.dofs.position.value = np.array(deformable_pos)
+        root.Whisker_node.RigidifiedBase.RigidParts.dofs.position.value = np.array(rigid_pos)
+        root.Whisker_node.Articulation_system.ServoMotor.Articulation.dofs.rest_position.value = np.array(arti_pos)
+        root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value = np.array(body_pos)
+        root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber1.dofs.position.value = np.array(chamber1_fiber1)
+        root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber2.dofs.position.value = np.array(chamber1_fiber2)
+        root.Whisker_node.Whisker.MechanicalModel.fiber.chamber2_fiber1.dofs.position.value = np.array(chamber2_fiber1)
+        root.Whisker_node.Whisker.MechanicalModel.fiber.chamber2_fiber2.dofs.position.value = np.array(chamber2_fiber2)

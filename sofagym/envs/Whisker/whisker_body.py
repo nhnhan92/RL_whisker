@@ -63,6 +63,14 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
 
     parent = Sofa.Core.Node(name)
     model = parent.addChild("MechanicalModel")
+    parent.addData(name='body_length', type='float', help='body length',
+                             value=design_params["body_length"])
+    parent.addData(name='no_chamber', type='float', help='no chamber',
+                             value=design_params["no_chamber"])
+    parent.addData(name='chamber_length', type='float', help='chamber length',
+                             value=design_params["chamber_length"])
+    parent.addData(name='thickness', type='float', help='thickness',
+                             value=design_params["thickness"])
     body_mesh_path = mesh_path + f'mesh_body/body_{design_params["no_chamber"]}chamber_{design_params["body_length"]}_{design_params["chamber_length"]}_{design_params["thickness"]}.vtk'
     # if os.path.exists(body_mesh_path):
     #     pass
@@ -87,7 +95,7 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
     model.addObject('UniformMass', totalMass='0.02')
     fem = model.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large', 
                     poissonRatio=PoissonRatio,  youngModulus=YoungsModulus, strainmeasurementstatus = 1, 
-                    strainmeasuringelements=[0])
+                    strainmeasuringelements=[0],computeVonMisesStress = 2)
     fem.addData(name='ave_strain', type='float', help='average strain',
                              value=0)
     model.addObject('BoxROI', name='smallend_Box', box=[-20, -20, design_params["body_length"]-0.5, 20, 20, design_params["body_length"]+0.5], 
@@ -111,8 +119,6 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
     # Chamber node                            #
     ##########################################
     chamber_node = model.addChild('Chamber')
-    chamber_node.addData(name='no_chamber', type='int', help='Number of chambers',
-                             value=design_params["no_chamber"])
     chamber_rot = [[-70,0,-120],[0,0,90]]
     for cavity_idx in range(design_params["no_chamber"]):
         rot_matrix = [rotation[0],rotation[1],cavity_idx*360/design_params["no_chamber"]+rotation[2]]
@@ -143,7 +149,7 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
                                                 no_chamber = design_params["no_chamber"],
                                                 offset = (-1)**(i+1) * 1)
         for fiber_idx in range (2):
-            fiber = fiber_node.addChild('fiber'+str(fiber_idx+1))
+            fiber = fiber_node.addChild(f'chamber{i+1}_fiber{str(fiber_idx+1)}')
             # fiber = parent.addChild(name+chamber[cavity_idx])
             fiber.addObject("MechanicalObject", template="Vec3", name="dofs",
                             position=fiber_dof[fiber_idx],
