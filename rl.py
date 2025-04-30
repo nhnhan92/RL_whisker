@@ -65,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument("-e", "--environment", help="Name of the environment",
                         type=str, required=True)
     parser.add_argument("-a", "--algorithm", help = "RL algorithm",
-                        type=str, required=True)
+                        type=str, required=False, default='PPO')
     parser.add_argument("-ne", "--env_num", help = "Number of parallel envs",
                         type=int, required=False, default=1)
     parser.add_argument("-fr", "--framework", help = "RL framework",
@@ -100,6 +100,7 @@ if __name__ == '__main__':
     test = args.test
     n_tests = args.num_test
     model_dir = args.model_dir
+    model_dir = "/home/nhnhan/Desktop/sofa/SofaGym/Results/whisker-v0/PPO/whisker_rl/"
     model_name = 'whisker_rl'
     logdir = './test_coopt'
     results_dir = "./Results"
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     max_episode_steps = args.max_steps  # Total number of training steps for each sampling time (episode)
     batch_size_for_distupdate = 5  # Batch size for design updates
     dist_update_period = 5  # Number of designs before each update
-    ent_decay_start = 500
+    ent_decay_start = 800
     ent_decay_end = 1000
     no_chamber = torch.tensor([1,2])
     pressure_range = torch.tensor([0.0,0.2])

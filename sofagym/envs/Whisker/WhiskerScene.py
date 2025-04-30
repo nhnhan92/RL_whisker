@@ -54,7 +54,7 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
             name="strain_measuring_Box",
             translation=[0,gauge_y_offset,gauge_z_offset],
             eulerRotation=eulerRotation,
-            scale=[8, 2, 10],
+            scale=[10, 2, 10],
             drawBoxes=1,
         )
         strain_measuring_box.tetrahedra.value = self.Whisker.MechanicalModel.container.tetrahedra.value
@@ -111,7 +111,7 @@ def createScene(root, config={"source": [0, 0, 160],
                               "goalPos": [0, 0, 100],
                                 "init_states": [0,0,0,0],
                                 "zFar":4000,
-                                "design_params": [90, 2,30,2,0,0.0],
+                                "design_params": [100, 2,30,2,0,0.0],
                                 "scale_factor": 10
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)

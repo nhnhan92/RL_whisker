@@ -156,7 +156,7 @@ class rewardShaper(Sofa.Core.Controller):
             if len(common_nodes) >= 3:
                 self.measured_elemennt.append(i)
         self.fem.strainmeasuringelements.value = self.measured_elemennt
-        # print(f"self.measured_elemennt = {self.measured_elemennt}")
+        print(f"self.measured_elemennt = {len(self.measured_elemennt)}")
         self.ele_indices = [self.tetrahedra_list[i] for i in self.measured_elemennt]
         self.volume = np.array([1])
         ### Articulation system node

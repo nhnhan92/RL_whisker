@@ -29,7 +29,7 @@ if __name__ == '__main__':
     logdir = './test_coopt'
     run_id = os.path.basename(logdir)
     total_steps = 1000
-    n_steps = 20  # Total number of training steps for each sampling time
+    n_steps = 50  # Total number of training steps for each sampling time
     batch_size = 5  # Batch size for design updates
     update_period = 3  # Number of designs before each update
     nenv = 5  # Number of parallel environments
@@ -76,7 +76,7 @@ if __name__ == '__main__':
             # print(rewards)
             # print(dones)
             # print(info)
-            # env.render()
+            env.render()
             if timer == int(n_steps/nenv):
                 
                 print("Resetting")

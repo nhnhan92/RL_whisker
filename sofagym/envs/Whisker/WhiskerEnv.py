@@ -41,7 +41,7 @@ class WhiskerEnv:
                       "timer_limit": 60,
                       "timeout": 50,
                       "display_size": (800, 600),
-                      "render": 0,
+                      "render": 1,
                       "save_data": False,
                       "save_image": False,
                       "save_path": path + "/Results" + "/Whisker",

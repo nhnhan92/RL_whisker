@@ -178,12 +178,13 @@ class SB3Agent(SofaBaseAgent):
             The name of the training model. Used for loading a previously trained model.
         """
         super().__init__(env_id, seed, output_dir, max_episode_steps, n_envs)
-
         self.algo_name = algo_name
         self.algo = eval(self.algo_name)
         self.model_name = model_name
         self.params = kwargs
+        print(self.params)
         self.init_model()
+        
 
     def init_dirs(self):
         """Initialize directories for logging data andsaving the model's training checkpoints
@@ -210,7 +211,14 @@ class SB3Agent(SofaBaseAgent):
         """
         model_log = self.params.copy()
         model_params = dict(env_id=self.env_id, algo=self.algo_name, seed=self.seed,
-                            n_envs=self.n_envs, model_name=self.model_name)
+                            n_envs=self.n_envs, model_name=self.model_name,
+                            design_space = self.design_space,
+                            batch_size_for_distupdate = self.batch_size_for_distupdate,
+                            dist_update_period = self.dist_update_period,
+                            ent_decay_start = self.ent_decay_start,
+                            ent_decay_end = self.ent_decay_end,
+                            cut_off_list = self.cut_off_list,
+                            params_path = self.params_path)
         model_log['model_params'] = model_params
 
         with open(self.model_log_path, 'wb') as model_log_file:
@@ -219,19 +227,28 @@ class SB3Agent(SofaBaseAgent):
     def load_params(self):
         """Load hyperparameters and preprocesses them.
         """
-        self.design_space = self.params["design_space"]
-        self.batch_size_for_distupdate = self.params["batch_size_for_distupdate"]
-        self.dist_update_period = self.params["dist_update_period"]
-        self.ent_decay_start = self.params["ent_decay_start"]
-        self.ent_decay_end = self.params["ent_decay_end"]
-        self.cut_off_list = self.params["cut_off_list"]
+        if self.params.get('model_params') is None:
+            self.design_space = self.params["design_space"]
+            self.batch_size_for_distupdate = self.params["batch_size_for_distupdate"]
+            self.dist_update_period = self.params["dist_update_period"]
+            self.ent_decay_start = self.params["ent_decay_start"]
+            self.ent_decay_end = self.params["ent_decay_end"]
+            self.cut_off_list = self.params["cut_off_list"]
+            self.params_path = self.params["params_path"]
+        else:
+            self.design_space = self.params["model_params"]["design_space"]
+            self.batch_size_for_distupdate = self.params["model_params"]["batch_size_for_distupdate"]
+            self.dist_update_period = self.params["model_params"]["dist_update_period"]
+            self.ent_decay_start = self.params["model_params"]["ent_decay_start"]
+            self.ent_decay_end = self.params["model_params"]["ent_decay_end"]
+            self.cut_off_list = self.params["model_params"]["cut_off_list"]
+            self.params_path = self.params["model_params"]["params_path"]
 
         if not self.params:
             self.params_path = "./agents/hyperparameters/stable_baselines_params.yml"
             config = yaml.safe_load(Path(self.params_path).read_text())
             self.params = config[self.algo_name]
         else:
-            self.params_path = self.params['params_path']
             config = yaml.safe_load(Path(self.params_path).read_text())
             self.params = config[self.algo_name]
 
@@ -427,7 +444,8 @@ class SB3Agent(SofaBaseAgent):
         model_log['model_params']['loaded_timestep'] = model_timestep
 
         agent = cls(env_id, algo_name, seed, output_dir, max_episode_steps, n_envs, model_name, **model_log)
-
+        # env_id, algo_name, seed=0, output_dir="./Results", max_episode_steps=None, n_envs=1, model_name=None, **kwargs
+        # env_id, seed, output_dir, max_episode_steps, n_envs
         return agent
     
     def env_wrap(self, n_envs, normalize=True):
