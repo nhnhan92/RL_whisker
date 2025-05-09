@@ -32,12 +32,14 @@ class WhiskerEnv:
     dim_state = 8
     DEFAULT_CONFIG = {"scene": "Whisker",
                       "deterministic": True,
-                      "source": [-220, -20, 30],
-                      "target": [100, -100, -50],
+                    #   "source": [-220, -20, 30],
+                    #   "target": [100, -100, -50],
+                      "source": [-220, 160, 30],
+                      "target": [50, -100, -50],
                       "goalList": [[0, 0, 0]],
                       "goal": False,
                       "start_node": None,
-                      "scale_factor": 10,  # equivalent to simulation duration = scale_factor * dt - dt
+                      "scale_factor": 5,  # equivalent to simulation duration = scale_factor * dt - dt
                       "timer_limit": 60,
                       "timeout": 50,
                       "display_size": (800, 600),

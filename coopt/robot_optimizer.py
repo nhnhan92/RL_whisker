@@ -146,7 +146,7 @@ class RobotDesignOptimizer(nn.Module):
         self.std_target = LinearSchedule(0.1, 0.005, ent_decay_start, ent_decay_end)
         self.beta = 0.0
         self.beta_min = 0.0
-        self.beta_max = 10.0
+        self.beta_max = 1.0
         wandb.define_metric(f"design_{self.cut_off_length}/*", step_metric="train/step")
 
     def get_design_dist(self):
@@ -165,8 +165,11 @@ class RobotDesignOptimizer(nn.Module):
         dist = self.get_design_dist()  # with current beta (temporarily using beta from outer scope)
         # Compute entropy of the discrete part.
         ent = torch.distributions.Categorical(logits=dist.discrete_logits).entropy()
-        print(f"self.scores = {self.scores}")
+        # print(f"self.scores = {self.scores}")
         print(f"UPDATING ENTROPY FROM {ent} TO TARGET {target}")
+        check = 0
+        # while torch.abs(ent - target) > 0.01 and check< 10:
+            # check += 1
         while torch.abs(ent - target) > 0.01:
             if ent > target:
                 low = beta
@@ -182,6 +185,7 @@ class RobotDesignOptimizer(nn.Module):
             # print("Temporary logits = ", temp_logits)
             ent = torch.distributions.Categorical(logits=temp_logits).entropy()
             # print("CHECK ent updating = ", ent)
+            
         print("UPDATED ENTROPY = ", ent)
 
         self.beta = beta
@@ -277,6 +281,7 @@ class RobotDesignOptimizer(nn.Module):
                 self.continuous_stds.data[idx] = new_std
 
         # Adjust the temperature parameter beta based on the updated scores.
+        print(f'CURRENT BETA = {t}')
         self.set_beta(t)
 
 

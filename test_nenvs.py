@@ -31,11 +31,11 @@ if __name__ == '__main__':
     total_steps = 1000
     n_steps = 50  # Total number of training steps for each sampling time
     batch_size = 5  # Batch size for design updates
-    update_period = 3  # Number of designs before each update
-    nenv = 5  # Number of parallel environments
+    update_period = 2  # Number of designs before each update
+    nenv = 1  # Number of parallel environments
     seed = 42  # Random seed for reproducibility
     no_int = 5
-    ent_decay_start = 20
+    ent_decay_start = 50
     ent_decay_end = 1000
     no_chamber = torch.tensor([1,2])
     pressure_range = torch.tensor([0.00001,0.2])
@@ -53,7 +53,7 @@ if __name__ == '__main__':
         design_space = ins.design_space()
         env = SubprocVecEnv([make_env(env_id = env_id,
                                       rank = i, 
-                                    #   seed = 1,
+                                      seed = 1,
                                       max_episode_steps = n_steps,
                                         config={"render": 1}) for i in range(nenv)])
         env = DesignManager(env,design_space=design_space,

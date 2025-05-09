@@ -84,7 +84,7 @@ class StateInitializer(Sofa.Core.Controller):
 
     def init_state(self, init_states):
         self.init_states = init_states
-        print("init_states = ", self.init_states)
+        # print("init_states = ", self.init_states)
         rot,_,_,_,_,_,_,_ = self.init_states
         with self.arti_sys.angleIn.writeable() as arti_input:
             arti_input[1] = rot
@@ -133,7 +133,7 @@ class rewardShaper(Sofa.Core.Controller):
             self.rootNode = kwargs["rootNode"]
         self.scale_factor = kwargs["scale_factor"]
         self.cost = None
-        self.force_thres = 0.1
+        self.force_thres = kwargs["force_threshold"]
         self.dt = self.rootNode.findData("dt").value
 
         self.whisker = self.rootNode.Whisker_node.Whisker.getChild("MechanicalModel")
@@ -156,7 +156,7 @@ class rewardShaper(Sofa.Core.Controller):
             if len(common_nodes) >= 3:
                 self.measured_elemennt.append(i)
         self.fem.strainmeasuringelements.value = self.measured_elemennt
-        print(f"self.measured_elemennt = {len(self.measured_elemennt)}")
+        # print(f"self.measured_elemennt = {len(self.measured_elemennt)}")
         self.ele_indices = [self.tetrahedra_list[i] for i in self.measured_elemennt]
         self.volume = np.array([1])
         ### Articulation system node
@@ -274,11 +274,15 @@ class rewardShaper(Sofa.Core.Controller):
         # print(f"strain_zz = {self.strain_zz}")
         # stress = [self.vonMises_stress[i] for i in self.measured_elemennt]
         # print(f"stress = {sum(stress)}")
-        average_strain = np.sum(self.strain_zz*self.volume)/np.sum(self.volume)
+        if np.sum(self.volume) != 0:
+            average_strain = np.sum(self.strain_zz*self.volume)/np.sum(self.volume)
+        else:
+            average_strain = 0
         self.fem.ave_strain.value = average_strain
         # print(f"Strain max = {max(self.strain_zz)}")
         # print(f"Strain ave = {average_strain:.5f}")
     def onAnimateEndEvent(self, event):
+        # self.arti_sys.angleIn[1] = 0.6
         self.initiated_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
         if self.time <= 1:
             self.arti_sys.angleIn[0] = self.original_min_pos - self.initiated_min_pos               
@@ -321,18 +325,15 @@ class rewardShaper(Sofa.Core.Controller):
         # self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
         self.angleIn_after = self.arti_sys.angleIn.value[1]
         self.angleIn_diff = self.angleIn_after - self.angleIn_prev
+        # print(f'Force = {self.force_value}')
     def getReward(self):
-
+            
         alpha = 1
         beta = 0.5
-        self.max_incr = 10*m.pi/180
-        scale_factor_force = 10**(4)
-        scale_factor_angle = 10**(2)
-        # print(f"self.force_value[2] = {self.force_value[2]}")
-        if self.force_value[2] == 0:
+        if abs(self.force_value[1]) <= 0.001 or self.rootNode.applyAction.new_angleIn > 0.6:
             self.reward = 0
         else:
-            force_penalty = np.maximum(0, (abs(self.force_value[2]) - self.force_thres)/self.force_thres)
+            force_penalty = np.maximum(0, (abs(self.force_value[1]) - self.force_thres)/self.force_thres)
             base_reward_force = alpha - alpha*force_penalty
             # print(f"force_penalty = {force_penalty} => base_reward_force = {base_reward_force}")
             rot_angle_penalty = abs(self.angleIn_diff)*self.scale_factor/self.rootNode.applyAction.max_incr
@@ -371,13 +372,15 @@ class applyAction(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = kwargs["root"]
         self.whisker_node = self.root.Whisker_node
-        self.max_incr = 10*m.pi/180
+        self.max_incr = 30*m.pi/180
         self.arti_sys = self.root.Whisker_node.getChild("Articulation_system")
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value
-        new_angleIn = current_angleIn[1] + incr
+        self.new_angleIn = current_angleIn[1] + incr
         # with self.arti_sys.angleIn.writeable() as arti_input:
-        self.arti_sys.angleIn.value = [current_angleIn[0],new_angleIn]
+        if self.new_angleIn < 0.65:
+            self.arti_sys.angleIn.value = [current_angleIn[0],self.new_angleIn]
+            
     def _normalizedAction_to_action(self, action):
         return self.max_incr*action/2
 
@@ -407,6 +410,7 @@ def startCmd(root, action, duration):
 
     """
     incr = action_to_command(root,action[0],duration/root.dt.value + 1)
+    # print(f'action = {action[0]*100}')
     startCmd_Whisker(root, root.Whisker_node,incr, duration)
 
 def action_to_command(root,action,nb_step):

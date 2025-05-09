@@ -15,8 +15,8 @@ PPO:
   init_kwargs:
     policy: 'MlpPolicy'
     learning_rate: 0.0003
-    n_steps: 50
-    batch_size: 64
+    n_steps: 150
+    batch_size: 75
     n_epochs: 10
     gamma: 0.99
     gae_lambda: 0.95
@@ -32,12 +32,23 @@ PPO:
     policy_kwargs: "dict(net_arch=dict(pi=[512, 512, 512], vf=[512, 512, 512]), optimizer_class=th.optim.Adam, ortho_init=True, activation_fn=nn.Tanh)"
     device: "auto"
   fit_kwargs:
-    total_timesteps: 1000
-    max_episode_steps: 100
-    eval_freq: 100
-    n_eval_episodes: 1
-    save_freq: 100
-    video_length: 200
+    total_timesteps: 1000000
+    max_episode_steps: 150
+    eval_freq: 15000
+    n_eval_episodes: 5
+    save_freq: 30000
+    video_length: 150
+  model_params:
+    batch_size_for_distupdate: 10  # Batch size for design updates
+    dist_update_period: 10  # Number of designs before each update
+    ent_decay_start: 200000
+    ent_decay_end: 950000
+    no_chamber: [1,2]
+    pressure_range: [0.0,0.2]
+    cut_off_list: [60,100,5]
+    thickness: [2,4,5]
+    chamber_length: [20,40,11]
+    params_path: "/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/whisker_params.yml"
 
 
 A2C:

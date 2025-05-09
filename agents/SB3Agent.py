@@ -4,7 +4,6 @@ import time
 import warnings
 from pathlib import Path
 from typing import Any, Callable, Dict
-
 import torch as th
 import torch.nn as nn
 import yaml
@@ -24,6 +23,12 @@ from stable_baselines3.common.vec_env import (
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from coopt.design_manager import DesignManager
 from coopt.coopt_vec_env import SubprocVecEnv
+import sys
+import pathlib
+import numpy as np
+import torch
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.absolute()))
+from sofagym.envs.Whisker.design_space.design_space import whiskerdesignspace
 
 # Adapted from RL Baselines3 Zoo
 def _preprocess_schedules(hyperparams: Dict[str, Any]) -> Dict[str, Any]:
@@ -182,10 +187,8 @@ class SB3Agent(SofaBaseAgent):
         self.algo = eval(self.algo_name)
         self.model_name = model_name
         self.params = kwargs
-        print(self.params)
         self.init_model()
         
-
     def init_dirs(self):
         """Initialize directories for logging data andsaving the model's training checkpoints
         and videos.
@@ -212,13 +215,14 @@ class SB3Agent(SofaBaseAgent):
         model_log = self.params.copy()
         model_params = dict(env_id=self.env_id, algo=self.algo_name, seed=self.seed,
                             n_envs=self.n_envs, model_name=self.model_name,
-                            design_space = self.design_space,
-                            batch_size_for_distupdate = self.batch_size_for_distupdate,
+                            params_path = self.params_path,
+                            batch_size_for_distupdate=self.batch_size_for_distupdate,
                             dist_update_period = self.dist_update_period,
                             ent_decay_start = self.ent_decay_start,
-                            ent_decay_end = self.ent_decay_end,
-                            cut_off_list = self.cut_off_list,
-                            params_path = self.params_path)
+                            ent_decay_end = self.ent_decay_end,no_chamber = self.no_chamber,
+                            pressure_range = self.pressure_range, cut_off_list = self.cut_off_list,
+                            thickness = self.thickness, chamber_length = self.chamber_length
+                            )
         model_log['model_params'] = model_params
 
         with open(self.model_log_path, 'wb') as model_log_file:
@@ -227,30 +231,35 @@ class SB3Agent(SofaBaseAgent):
     def load_params(self):
         """Load hyperparameters and preprocesses them.
         """
-        if self.params.get('model_params') is None:
-            self.design_space = self.params["design_space"]
-            self.batch_size_for_distupdate = self.params["batch_size_for_distupdate"]
-            self.dist_update_period = self.params["dist_update_period"]
-            self.ent_decay_start = self.params["ent_decay_start"]
-            self.ent_decay_end = self.params["ent_decay_end"]
-            self.cut_off_list = self.params["cut_off_list"]
-            self.params_path = self.params["params_path"]
-        else:
-            self.design_space = self.params["model_params"]["design_space"]
-            self.batch_size_for_distupdate = self.params["model_params"]["batch_size_for_distupdate"]
-            self.dist_update_period = self.params["model_params"]["dist_update_period"]
-            self.ent_decay_start = self.params["model_params"]["ent_decay_start"]
-            self.ent_decay_end = self.params["model_params"]["ent_decay_end"]
-            self.cut_off_list = self.params["model_params"]["cut_off_list"]
-            self.params_path = self.params["model_params"]["params_path"]
 
         if not self.params:
             self.params_path = "./agents/hyperparameters/stable_baselines_params.yml"
             config = yaml.safe_load(Path(self.params_path).read_text())
             self.params = config[self.algo_name]
         else:
+            self.params_path = self.params['model_params']['params_path']
             config = yaml.safe_load(Path(self.params_path).read_text())
             self.params = config[self.algo_name]
+        ### Load env parameters
+        self.model_kwargs = self.params['model_params'].copy()
+        self.batch_size_for_distupdate = self.model_kwargs["batch_size_for_distupdate"]
+        self.dist_update_period = self.model_kwargs["dist_update_period"]
+        self.ent_decay_start = self.model_kwargs["ent_decay_start"]
+        self.ent_decay_end = self.model_kwargs["ent_decay_end"]
+        self.no_chamber = torch.tensor(self.model_kwargs["no_chamber"])
+        self.pressure_range = torch.tensor(self.model_kwargs["pressure_range"])
+        self.cut_off_list = np.linspace(self.model_kwargs["cut_off_list"][0],
+                                    self.model_kwargs["cut_off_list"][1],
+                                    self.model_kwargs["cut_off_list"][2],dtype=int).tolist()
+        self.thickness = torch.tensor(np.linspace(self.model_kwargs["thickness"][0],
+                                            self.model_kwargs["thickness"][1],
+                                            self.model_kwargs["thickness"][2],dtype=float))
+        self.chamber_length = torch.tensor(np.linspace(self.model_kwargs["chamber_length"][0],
+                                                self.model_kwargs["chamber_length"][1],
+                                                self.model_kwargs["chamber_length"][2],dtype=int))
+        ins = whiskerdesignspace(self.cut_off_list,self.no_chamber,
+                                 self.chamber_length,self.thickness,self.pressure_range)
+        self.design_space = ins.design_space()
 
         self.init_kwargs = self.params['init_kwargs'].copy()
         if self.init_kwargs.get('policy_kwargs'):
@@ -440,12 +449,8 @@ class SB3Agent(SofaBaseAgent):
         n_envs = model_params['n_envs']
         max_episode_steps = model_log['fit_kwargs']['max_episode_steps']
         model_name = model_params['model_name']
-
         model_log['model_params']['loaded_timestep'] = model_timestep
-
         agent = cls(env_id, algo_name, seed, output_dir, max_episode_steps, n_envs, model_name, **model_log)
-        # env_id, algo_name, seed=0, output_dir="./Results", max_episode_steps=None, n_envs=1, model_name=None, **kwargs
-        # env_id, seed, output_dir, max_episode_steps, n_envs
         return agent
     
     def env_wrap(self, n_envs, normalize=True):
@@ -460,50 +465,54 @@ class SB3Agent(SofaBaseAgent):
         
         Returns
         -------
-        vec_env : object
+        self.vec_env : object
             The wrapped training environment.
         """
-
-        vec_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps) for i in range(n_envs)])
-        self.test_env = SubprocVecEnv([make_env(self.env_id, 0, self.seed, self.max_episode_steps, config={"render": 1})])
-        vec_env = DesignManager(venv=vec_env,
+        n_envs_test = 5
+        ratio_raw_test = int(n_envs/n_envs_test)
+        self.vec_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps) for i in range(n_envs)])
+        self.test_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps, config={"render": 1})for i in range(n_envs_test)])
+        self.vec_env = DesignManager(venv=self.vec_env,
                                 design_space=self.design_space,
-                                n_steps = self.max_episode_steps,
+                                n_steps = self.init_kwargs['n_steps'],
                                 n_env = n_envs,
                                 batch_size = self.batch_size_for_distupdate,
                                 update_period = self.dist_update_period,
                                 ent_decay_start = self.ent_decay_start,
                                 ent_decay_end = self.ent_decay_end,
-                                cut_off_list = self.cut_off_list
+                                cut_off_list = self.cut_off_list,
+                                test_mode=False,
                                 )
-        self.test_env = DesignManager(venv=vec_env,
+        self.test_env = DesignManager(venv=self.test_env,
                                 design_space=self.design_space,
-                                n_steps = self.max_episode_steps,
-                                n_env = n_envs,
+                                n_steps = self.init_kwargs['n_steps'],
+                                n_env = n_envs_test,
                                 batch_size = self.batch_size_for_distupdate,
                                 update_period = self.dist_update_period,
                                 ent_decay_start = self.ent_decay_start,
                                 ent_decay_end = self.ent_decay_end,
-                                cut_off_list = self.cut_off_list
+                                cut_off_list = self.cut_off_list,
+                                test_mode=True,
+                                shared_distribution=self.vec_env.design_optimizer 
                                 )
         if normalize:
             if self.model_timestep is None:
-                vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True)
+                self.vec_env = VecNormalize(self.vec_env, norm_obs=True, norm_reward=True)
                 self.test_env = VecNormalize(self.test_env, norm_obs=True, training=False, norm_reward=False)
             else:
                 vecnormalize_path = f"{self.checkpoints_dir}/vecnormalize_{self.model_timestep}.pkl"
                 if not os.path.exists(vecnormalize_path):
                     print(Fore.RED + '[ERROR]   ' + Fore.RESET + "Model VecNormalize file does not exist")
                     exit(1)
-                vec_env = VecNormalize.load(vecnormalize_path, vec_env)
+                self.vec_env = VecNormalize.load(vecnormalize_path, self.vec_env)
                 self.test_env = VecNormalize.load(vecnormalize_path, self.test_env)
                 self.test_env.training = False
                 self.test_env.norm_reward = False
 
-        vec_env = VecMonitor(vec_env, self.log_dir)
+        self.vec_env = VecMonitor(self.vec_env, self.log_dir)
         self.test_env = VecMonitor(self.test_env, self.log_dir)
 
-        return vec_env
+        return self.vec_env
 
     def policy(self, obs, deterministic=True):
         """Perform prediction using the trained model

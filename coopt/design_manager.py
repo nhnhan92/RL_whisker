@@ -124,12 +124,14 @@ class DesignManager(VecEnvWrapper):
                  update_period = 10,
                  ent_decay_start = 1,
                  ent_decay_end = 10,
-                 cut_off_list = [5,10,15,20]):
+                 cut_off_list = [5,10,15,20],
+                 test_mode=False,
+                 shared_distribution = None):
         super().__init__(venv)
-
-        self.steps_per_EP= n_steps
+        self.test_mode = test_mode
+        # self.steps_per_EP= n_steps
         self.n_env = n_env
-        self.steps_per_design = int(self.steps_per_EP/self.n_env) # Number of evironment steps each design takes
+        self.steps_per_design = n_steps # Number of evironment steps each design takes
         self.design_count = 0
         self.batch_size = batch_size # number of designs used in each update
         self.steps = 0
@@ -148,18 +150,24 @@ class DesignManager(VecEnvWrapper):
         self.discrete_combinations = list(product(self.design_space[100]['no_chamber'], 
                                                   self.design_space[100]['chamber_length'],
                                                   self.design_space[100]['thickness']))
-        for i in self.cut_off_list:
-            self.last_design_update[i] = 0
-            # space_idx = list(self.design_space.keys())[i]
-            self.design_optimizer[i] = RobotDesignOptimizer(i,
-                                                            self.design_space[i],
-                                                            self.ent_decay_start, 
-                                                            self.ent_decay_end)
+        if not self.test_mode:
+            for i in self.cut_off_list:
+                self.last_design_update[i] = 0
+                # space_idx = list(self.design_space.keys())[i]
+                self.design_optimizer[i] = RobotDesignOptimizer(i,
+                                                                self.design_space[i],
+                                                                self.ent_decay_start, 
+                                                                self.ent_decay_end)
+        else:
+            self.design_optimizer = shared_distribution
         self.ckptr = Checkpointer(os.path.join(logdir, 'ckpts_design_params'))
-        self.configure_design_manager(self.steps_per_design,self.batch_size)
+        self.configure_design_manager(self.batch_size)
 
-    # def step_wait(self):
-    #     return self.venv.step_wait()
+    def distribution_state_reference(self):
+        shared_dist = []
+        for cut_off_length, optimizer in self.design_optimizer.items():
+            shared_dist[cut_off_length] = optimizer
+        return shared_dist
 
     def set_design_dist(self, design_dist):
         self.design_dist = design_dist
@@ -167,8 +175,7 @@ class DesignManager(VecEnvWrapper):
     def get_design_count(self):
         return self.logger.get_design_count()
 
-    def configure_design_manager(self, steps_per_design, maxlen):
-        self.steps_per_design = steps_per_design
+    def configure_design_manager(self, maxlen):
         self.logger = DesignLogger(maxlen = maxlen,
                                    cut_off_list=self.cut_off_list,
                                    discrete_combinations = self.discrete_combinations)
@@ -207,8 +214,8 @@ class DesignManager(VecEnvWrapper):
                 sample = self._sample_design(optimizer = optimizer)  # sample is expected to be a dict.
                 sample = {'body_length': cut_off_length, **sample}
                 self.designs.append(sample)
-        if len(self.designs) < self.n_env:
-            for _ in range(self.n_env - len(self.designs)):
+        for cut_off_length, optimizer in self.design_optimizer.items():
+            if len(self.designs) < self.n_env:
                 sample = self._sample_design(optimizer = optimizer)  # sample is expected to be a dict.
                 sample = {'body_length': cut_off_length, **sample}
                 self.designs.append(sample)
@@ -216,26 +223,12 @@ class DesignManager(VecEnvWrapper):
         print("designs: ", self.designs)
         self.venv.set_designs(self.designs)
         self.rewards = np.zeros(self.n_env)
-
+    
     def reset(self):
         if self.designs is None:
             print("self.designs is None")
             self.init_scene()
         return self.venv.reset()
-
-    # def trigger_dist_update(self):
-    #     # Update the design distribution
-    #     design_count = self.get_design_count()
-    #     print("Design Count =", design_count)
-    #     for i in self.cut_off_list:
-    #         designs_since_update = design_count[i] - self.last_design_update[i]
-    #         if designs_since_update >= self.update_period:
-    #             designs, rewards = self.get_designs_and_rewards(self.batch_size,i)
-    #             print("DESIGNS USED FOR UPDATE", designs)
-    #             self.design_optimizer[i].update(designs, rewards,
-    #                                         self.t)
-    #             self.design_optimizer[i].log(self.t)
-    #             self.last_design_update[i] = design_count[i]
 
     def trigger_dist_update(self):
         # Update the design distribution
@@ -246,7 +239,7 @@ class DesignManager(VecEnvWrapper):
         extra_rewards = state_dict['extra_rewards']
         # print(extra_rewards)
         base_extra_reward = self.design_avg_extra_reward(self.t)
-        print(f'base_extra_reward = {base_extra_reward}')
+        # print(f'base_extra_reward = {base_extra_reward}')
         for i in self.cut_off_list:
             designs_since_update = design_count[i] - self.last_design_update[i]
             if designs_since_update >= self.update_period:
@@ -255,7 +248,7 @@ class DesignManager(VecEnvWrapper):
                     d_val = (sample['no_chamber'], sample['chamber_length'], sample['thickness'])
                     idx = self.discrete_combinations.index(d_val)
                     rewards[j] += base_extra_reward * extra_rewards[idx]
-                    print(f'extra_rewards[{idx}] = {extra_rewards[idx]}')
+                    # print(f'extra_rewards[{idx}] = {base_extra_reward * extra_rewards[idx]}')
                 self.design_optimizer[i].update(designs, rewards,
                                             self.t)
                 self.design_optimizer[i].log(self.t)
@@ -276,9 +269,10 @@ class DesignManager(VecEnvWrapper):
         self.steps += 1
         self.rewards += rewards
         if self.steps_per_design and self.steps % self.steps_per_design == 0:
-            for design, reward in zip(self.designs, self.rewards):
-                self.logger.log(design, reward)
-            self.trigger_dist_update()
+            if not self.test_mode:
+                for design, reward in zip(self.designs, self.rewards):
+                    self.logger.log(design, reward)
+                self.trigger_dist_update()
             self.init_scene()
             dones[:] = True  # Force reset after a design interval
         return obs, rewards, dones, infos

@@ -109,9 +109,9 @@ pole_simu_pos = [pole_init_pos[0]+precontact_distance,
 def createScene(root, config={"source": [0, 0, 160],
                                 "target": [0, 1, 0],
                               "goalPos": [0, 0, 100],
-                                "init_states": [0,0,0,0],
+                                "init_states": [1,0,0,0],
                                 "zFar":4000,
-                                "design_params": [100, 2,30,2,0,0.0],
+                                "design_params": [80, 2,30,2,0,0.0],
                                 "scale_factor": 10
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
@@ -215,7 +215,7 @@ def createScene(root, config={"source": [0, 0, 160],
 
     # SofaGym Env Components
     root.addObject(StateInitializer(name="StateInitializer", rootNode=root, init_states=config['init_states']))
-    root.addObject(rewardShaper(name="Reward", rootNode=root, scale_factor=config['scale_factor']))
+    root.addObject(rewardShaper(name="Reward", rootNode=root, scale_factor=config['scale_factor'], force_threshold = 0.1))
     root.addObject(applyAction(name="applyAction", root=root,config = config))
     # setData(whisker_model.Articulation_system.ServoMotor.Articulation.ServoWheel.dofs, showObject=1, showObjectScale=20,
     # drawMode=2, showColor=[1., 1., 0., 1.])

@@ -24,6 +24,8 @@ import os
 from sofagym.envs.Whisker.design_space.design_space import whiskerdesignspace
 import torch
 import numpy as np
+import yaml
+from pathlib import Path
 
 envs = {
         1: 'bubblemotion-v0',
@@ -104,21 +106,12 @@ if __name__ == '__main__':
     model_name = 'whisker_rl'
     logdir = './test_coopt'
     results_dir = "./Results"
-    params_path = "/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/whisker_params.yml"
     run_id = os.path.basename(logdir)
     total_steps = args.total_timesteps
     max_episode_steps = args.max_steps  # Total number of training steps for each sampling time (episode)
-    batch_size_for_distupdate = 5  # Batch size for design updates
-    dist_update_period = 5  # Number of designs before each update
-    ent_decay_start = 800
-    ent_decay_end = 1000
-    no_chamber = torch.tensor([1,2])
-    pressure_range = torch.tensor([0.0,0.2])
-    body_length = np.linspace(60,100,5,dtype=int).tolist()
-    thickness = torch.tensor(np.linspace(2,4,5,dtype=float))
-    chamber_length = torch.tensor(np.linspace(20,40,11,dtype=int))
-    ins = whiskerdesignspace(body_length,no_chamber,chamber_length,thickness,pressure_range)
-    design_space = ins.design_space()
+    kwargs = {'model_params':
+                {'params_path': "/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/whisker_params.yml"}}
+
     with wandb.init(project='rl_whisker',
                     id=run_id+'_train', group=run_id,
                     job_type='train', resume='allow'):
@@ -135,13 +128,7 @@ if __name__ == '__main__':
                             max_episode_steps=max_episode_steps, 
                             n_envs = n_envs,
                             model_name = model_name,
-                            design_space=design_space,
-                            batch_size_for_distupdate =batch_size_for_distupdate,
-                            dist_update_period = dist_update_period,
-                            ent_decay_start = ent_decay_start,
-                            ent_decay_end = ent_decay_end,
-                            cut_off_list = body_length,
-                            params_path = params_path
+                            **kwargs
                             )
             agent.fit(total_steps)
         else:
