@@ -102,7 +102,8 @@ if __name__ == '__main__':
     test = args.test
     n_tests = args.num_test
     model_dir = args.model_dir
-    model_dir = "/home/nhnhan/Desktop/sofa/SofaGym/Results/whisker-v0/PPO/whisker_rl/"
+    parent_dict = os.path.dirname(os.path.abspath(__file__))
+    model_dir = parent_dict + "/Results/whisker-v0/PPO/whisker_rl/"
     model_name = 'whisker_rl'
     logdir = './test_coopt'
     results_dir = "./Results"
@@ -110,7 +111,7 @@ if __name__ == '__main__':
     total_steps = args.total_timesteps
     max_episode_steps = args.max_steps  # Total number of training steps for each sampling time (episode)
     kwargs = {'model_params':
-                {'params_path': "/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/whisker_params.yml"}}
+                {'params_path': parent_dict+"/sofagym/envs/Whisker/whisker_params.yml"}}
 
     with wandb.init(project='rl_whisker',
                     id=run_id+'_train', group=run_id,

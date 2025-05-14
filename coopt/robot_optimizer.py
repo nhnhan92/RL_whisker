@@ -146,7 +146,7 @@ class RobotDesignOptimizer(nn.Module):
         self.std_target = LinearSchedule(0.1, 0.005, ent_decay_start, ent_decay_end)
         self.beta = 0.0
         self.beta_min = 0.0
-        self.beta_max = 1.0
+        self.beta_max = 5.0
         wandb.define_metric(f"design_{self.cut_off_length}/*", step_metric="train/step")
 
     def get_design_dist(self):
@@ -171,20 +171,27 @@ class RobotDesignOptimizer(nn.Module):
         # while torch.abs(ent - target) > 0.01 and check< 10:
             # check += 1
         while torch.abs(ent - target) > 0.01:
-            if ent > target:
-                low = beta
+            check += 1
+            if check < 100:
+                if ent > target:
+                    low = beta
+                else:
+                    high = beta
+                beta = (high + low) / 2.0
+                
+                if beta > 0.99 * self.beta_max:
+                    beta = self.beta_max
+                    break
+                # Update distribution temporarily.
+                temp_logits = beta * self.scores
+                
+                ent = torch.distributions.Categorical(logits=temp_logits).entropy()
+                
             else:
-                high = beta
-            beta = (high + low) / 2.0
-            # print("CHECK beta updating = ", beta)
-            if beta > 0.99 * self.beta_max:
-                beta = self.beta_max
-                break
-            # Update distribution temporarily.
-            temp_logits = beta * self.scores
-            # print("Temporary logits = ", temp_logits)
-            ent = torch.distributions.Categorical(logits=temp_logits).entropy()
-            # print("CHECK ent updating = ", ent)
+                print("CHECK beta updating = ", beta)
+                print("Temporary logits = ", temp_logits)
+                print("CHECK ent updating = ", ent)
+                raise ValueError(f"Does not converge FROM {ent} TO TARGET {target}")
             
         print("UPDATED ENTROPY = ", ent)
 
@@ -281,7 +288,6 @@ class RobotDesignOptimizer(nn.Module):
                 self.continuous_stds.data[idx] = new_std
 
         # Adjust the temperature parameter beta based on the updated scores.
-        print(f'CURRENT BETA = {t}')
         self.set_beta(t)
 
 

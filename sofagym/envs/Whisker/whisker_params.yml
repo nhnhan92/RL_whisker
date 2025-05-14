@@ -15,7 +15,7 @@ PPO:
   init_kwargs:
     policy: 'MlpPolicy'
     learning_rate: 0.0003
-    n_steps: 150
+    n_steps: 100
     batch_size: 75
     n_epochs: 10
     gamma: 0.99
@@ -33,15 +33,15 @@ PPO:
     device: "auto"
   fit_kwargs:
     total_timesteps: 1000000
-    max_episode_steps: 150
-    eval_freq: 15000
+    max_episode_steps: 100
+    eval_freq: 10000
     n_eval_episodes: 5
-    save_freq: 30000
-    video_length: 150
+    save_freq: 20000
+    video_length: 100
   model_params:
     batch_size_for_distupdate: 10  # Batch size for design updates
     dist_update_period: 10  # Number of designs before each update
-    ent_decay_start: 200000
+    ent_decay_start: 150000
     ent_decay_end: 950000
     no_chamber: [1,2]
     pressure_range: [0.0,0.2]
