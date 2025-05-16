@@ -328,8 +328,8 @@ class rewardShaper(Sofa.Core.Controller):
         # print(f'Force = {self.force_value}')
     def getReward(self):
             
-        alpha = 1
-        beta = 0.5
+        alpha = 0.1
+        beta = 0.05
         if abs(self.force_value[1]) <= 0.001 or self.rootNode.applyAction.new_angleIn > 0.6:
             self.reward = 0
         else:

@@ -26,7 +26,7 @@ import torch
 import numpy as np
 import yaml
 from pathlib import Path
-
+import datetime
 envs = {
         1: 'bubblemotion-v0',
         2: 'cartstem-v0',
@@ -107,14 +107,14 @@ if __name__ == '__main__':
     model_name = 'whisker_rl'
     logdir = './test_coopt'
     results_dir = "./Results"
-    run_id = os.path.basename(logdir)
+    run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     total_steps = args.total_timesteps
     max_episode_steps = args.max_steps  # Total number of training steps for each sampling time (episode)
     kwargs = {'model_params':
                 {'params_path': parent_dict+"/sofagym/envs/Whisker/whisker_params.yml"}}
 
     with wandb.init(project='rl_whisker',
-                    id=run_id+'_train', group=run_id,
+                    id=f"train_{run_id}", group=f"session_{run_id}",
                     job_type='train', resume='allow'):
         if model_dir is None:
             if train == 'continue' or (train == 'none' and test):

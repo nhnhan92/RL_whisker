@@ -48,8 +48,8 @@ class DesignLogger:
         d_val = (design['no_chamber'], design['chamber_length'], design['thickness'])
         idx = self.discrete_combinations.index(d_val)
         if self.average_discrete_design[body_length][idx] != 0:
-            self.average_discrete_design[body_length][idx] += reward
-            self.average_discrete_design[body_length][idx] = self.average_discrete_design[body_length][idx]/2
+            if self.average_discrete_design[body_length][idx] < reward:
+                self.average_discrete_design[body_length][idx] = reward
         else:
             self.average_discrete_design[body_length][idx] = reward
         

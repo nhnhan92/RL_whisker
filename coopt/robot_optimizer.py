@@ -146,7 +146,8 @@ class RobotDesignOptimizer(nn.Module):
         self.std_target = LinearSchedule(0.1, 0.005, ent_decay_start, ent_decay_end)
         self.beta = 0.0
         self.beta_min = 0.0
-        self.beta_max = 5.0
+        self.beta_max = 3.0
+        self.init_list_sample = 0
         wandb.define_metric(f"design_{self.cut_off_length}/*", step_metric="train/step")
 
     def get_design_dist(self):
@@ -159,7 +160,7 @@ class RobotDesignOptimizer(nn.Module):
 
     def set_beta(self, t):
         high = self.beta_max
-        low = self.beta_min
+        low = self.beta_min 
         target = self.target(t)
         beta = (high + low) / 2.0
         dist = self.get_design_dist()  # with current beta (temporarily using beta from outer scope)
@@ -168,17 +169,22 @@ class RobotDesignOptimizer(nn.Module):
         # print(f"self.scores = {self.scores}")
         print(f"UPDATING ENTROPY FROM {ent} TO TARGET {target}")
         check = 0
+        temp_beta = []
         # while torch.abs(ent - target) > 0.01 and check< 10:
             # check += 1
         while torch.abs(ent - target) > 0.01:
             check += 1
-            if check < 100:
+            if check < 50:
                 if ent > target:
                     low = beta
                 else:
                     high = beta
+                if abs(beta - (high + low)/2) < 0.00001:
+                    if beta > (high + low)/2:
+                        low = self.beta_min
+                    elif beta < (high + low)/2:
+                        high = self.beta_max
                 beta = (high + low) / 2.0
-                
                 if beta > 0.99 * self.beta_max:
                     beta = self.beta_max
                     break
@@ -186,28 +192,31 @@ class RobotDesignOptimizer(nn.Module):
                 temp_logits = beta * self.scores
                 
                 ent = torch.distributions.Categorical(logits=temp_logits).entropy()
-                
+                temp_beta.append(beta)
             else:
                 print("CHECK beta updating = ", beta)
+                print(f"self.scores = {self.scores}")
                 print("Temporary logits = ", temp_logits)
+                print(f'Temporary beta = {temp_beta}')
                 print("CHECK ent updating = ", ent)
                 raise ValueError(f"Does not converge FROM {ent} TO TARGET {target}")
-            
-        print("UPDATED ENTROPY = ", ent)
-
         self.beta = beta
-
+        print("UPDATED ENTROPY = ", ent)
 
     def sample(self):
         # Get the current design distribution (an instance of RobotDesignDist).
         design_dist = self.get_design_dist()  # RobotDesignDist instance
-        # ent = torch.distributions.Categorical(logits=design_dist.discrete_logits).entropy()
-        # Build a categorical distribution from the discrete logits.
-        disc_dist = torch.distributions.Categorical(logits=design_dist.discrete_logits)
-        # Sample a discrete index (scalar tensor).
-        discrete_idx = disc_dist.sample()  
-        # Look up the discrete value (tuple) from your discrete_values list.
-        discrete_values = self.discrete_combinations[discrete_idx.item()]
+        if self.init_list_sample < len(self.discrete_combinations):
+            discrete_values = self.discrete_combinations[int(self.init_list_sample)]
+            self.init_list_sample += 1
+        else:
+            # ent = torch.distributions.Categorical(logits=design_dist.discrete_logits).entropy()
+            # Build a categorical distribution from the discrete logits.
+            disc_dist = torch.distributions.Categorical(logits=design_dist.discrete_logits)
+            # Sample a discrete index (scalar tensor).
+            discrete_idx = disc_dist.sample()  
+            # Look up the discrete value (tuple) from your discrete_values list.
+            discrete_values = self.discrete_combinations[discrete_idx.item()]
         # Create a continuous distribution for the chosen component.
         design_dist = self.get_design_dist()  # RobotDesignDist instance
         transformed_pressure_list = design_dist.get_distribution().sample()
