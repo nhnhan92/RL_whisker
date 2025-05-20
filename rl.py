@@ -27,6 +27,7 @@ import numpy as np
 import yaml
 from pathlib import Path
 import datetime
+torch.cuda.empty_cache() 
 envs = {
         1: 'bubblemotion-v0',
         2: 'cartstem-v0',

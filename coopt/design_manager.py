@@ -53,7 +53,7 @@ class DesignLogger:
         else:
             self.average_discrete_design[body_length][idx] = reward
         
-        if self.count[body_length] % 5 == 0:  
+        if self.count[body_length] % 100 == 0:  
             # Check the type of design.
             if isinstance(design, dict):
                 # Convert dictionary into a string: "key1=value1, key2=value2, ..."
@@ -63,7 +63,7 @@ class DesignLogger:
             else:
                 design_str = str(int(design))
             self.data[body_length].append([self.count[body_length], design_str, float(reward)])
-        if self.count[body_length] % 5 == 0:
+        if self.count[body_length] % 1000 == 0:
             table = wandb.Table(data=self.data[body_length], columns=self.columns)
             wandb.log({f"designs_{body_length}": table, "train/design_count": self.count[body_length]})
     def state_dict(self):
@@ -220,7 +220,7 @@ class DesignManager(VecEnvWrapper):
                 sample = {'body_length': cut_off_length, **sample}
                 self.designs.append(sample)
         # self.designs = [self._sample_design() for _ in range(self.num_envs)]
-        print("designs: ", self.designs)
+        # print("designs: ", self.designs)
         self.venv.set_designs(self.designs)
         self.rewards = np.zeros(self.n_env)
     

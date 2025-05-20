@@ -201,7 +201,7 @@ class RobotDesignOptimizer(nn.Module):
                 print("CHECK ent updating = ", ent)
                 raise ValueError(f"Does not converge FROM {ent} TO TARGET {target}")
         self.beta = beta
-        print("UPDATED ENTROPY = ", ent)
+        # print("UPDATED ENTROPY = ", ent)
 
     def sample(self):
         # Get the current design distribution (an instance of RobotDesignDist).
@@ -289,9 +289,8 @@ class RobotDesignOptimizer(nn.Module):
                 samples_tensor = torch.stack(samples_i)  # shape: (num_samples_for_idx, 3)
                 new_mean = samples_tensor.mean(dim=0)
                 new_std = samples_tensor.std(dim=0, unbiased=False)
-                print("NEW STD = ", new_std)
+                print(f"NEW STD = {new_std}")
                 scheduled_std = self.std_target(t)
-                print("SCHEDULED STD = ", scheduled_std)
                 new_std = torch.clamp(new_std, min=scheduled_std,max=max_std)
                 self.continuous_means.data[idx] = new_mean
                 self.continuous_stds.data[idx] = new_std

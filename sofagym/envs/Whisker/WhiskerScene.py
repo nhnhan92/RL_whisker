@@ -126,38 +126,13 @@ def createScene(root, config={"source": [0, 0, 160],
     if 'simu' in mode:
         simu = True
     # addHeader(root)
-    root.addObject('RequiredPlugin', name='BeamAdapter')
-    root.addObject('RequiredPlugin', name='Sofa.Component.AnimationLoop')
-    root.addObject('RequiredPlugin', name="Sofa.Component.Constraint.Lagrangian.Correction")
+
     root.addObject('RequiredPlugin', name="SofaPython3")
     root.addObject('RequiredPlugin', name="Sofa.Component.Constraint.Lagrangian.Solver")
     root.addObject('RequiredPlugin', name="SoftRobots")
     root.addObject('RequiredPlugin', name="STLIB")
-    root.addObject('RequiredPlugin', name="Sofa.Component.Constraint.Projective")
-    root.addObject('RequiredPlugin', name="Sofa.Component.Engine.Select")
-    root.addObject('RequiredPlugin', name="Sofa.Component.IO.Mesh")
-    root.addObject('RequiredPlugin', name="Sofa.Component.LinearSolver.Direct")
-    root.addObject('RequiredPlugin', name="Sofa.Component.Mapping.MappedMatrix")
-    root.addObject('RequiredPlugin', name="Sofa.Component.Topology.Container.Dynamic")
-    root.addObject('RequiredPlugin', name="Sofa.Component.Mass")
-    root.addObject('RequiredPlugin', name="Sofa.Component.SolidMechanics.FEM.Elastic")
-    root.addObject('RequiredPlugin', name="Sofa.Component.SolidMechanics.Spring")
-    root.addObject('RequiredPlugin', name="Sofa.Component.StateContainer")
-    root.addObject('RequiredPlugin', name="Sofa.Component.Topology.Container.Constant")
-    root.addObject('RequiredPlugin', name="Sofa.GL.Component.Rendering3D")
-    root.addObject('RequiredPlugin', name="Sofa.GUI.Component")
-    root.addObject('RequiredPlugin', name="Sofa.GL.Component.Shader")
-    root.addObject('RequiredPlugin', name="Sofa.Component.Mapping.Linear")
-    root.addObject('RequiredPlugin', name="Sofa.Component.Mapping.NonLinear")
     root.addObject('RequiredPlugin', name="ArticulatedSystemPlugin")
-    root.addObject('RequiredPlugin', name='Sofa.Component.Collision.Detection.Algorithm') # Needed to use components [BVHNarrowPhase,BruteForceBroadPhase,CollisionPipeline]  
-    root.addObject('RequiredPlugin', name='Sofa.Component.Collision.Detection.Intersection') # Needed to use components [LocalMinDistance]  
-    root.addObject('RequiredPlugin', name='Sofa.Component.Collision.Geometry') # Needed to use components [LineCollisionModel,PointCollisionModel,TriangleCollisionModel]  
-    root.addObject('RequiredPlugin', name='Sofa.Component.Collision.Response.Contact') # Needed to use components [RuleBasedContactManager]  
-    root.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
-    root.addObject('RequiredPlugin', name='Sofa.Component.Setting') # Needed to use components [BackgroundSetting]  
-    root.addObject('RequiredPlugin', name='Sofa.Component.Visual') # Needed to use components [InteractiveCamera,VisualStyle]
-
+    root.addObject('RequiredPlugin', name="Sofa.GL.Component.Shader")
     
     root.addObject('VisualStyle', displayFlags='showVisualModels hideCollisionModels')
     source = [config["source"]]
@@ -234,10 +209,6 @@ def createScene(root, config={"source": [0, 0, 160],
 def main():
     import SofaRuntime
     import Sofa.Gui
-    SofaRuntime.importPlugin("SofaOpenglVisual")
-    SofaRuntime.importPlugin("CImgPlugin")
-    SofaRuntime.importPlugin("SofaBaseMechanics")
-    SofaRuntime.importPlugin("SofaImplicitOdeSolver")
     
     root=Sofa.Core.Node("root")
     
