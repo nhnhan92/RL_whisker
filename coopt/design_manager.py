@@ -11,6 +11,18 @@ from dl.ckptr import Checkpointer
 from coopt.discrete_robot_optimizer import DiscreteDesignOptimizer
 from coopt.robot_optimizer import RobotDesignOptimizer
 from itertools import product
+
+from pympler import asizeof
+
+def bytes_to_mb(x):
+    return x / (1024 ** 2)
+
+def dump_self_data_size(data, tag=""):
+    size_b = asizeof.asizeof(data)
+    print(f"[mem]{tag} self.data = {bytes_to_mb(size_b):.2f} MB")
+
+
+
 class DesignLogger:
     """Records and keeps the history of designs and refwards."""
 
@@ -48,12 +60,12 @@ class DesignLogger:
         d_val = (design['no_chamber'], design['chamber_length'], design['thickness'])
         idx = self.discrete_combinations.index(d_val)
         if self.average_discrete_design[body_length][idx] != 0:
-            self.average_discrete_design[body_length][idx] += reward
-            self.average_discrete_design[body_length][idx] = self.average_discrete_design[body_length][idx]/2
+            if self.average_discrete_design[body_length][idx] < reward:
+                self.average_discrete_design[body_length][idx] = reward
         else:
             self.average_discrete_design[body_length][idx] = reward
         
-        if self.count[body_length] % 5 == 0:  
+        if self.count[body_length] % 100 == 0:  
             # Check the type of design.
             if isinstance(design, dict):
                 # Convert dictionary into a string: "key1=value1, key2=value2, ..."
@@ -63,9 +75,12 @@ class DesignLogger:
             else:
                 design_str = str(int(design))
             self.data[body_length].append([self.count[body_length], design_str, float(reward)])
-        if self.count[body_length] % 5 == 0:
+        if self.count[body_length] % 1000 == 0:
+            # dump_self_data_size(self.data, tag=f" #{self.count[body_length]}")
             table = wandb.Table(data=self.data[body_length], columns=self.columns)
             wandb.log({f"designs_{body_length}": table, "train/design_count": self.count[body_length]})
+
+
     def state_dict(self):
         sums = {}
         for body_length, inner in self.average_discrete_design.items():
@@ -220,7 +235,7 @@ class DesignManager(VecEnvWrapper):
                 sample = {'body_length': cut_off_length, **sample}
                 self.designs.append(sample)
         # self.designs = [self._sample_design() for _ in range(self.num_envs)]
-        print("designs: ", self.designs)
+        # print("designs: ", self.designs)
         self.venv.set_designs(self.designs)
         self.rewards = np.zeros(self.n_env)
     

@@ -117,10 +117,10 @@ class SubprocVecEnv(VecEnv):
         VecEnv.__init__(self, len(env_fns), observation_space, action_space)
 
     def set_designs(self, designs):
+        # print("*********************************************************")
         for i, remote in enumerate(self.remotes):
             remote.send(('set_design', designs[i]))
         self._dones = [True for _ in range(self.nenvs)]
-
 
     def step_async(self, actions: np.ndarray) -> None:
         for remote, action in zip(self.remotes, actions):
