@@ -40,7 +40,7 @@ class WhiskerEnv:
                       "goal": False,
                       "start_node": None,
                       "scale_factor": 5,  # equivalent to simulation duration = scale_factor * dt - dt
-                      "timer_limit": 60,
+                      "timer_limit": 150,
                       "timeout": 50,
                       "display_size": (800, 600),
                       "render": 0,
@@ -79,7 +79,8 @@ class WhiskerEnv:
         self.env.observation_space = spaces.Box(low_coordinates, high_coordinates,
                                             dtype='float32')
         self.body_length_categories = np.array([80,90,100])
-    
+        if self.env.root is None and not self.use_server:
+            self.env.init_root()
     # called when an attribute is not found:
     def __getattr__(self, name):
         # assume it is implemented by self.instance
@@ -128,7 +129,7 @@ class WhiskerEnv:
     def reset(self):
         """Reset simulation.
         """
-        # self.initialize_states()
+        self.initialize_states()
 
         if self.env.config["goal"]:
             self.init_goal()
