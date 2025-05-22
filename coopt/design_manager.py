@@ -11,6 +11,18 @@ from dl.ckptr import Checkpointer
 from coopt.discrete_robot_optimizer import DiscreteDesignOptimizer
 from coopt.robot_optimizer import RobotDesignOptimizer
 from itertools import product
+
+from pympler import asizeof
+
+def bytes_to_mb(x):
+    return x / (1024 ** 2)
+
+def dump_self_data_size(data, tag=""):
+    size_b = asizeof.asizeof(data)
+    print(f"[mem]{tag} self.data = {bytes_to_mb(size_b):.2f} MB")
+
+
+
 class DesignLogger:
     """Records and keeps the history of designs and refwards."""
 
@@ -64,8 +76,11 @@ class DesignLogger:
                 design_str = str(int(design))
             self.data[body_length].append([self.count[body_length], design_str, float(reward)])
         if self.count[body_length] % 1000 == 0:
+            # dump_self_data_size(self.data, tag=f" #{self.count[body_length]}")
             table = wandb.Table(data=self.data[body_length], columns=self.columns)
             wandb.log({f"designs_{body_length}": table, "train/design_count": self.count[body_length]})
+
+
     def state_dict(self):
         sums = {}
         for body_length, inner in self.average_discrete_design.items():
