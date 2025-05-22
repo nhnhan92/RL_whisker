@@ -343,11 +343,15 @@ class SB3Agent(SofaBaseAgent):
         print("[INFO]  >>    algo: ", self.algo_name)
         print("[INFO]  >>    seed: ", self.seed)
         print("-------------------------------\n")
-
+        chunk = 300
+        # for _ in range(int(total_timesteps/chunk)):
+        #     self.model.learn(total_timesteps=chunk, reset_num_timesteps=False,
+        #                     progress_bar=True, log_interval=1, tb_log_name="log",
+        #                     callback=[eval_callback, save_callback])
+        #     self.env.hard_reset_workers() 
         self.model.learn(total_timesteps=total_timesteps, reset_num_timesteps=False,
-                         progress_bar=True, log_interval=1, tb_log_name="log",
-                         callback=[eval_callback, save_callback])
-
+                        progress_bar=True, log_interval=1, tb_log_name="log",
+                        callback=[eval_callback, save_callback])
         print(">>   End.")
         print("[INFO]  >>    time: ", sec_to_hours(time.time()-start_time))
 

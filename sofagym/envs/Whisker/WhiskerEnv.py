@@ -59,7 +59,7 @@ class WhiskerEnv:
                       "dim_state": dim_state,
                       "init_states": [0,0,100,1,20,2,0.1,0.1],
                       "randomize_states": True,
-                      "use_server": False,
+                      "use_server": True,
                       "zFar":4000
                       }
     def __init__(self, config = None, root=None, use_server: Optional[bool]=None):
