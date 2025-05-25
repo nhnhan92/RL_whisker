@@ -116,6 +116,7 @@ class CustomQueue(queue.Queue):
 
         """
         res = queue.Queue.get(self, timeout=timeout)
+        # print(f"RESULTS = {res}")
         self.entries.pop(0)
         return res
 
@@ -626,7 +627,7 @@ def get_result(result_id, timeout=None):
             except queue.Empty:
                 print("TIMEOUT ", timeout)
                 res = {"stateId": result_id,
-                       "observation": "",
+                       "observation": firstObservation.back(),
                        "reward": 0.0,
                        "done": True,
                        "info": {"error": "TIMEOUT"}
