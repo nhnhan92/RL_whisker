@@ -376,10 +376,8 @@ class applyAction(Sofa.Core.Controller):
         self.arti_sys = self.root.Whisker_node.getChild("Articulation_system")
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value
-        self.new_angleIn = current_angleIn[1] + incr
-        # with self.arti_sys.angleIn.writeable() as arti_input:
-        if self.new_angleIn < 0.65:
-            self.arti_sys.angleIn.value = [current_angleIn[0],self.new_angleIn]
+        self.new_angleIn = max(min(current_angleIn[1] + incr, 0.65), -0.65) 
+        self.arti_sys.angleIn.value = [current_angleIn[0],self.new_angleIn]
             
     def _normalizedAction_to_action(self, action):
         return self.max_incr*action/2

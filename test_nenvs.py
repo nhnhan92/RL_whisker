@@ -14,7 +14,7 @@ import os
 from sofagym.envs.Whisker.design_space.design_space import whiskerdesignspace
 import torch
 RANDOM = False
-
+import datetime
 import psutil
 pid = os.getpid()
 py = psutil.Process(pid)
@@ -43,11 +43,11 @@ if __name__ == '__main__':
     thickness = torch.tensor(np.linspace(2,4,5,dtype=float))
     chamber_length = torch.tensor(np.linspace(20,40,11,dtype=int))
     ins = whiskerdesignspace(body_length,no_chamber,chamber_length,thickness,pressure_range)
-    with wandb.init(
-        project='rl_whisker',
-        id=run_id+'_train', group=run_id,
-        job_type='train', resume='allow',reinit = True
-    ):
+    run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    with wandb.init(project='rl_whisker',
+                    id=f"train_{run_id}", group=f"session_{run_id}",
+                    job_type='train', resume='allow'):
         env_id = "whisker-v0"
         # Create the vectorized environment
         design_space = ins.design_space()
