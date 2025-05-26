@@ -25,7 +25,6 @@ contact_list, contact_pos, rest_pos = ext_data()
 body_length = 100
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 MeshesPath = os.path.dirname(os.path.abspath(__file__))+'/mesh/length_'
-USE_GUI = True
 
 def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
                 translation = [0,0,0], rotation = [0,0,0], strain_gauge = [10,2]):
@@ -111,7 +110,7 @@ def createScene(root, config={"source": [0, 0, 160],
                               "goalPos": [0, 0, 100],
                                 "init_states": [1,0,0,0],
                                 "zFar":4000,
-                                "design_params": [80, 2,30,2,0,0.0],
+                                "design_params": [60, 2,30,2,0.1,0.1],
                                 "scale_factor": 10
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
@@ -214,10 +213,11 @@ def main():
     
     createScene(root)
     Sofa.Simulation.init(root)
+    USE_GUI = True
     if not USE_GUI:
         for iteration in range(10):
             Sofa.Simulation.animate(root, root.dt.value)
-
+    # Sofa.Simulation.reset(self.root)
     Sofa.Gui.GUIManager.Init("myscene", "qglviewer")
     Sofa.Gui.GUIManager.createGUI(root, __file__)
     Sofa.Gui.GUIManager.SetDimension(1080, 1080)

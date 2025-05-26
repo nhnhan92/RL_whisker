@@ -91,6 +91,7 @@ class SubprocVecEnv(VecEnv):
         self.waiting = False
         self.closed = False
         n_envs = len(env_fns)
+        self.env_fns = env_fns
         self.nenvs = n_envs
         print("n_envs =",self.nenvs)
         if start_method is None:
@@ -103,7 +104,7 @@ class SubprocVecEnv(VecEnv):
 
         self.remotes, self.work_remotes = zip(*[ctx.Pipe() for _ in range(n_envs)])
         self.processes = []
-        for work_remote, remote, env_fn in zip(self.work_remotes, self.remotes, env_fns):
+        for work_remote, remote, env_fn in zip(self.work_remotes, self.remotes, self.env_fns):
             args = (work_remote, remote, CloudpickleWrapper(env_fn))
             # daemon=True: if the main process crashes, we should not cause things to hang
             process = ctx.Process(target=_worker, args=args, daemon=True)  # pytype:disable=attribute-error
@@ -111,11 +112,34 @@ class SubprocVecEnv(VecEnv):
             self.processes.append(process)
             work_remote.close()
 
-        self._dones = [False for _ in range(len(env_fns))]
+        self._dones = [False for _ in range(len(self.env_fns))]
         self.remotes[0].send(("get_spaces", None))
         observation_space, action_space = self.remotes[0].recv()
-        VecEnv.__init__(self, len(env_fns), observation_space, action_space)
+        VecEnv.__init__(self, len(self.env_fns), observation_space, action_space)
+    def hard_reset_workers(self):
+        """Close all current worker processes and respawn fresh ones."""
+        # 1. Close old workers
+        for remote in self.remotes:
+            remote.send(("close", None))
+        for proc in self.processes:
+            proc.join()
 
+        # 2. Spawn replacements
+        ctx = mp.get_context("forkserver")
+        self.remotes, self.work_remotes = zip(*[ctx.Pipe() for _ in range(self.nenvs)])
+        self.processes = []
+        for work_remote, remote, env_fn in zip(self.work_remotes, self.remotes, self.env_fns):
+            p = ctx.Process(target=_worker, args=(work_remote, remote,
+                                                  CloudpickleWrapper(env_fn)), daemon=True)
+            p.start()
+            self.processes.append(p)
+            work_remote.close()
+
+        # 3. Sync spaces again
+        self.remotes[0].send(("get_spaces", None))
+        self.observation_space, self.action_space = self.remotes[0].recv()
+        # done flags reset
+        self._dones = [False] * self.nenvs
     def set_designs(self, designs):
         # print("*********************************************************")
         for i, remote in enumerate(self.remotes):

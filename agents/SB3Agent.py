@@ -343,11 +343,15 @@ class SB3Agent(SofaBaseAgent):
         print("[INFO]  >>    algo: ", self.algo_name)
         print("[INFO]  >>    seed: ", self.seed)
         print("-------------------------------\n")
-
+        chunk = 300
+        # for _ in range(int(total_timesteps/chunk)):
+        #     self.model.learn(total_timesteps=chunk, reset_num_timesteps=False,
+        #                     progress_bar=True, log_interval=1, tb_log_name="log",
+        #                     callback=[eval_callback, save_callback])
+        #     self.env.hard_reset_workers() 
         self.model.learn(total_timesteps=total_timesteps, reset_num_timesteps=False,
-                         progress_bar=True, log_interval=1, tb_log_name="log",
-                         callback=[eval_callback, save_callback])
-
+                        progress_bar=True, log_interval=1, tb_log_name="log",
+                        callback=[eval_callback, save_callback])
         print(">>   End.")
         print("[INFO]  >>    time: ", sec_to_hours(time.time()-start_time))
 
@@ -370,7 +374,7 @@ class SB3Agent(SofaBaseAgent):
         checkpoint_path = f"{self.checkpoints_dir}/{model_timestep}"
         checkpoint_vecnormalize_path = f"{self.checkpoints_dir}/vecnormalize_{model_timestep}.pkl"
         
-        eval_env = SubprocVecEnv([make_env(self.env_id, 0, self.seed, self.max_episode_steps, config={"render": 0})])
+        eval_env = SubprocVecEnv([make_env(self.env_id, 0, self.seed, self.max_episode_steps, config={"render": 1})])
         eval_env = VecNormalize.load(checkpoint_vecnormalize_path, eval_env)
         eval_env.training = False
         eval_env.norm_reward = False
@@ -471,7 +475,7 @@ class SB3Agent(SofaBaseAgent):
         n_envs_test = 5
         ratio_raw_test = int(n_envs/n_envs_test)
         self.vec_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps) for i in range(n_envs)])
-        self.test_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps, config={"render": 0})for i in range(n_envs_test)])
+        self.test_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps, config={"render": 1})for i in range(n_envs_test)])
         self.vec_env = DesignManager(venv=self.vec_env,
                                 design_space=self.design_space,
                                 n_steps = self.init_kwargs['n_steps'],

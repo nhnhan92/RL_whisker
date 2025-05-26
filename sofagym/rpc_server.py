@@ -116,6 +116,7 @@ class CustomQueue(queue.Queue):
 
         """
         res = queue.Queue.get(self, timeout=timeout)
+        # print(f"RESULTS = {res}")
         self.entries.pop(0)
         return res
 
@@ -449,47 +450,72 @@ def close_scene():
     time.sleep(0.01)
 
 
+# def clean_registry(history):
+#     """Close the clients of the useless branches.
+
+#     Usefull only in planning.
+
+#     Parameters:
+#     ----------
+#         history: list
+#             The sequence of actions.
+
+#     Returns:
+#     -------
+#         None.
+
+#     """
+#     global stateId, actions_to_stateId, instances
+#     id_closed = set()
+#     if len(history) > 0:
+#         copy_dic = copy.copy(instances)
+
+#         for instance in copy_dic.values():
+#             for i, action in enumerate(history):
+
+#                 if instance.get('history'):
+#                     if len(instance['history']) < len(history) or instance['history'][i] != action:
+#                         id = get_id_from_actions(instance['history'])
+#                         if id not in id_closed:
+#                             try:
+#                                 instances[id]["pendingTasks"].put(make_action("exit"))
+#                                 id_closed.add(id)
+#                             except KeyError:
+#                                 print("KeyError ", get_id_from_actions(instance['history']))
+#                                 pass
+
+#     for id in id_closed:
+#         # while instances[id]["pendingTasks"].__len__()!=0:
+#         #     pass
+#         actions_to_stateId.pop(str(instances[id]['history']))
+#         instances.pop(id)
+
 def clean_registry(history):
-    """Close the clients of the useless branches.
-
-    Usefull only in planning.
-
-    Parameters:
-    ----------
-        history: list
-            The sequence of actions.
-
-    Returns:
-    -------
-        None.
-
-    """
     global stateId, actions_to_stateId, instances
-    id_closed = set()
-    if len(history) > 0:
-        copy_dic = copy.copy(instances)
 
-        for instance in copy_dic.values():
-            for i, action in enumerate(history):
+    ids_to_close = []
+    if history:
+        for sid, inst in list(instances.items()):
+            if not inst.get('history'):
+                continue
+            # check divergence
+            hist = inst['history']
+            if len(hist) < len(history) or any(h != a for h, a in zip(hist, history)):
+                ids_to_close.append(sid)
 
-                if instance.get('history'):
-                    if len(instance['history']) < len(history) or instance['history'][i] != action:
-                        id = get_id_from_actions(instance['history'])
-                        if id not in id_closed:
-                            try:
-                                instances[id]["pendingTasks"].put(make_action("exit"))
-                                id_closed.add(id)
-                            except KeyError:
-                                print("KeyError ", get_id_from_actions(instance['history']))
-                                pass
+    # Ask the clients to exit
+    for sid in ids_to_close:
+        try:
+            instances[sid]["pendingTasks"].put(make_action("exit"))
+        except KeyError:
+            pass                         # it may already have disappeared
 
-    for id in id_closed:
-        # while instances[id]["pendingTasks"].__len__()!=0:
-        #     pass
-        actions_to_stateId.pop(str(instances[id]['history']))
-        instances.pop(id)
-
-
+    # Now safely remove from the dicts
+    for sid in ids_to_close:
+        inst = instances.pop(sid, None)  # pop returns None if already gone
+        if inst and inst.get('history'):
+            actions_to_stateId.pop(str(inst['history']), None)
+            
 def start_scene(config, nb_actions):
     """Start the first client.
 
@@ -601,7 +627,7 @@ def get_result(result_id, timeout=None):
             except queue.Empty:
                 print("TIMEOUT ", timeout)
                 res = {"stateId": result_id,
-                       "observation": "",
+                       "observation": firstObservation.back(),
                        "reward": 0.0,
                        "done": True,
                        "info": {"error": "TIMEOUT"}

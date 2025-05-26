@@ -7,3 +7,6 @@ Results/
 rlberry_data/
 _tests/
 wandb/
+wandb/debug-cli.nhnhan.log
+wandb/debug-internal.log
+wandb/debug.log

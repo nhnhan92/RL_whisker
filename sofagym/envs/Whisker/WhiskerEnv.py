@@ -40,10 +40,10 @@ class WhiskerEnv:
                       "goal": False,
                       "start_node": None,
                       "scale_factor": 5,  # equivalent to simulation duration = scale_factor * dt - dt
-                      "timer_limit": 60,
-                      "timeout": 50,
+                      "timer_limit": 150,
+                      "timeout": 120,
                       "display_size": (800, 600),
-                      "render": 0,
+                      "render": 1,
                       "save_data": False,
                       "save_image": False,
                       "save_path": path + "/Results" + "/Whisker",
@@ -55,11 +55,11 @@ class WhiskerEnv:
                       "time_before_start": 0,
                       "dt": 0.01,
                       "design_params": [100,1,20,2.0,0.1,0.0],
-                      "nb_actions": -1,
+                      "nb_actions": 1,
                       "dim_state": dim_state,
                       "init_states": [0,0,100,1,20,2,0.1,0.1],
                       "randomize_states": True,
-                      "use_server": False,
+                      "use_server": True,
                       "zFar":4000
                       }
     def __init__(self, config = None, root=None, use_server: Optional[bool]=None):
@@ -79,7 +79,8 @@ class WhiskerEnv:
         self.env.observation_space = spaces.Box(low_coordinates, high_coordinates,
                                             dtype='float32')
         self.body_length_categories = np.array([80,90,100])
-    
+        if self.env.root is None and not self.use_server:
+            self.env.init_root()
     # called when an attribute is not found:
     def __getattr__(self, name):
         # assume it is implemented by self.instance

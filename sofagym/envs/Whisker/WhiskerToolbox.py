@@ -282,7 +282,7 @@ class rewardShaper(Sofa.Core.Controller):
         # print(f"Strain max = {max(self.strain_zz)}")
         # print(f"Strain ave = {average_strain:.5f}")
     def onAnimateEndEvent(self, event):
-        # self.arti_sys.angleIn[1] = 0.6
+        # self.arti_sys.angleIn[1] = -0.65
         self.initiated_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
         if self.time <= 1:
             self.arti_sys.angleIn[0] = self.original_min_pos - self.initiated_min_pos               
@@ -330,13 +330,18 @@ class rewardShaper(Sofa.Core.Controller):
             
         alpha = 0.1
         beta = 0.05
+        # print(f'check getReward = {self.rootNode.applyAction.new_angleIn}')
+        # print(f'check force_value = {self.force_value[1]}')
         if abs(self.force_value[1]) <= 0.001 or self.rootNode.applyAction.new_angleIn > 0.6:
             self.reward = 0
         else:
             force_penalty = np.maximum(0, (abs(self.force_value[1]) - self.force_thres)/self.force_thres)
+            # print(f'check force_pen = {force_penalty}')
             base_reward_force = alpha - alpha*force_penalty
+
             # print(f"force_penalty = {force_penalty} => base_reward_force = {base_reward_force}")
             rot_angle_penalty = abs(self.angleIn_diff)*self.scale_factor/self.rootNode.applyAction.max_incr
+            # print(f'check rot_angle_penalty = {rot_angle_penalty}')
             # print(f"self.rootNode.applyAction.max_incr = {self.rootNode.applyAction.max_incr}")
             base_reward_angle = beta * rot_angle_penalty
             # print(f"rot_angle_penalty = {rot_angle_penalty} => base_reward_force = {base_reward_angle}")
@@ -376,10 +381,8 @@ class applyAction(Sofa.Core.Controller):
         self.arti_sys = self.root.Whisker_node.getChild("Articulation_system")
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value
-        self.new_angleIn = current_angleIn[1] + incr
-        # with self.arti_sys.angleIn.writeable() as arti_input:
-        if self.new_angleIn < 0.65:
-            self.arti_sys.angleIn.value = [current_angleIn[0],self.new_angleIn]
+        self.new_angleIn = max(min(current_angleIn[1] + incr, 0.65), -0.65) 
+        self.arti_sys.angleIn.value = [current_angleIn[0],self.new_angleIn]
             
     def _normalizedAction_to_action(self, action):
         return self.max_incr*action/2
