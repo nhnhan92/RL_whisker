@@ -41,9 +41,9 @@ class WhiskerEnv:
                       "start_node": None,
                       "scale_factor": 5,  # equivalent to simulation duration = scale_factor * dt - dt
                       "timer_limit": 150,
-                      "timeout": 50,
+                      "timeout": 120,
                       "display_size": (800, 600),
-                      "render": 0,
+                      "render": 1,
                       "save_data": False,
                       "save_image": False,
                       "save_path": path + "/Results" + "/Whisker",
@@ -55,7 +55,7 @@ class WhiskerEnv:
                       "time_before_start": 0,
                       "dt": 0.01,
                       "design_params": [100,1,20,2.0,0.1,0.0],
-                      "nb_actions": -1,
+                      "nb_actions": 1,
                       "dim_state": dim_state,
                       "init_states": [0,0,100,1,20,2,0.1,0.1],
                       "randomize_states": True,
@@ -129,7 +129,7 @@ class WhiskerEnv:
     def reset(self):
         """Reset simulation.
         """
-        self.initialize_states()
+        # self.initialize_states()
 
         if self.env.config["goal"]:
             self.init_goal()

@@ -65,7 +65,7 @@ class DesignLogger:
         else:
             self.average_discrete_design[body_length][idx] = reward
         
-        if self.count[body_length] % 100 == 0:  
+        if self.count[body_length] % 10 == 0:  
             # Check the type of design.
             if isinstance(design, dict):
                 # Convert dictionary into a string: "key1=value1, key2=value2, ..."
@@ -75,7 +75,7 @@ class DesignLogger:
             else:
                 design_str = str(int(design))
             self.data[body_length].append([self.count[body_length], design_str, float(reward)])
-        if self.count[body_length] % 1000 == 0:
+        if self.count[body_length] % 20 == 0:
             # dump_self_data_size(self.data, tag=f" #{self.count[body_length]}")
             table = wandb.Table(data=self.data[body_length], columns=self.columns)
             wandb.log({f"designs_{body_length}": table, "train/design_count": self.count[body_length]})
