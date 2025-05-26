@@ -16,7 +16,7 @@ PPO:
     policy: 'MlpPolicy'
     learning_rate: 0.0003
     n_steps: 150
-    batch_size: 64
+    batch_size: 60
     n_epochs: 10
     gamma: 0.99
     gae_lambda: 0.95
@@ -37,7 +37,7 @@ PPO:
     eval_freq: 30000
     n_eval_episodes: 5
     save_freq: 60000
-    video_length: 100
+    video_length: 150
   model_params:
     batch_size_for_distupdate: 10  # Batch size for design updates
     dist_update_period: 10  # Number of designs before each update
@@ -49,7 +49,10 @@ PPO:
     thickness: [2,4,5]
     chamber_length: [20,40,11]
     params_path: "/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/whisker_params.yml"
-
+/home/nhnhan/.pyenv/versions/3.10.13/envs/rlsofa/lib/python3.10/site-packages/stable_baselines3/ppo/ppo.py:145: UserWarning: You have specified a mini-batch size of 64, but because the `RolloutBuffer` is of size `n_steps * n_envs = 3000`, after every 46 untruncated mini-batches, there will be a truncated mini-batch of size 56
+We recommend using a `batch_size` that is a factor of `n_steps * n_envs`.
+Info: (n_steps=150 and n_envs=20)
+  warnings.warn(
 
 A2C:
   init_kwargs:

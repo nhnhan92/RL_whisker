@@ -86,14 +86,15 @@ def do_animate(task, _getReward_, _getState_, _startCmd, _getPos):
     # Run simulation and get results (position, state, reward)
     try:
         pos = step_simulation(root, config, action, _startCmd, _getPos)
+        position = pos
         done, reward = _getReward(root)
         obs = _getState(root)
     except Exception as e:
         print("[CLIENT] exception:", e)
         obs, reward, done = _getState(root), 0.0, True
     # Notify the server that the task is done
-    finally:
-        s.taskDone(stateId, history, make_result(stateId, obs, reward, done))
+    # finally:
+    
         
     if config['save_data']:
         data = {"history": history,
@@ -105,9 +106,7 @@ def do_animate(task, _getReward_, _getState_, _startCmd, _getPos):
         with open(filename, 'w') as outfile:
             json.dump(data, outfile)
 
-    
-
-
+    s.taskDone(stateId, history, make_result(stateId, obs, reward, done))
 
 
 def send_position():
