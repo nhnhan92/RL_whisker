@@ -231,7 +231,6 @@ class RobotDesignOptimizer(nn.Module):
                 'pressure1': torch.clamp(inversed_pressure_list[0], min=self.pressure_range[0],max=self.pressure_range[1]),
                 'pressure2': torch.clamp(inversed_pressure_list[1], min=self.pressure_range[0],max=self.pressure_range[1])} ### pressure_list is 'list' type then there is no .numpy()
 
-
     def update(self, designs, rewards, t,max_std=0.15):
         batch_reward_sums = {}
         batch_counts = {}
@@ -297,7 +296,6 @@ class RobotDesignOptimizer(nn.Module):
 
         # Adjust the temperature parameter beta based on the updated scores.
         self.set_beta(t)
-
 
     def log(self, t):
 

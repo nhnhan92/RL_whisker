@@ -82,6 +82,10 @@ class DesignLogger:
 
 
     def state_dict(self):
+        # convert each deque to a list so it can be pickled
+        designs_serialised = {k: list(v) for k, v in self.designs.items()}
+        rewards_serialised = {k: list(v) for k, v in self.rewards.items()}
+
         sums = {}
         for body_length, inner in self.average_discrete_design.items():
             for key, value in inner.items():
@@ -92,15 +96,15 @@ class DesignLogger:
         range = max_sum - min_sum
         extra_rewards = {k: (v - min_sum) / range for k, v in sums.items()}
         return {
-            'designs': list(self.designs),
-            'rewards': list(self.rewards),
+            'designs': self.designs,
+            'rewards': self.rewards,
             'count': self.count,
             'extra_rewards': extra_rewards
         }
 
     def load_state_dict(self, state_dict):
-        self.designs = deque(state_dict['designs'], maxlen=self.maxlen)
-        self.rewards = deque(state_dict['rewards'], maxlen=self.maxlen)
+        self.designs = state_dict['designs']
+        self.rewards = state_dict['rewards']
         self.count = state_dict['count']
 
     def get_designs_and_rewards(self, n,cut_off_length):
@@ -141,7 +145,10 @@ class DesignManager(VecEnvWrapper):
                  ent_decay_end = 10,
                  cut_off_list = [5,10,15,20],
                  test_mode=False,
-                 shared_distribution = None):
+                 shared_distribution = None,
+                 resume = False,
+                 logdir = None,
+                 save_freq = 300):
         super().__init__(venv)
         self.test_mode = test_mode
         # self.steps_per_EP= n_steps
@@ -156,9 +163,10 @@ class DesignManager(VecEnvWrapper):
         self.design_space = design_space
         self.designs = None
         self.rewards = np.zeros(self.n_env)
+        self.logdir = logdir
         self.ent_decay_start = ent_decay_start # start of entropy decay
         self.ent_decay_end = ent_decay_end  # end of entropy decay
-        logdir = './test_coopt'
+        self.save_freq = save_freq
         self.design_optimizer = {}
         self.last_design_update = {}
         self.design_avg_extra_reward = LinearSchedule(0, 1, ent_decay_start, ent_decay_end)
@@ -175,9 +183,11 @@ class DesignManager(VecEnvWrapper):
                                                                 self.ent_decay_end)
         else:
             self.design_optimizer = shared_distribution
-        self.ckptr = Checkpointer(os.path.join(logdir, 'ckpts_design_params'))
+        self.ckptr = Checkpointer(os.path.join(self.logdir, 'ckpts_design_params'))
         self.configure_design_manager(self.batch_size)
-
+        if resume:
+            # try to load immediately (when env is created outside SB3)
+            self.load()
     def distribution_state_reference(self):
         shared_dist = []
         for cut_off_length, optimizer in self.design_optimizer.items():
@@ -268,7 +278,7 @@ class DesignManager(VecEnvWrapper):
                                             self.t)
                 self.design_optimizer[i].log(self.t)
                 self.last_design_update[i] = design_count[i]
-
+        
     def step_async(self, actions):
         self.venv.step_async(actions)
 
@@ -290,6 +300,8 @@ class DesignManager(VecEnvWrapper):
                 self.trigger_dist_update()
             self.init_scene()
             dones[:] = True  # Force reset after a design interval
+            if not self.test_mode and self.t%self.save_freq == 0 and self.t != 0 :
+                self.save()
         return obs, rewards, dones, infos
     def state_dict(self):
         return self.logger.state_dict()
@@ -298,12 +310,39 @@ class DesignManager(VecEnvWrapper):
         self.logger.load_state_dict(state_dict['designs'])
 
     def save(self):
-        state = self.design_optimizer.state_dict()
-        self.ckptr.save(state, self.t)
+        # state = self.design_optimizer.state_dict()
+        # self.ckptr.save(state, self.t)
+        dist_state = {cut: opt.state_dict()
+                  for cut, opt in self.design_optimizer.items()}
+        payload = {
+            "dist_state": dist_state,
+            "logger_state": self.logger.state_dict(),
+            "step": self.t
+        }
+        self.ckptr.save(payload, self.t)
 
+    # def load(self, t=None):
+    #     state_dict = self.ckptr.load(t)
+    #     if state_dict is not None:
+    #         self.design_optimizer.load_state_dict(state_dict)
+    #     design_count = self.get_design_count()
+    #     self.last_design_update = design_count - (design_count % self.update_period)
     def load(self, t=None):
-        state_dict = self.ckptr.load(t)
-        if state_dict is not None:
-            self.design_optimizer.load_state_dict(state_dict)
+        payload = self.ckptr.load(t)
+        if payload is None:
+            return
+
+        dist_state = payload["dist_state"]
+        for cut, sd in dist_state.items():
+            self.design_optimizer[cut].load_state_dict(sd)
+
+        # restore logger
+        self.logger.load_state_dict(payload["logger_state"])
+
+        # restore counters
+        self.t = payload.get("step", 0)
         design_count = self.get_design_count()
-        self.last_design_update = design_count - (design_count % self.update_period)
+        self.last_design_update = {
+            cut: design_count[cut] - design_count[cut] % self.update_period
+            for cut in self.cut_off_list
+        }

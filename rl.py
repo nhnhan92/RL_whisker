@@ -134,7 +134,7 @@ if __name__ == '__main__':
                             )
             agent.fit(total_steps)
         else:
-            agent = Agent.load(model_dir)
+            agent = Agent.load(model_dir = model_dir)
             
             if train == 'continue':
                 agent.fit(total_steps)

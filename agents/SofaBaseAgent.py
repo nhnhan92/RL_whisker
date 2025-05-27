@@ -54,7 +54,7 @@ class SofaBaseAgent(SofaTestAgent):
     -----
     Create subclasses for different types of agents and inherit from this class.
     """
-    def __init__(self, env_id, seed=0, output_dir="./Results", max_episode_steps=None, n_envs=1):
+    def __init__(self, env_id, seed=0, output_dir="./Results", max_episode_steps=None, n_envs=1,model_name=None, resume = False):
         """
         Initialization of base agent class. Creates the environment for the SOFA scene, 
         which will be used for the training using RL.

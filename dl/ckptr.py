@@ -19,61 +19,62 @@ class Checkpointer():
         self.format = format
         os.makedirs(ckptdir, exist_ok=True)
 
-    def ckpts(self):
+    def _all_steps(self) -> list[int]:
         """Get list of checkpoints."""
         ckpts = glob.glob(os.path.join(self.ckptdir, "*.pt"))
-        return sorted([int(c.split('/')[-1][:-3]) for c in ckpts])
-
-    def get_ckpt_path(self, t):
+        # return sorted([int(c.split('/')[-1][:-3]) for c in ckpts])
+        return sorted(int(os.path.basename(c)[:-3]) for c in ckpts)
+    
+    def _ckpt_path(self, t: int) -> str:
         """Convert checkpoint timestep to path."""
         return os.path.join(self.ckptdir, self.format.format(t) + '.pt')
 
-    def save(self, save_dict, t):
-        """Save checkpoint."""
-        ts = self.ckpts()
-        max_t = max(ts) if len(ts) > 0 else -1
-        assert t >= max_t, (f"Cannot save a checkpoint at timestep {t} when "
-                            "checkpoints at a later timestep exist.")
-        if '_rng' in save_dict:
-            raise ValueError("Can't save rng state because the key '_rng' "
-                             "is in use.")
-        save_dict['_rng'] = rng.get_state()
-        torch.save(save_dict, self.get_ckpt_path(t))
-        self.prune_ckpts()
+    def save(self, payload: dict, t: int):
+        """
+        payload: any dict (may itself contain nested dicts / tensors)
+        t      : current global step
+        """
+        # forbid overwriting newer checkpoints
+        if self._all_steps() and t < max(self._all_steps()):
+            raise ValueError(f"step {t} older than latest checkpoint")
 
-    def load(self, t=None):
-        """Load checkpoint."""
+        # stash RNG
+        if "_rng" in payload:
+            raise KeyError("'_rng' key reserved by Checkpointer")
+        payload = payload | {"_rng": rng.get_state()}
+
+        torch.save(payload, self._ckpt_path(t))
+        self._prune()
+
+    def load(self, t: int | None = None) -> dict | None:
+        """
+        Returns the saved dict (without touching it) and restores RNG.
+        If no checkpoints exist and t is None, returns None.
+        """
+        steps = self._all_steps()
+        if not steps:
+            return None
         if t is None:
-            if len(self.ckpts()) == 0:
-                return None
-            else:
-                t = max(self.ckpts())
-        path = self.get_ckpt_path(t)
-        if not os.path.exists(path):
-            raise ValueError(f"Can't find checkpoint at iteration {t}.")
-        if torch.cuda.is_available():
-            save_dict = torch.load(path)
-        else:
-            save_dict = torch.load(path, map_location='cpu')
-        rng.set_state(save_dict['_rng'])
-        return save_dict
+            t = steps[-1]
+        if t not in steps:
+            raise FileNotFoundError(f"no checkpoint at step {t}")
 
-    def prune_ckpts(self):
-        """Prune old checkpoints."""
+        obj = torch.load(self._ckpt_path(t), map_location="cpu")
+        rng.set_state(obj.pop("_rng"))
+        return obj
+
+    def _prune(self):
         if self.ckpt_period is None:
             return
-        ts = np.sort(self.ckpts())
-        ckpt_period = [t // self.ckpt_period for t in ts]
-        last_period = -1
-        ts_to_remove = []
-        for i, t in enumerate(ts[:-1]):
-            if ckpt_period[i] > last_period:
-                last_period = ckpt_period[i]
-            else:
-                ts_to_remove.append(t)
-
-        for t in ts_to_remove:
-            os.remove(self.get_ckpt_path(t))
+        steps = np.array(self._all_steps())
+        keep  = {steps[-1]}                     # always keep the latest
+        periods = steps // self.ckpt_period
+        for p in np.unique(periods):
+            # keep the first ckpt of every period
+            keep.add(steps[periods == p][0])
+        for step in steps:
+            if step not in keep:
+                os.remove(self._ckpt_path(step))
 
 
 if __name__ == '__main__':
@@ -91,7 +92,7 @@ if __name__ == '__main__':
 
             assert ckptr.load()['test'] == 99
 
-            assert ckptr.ckpts() == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 99]
+            assert ckptr._all_steps() == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 99]
             for t in [0, 10, 50]:
                 assert ckptr.load(t)['test'] == t
 
@@ -113,7 +114,7 @@ if __name__ == '__main__':
             for t in range(100):
                 ckptr.save({'test': t},  t)
             for t in range(100):
-                assert os.path.exists(ckptr.get_ckpt_path(t))
+                assert os.path.exists(ckptr._ckpt_path(t))
             rmtree('.test_ckpt_dir')
 
         def test_rng(self):

@@ -34,13 +34,13 @@ PPO:
   fit_kwargs:
     total_timesteps: 1000000
     max_episode_steps: 150
-    eval_freq: 30000
+    eval_freq: 750
     n_eval_episodes: 5
-    save_freq: 60000
+    save_freq: 750
     video_length: 150
   model_params:
-    batch_size_for_distupdate: 10  # Batch size for design updates
-    dist_update_period: 10  # Number of designs before each update
+    batch_size_for_distupdate: 1  # Batch size for design updates
+    dist_update_period: 1  # Number of designs before each update
     ent_decay_start: 200000
     ent_decay_end: 950000
     no_chamber: [1,2]

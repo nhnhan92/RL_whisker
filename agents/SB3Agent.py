@@ -158,10 +158,10 @@ class SB3Agent(SofaBaseAgent):
     - Use the `eval` method to evaluate the performance of a trained model.
     - Use the `load` method to load a previously trained model to continue training using `fit` or evaluate it using `eval`.
     """
-    def __init__(self, env_id, algo_name, seed=0, output_dir="./Results", max_episode_steps=None, n_envs=1, model_name=None, **kwargs):
+    def __init__(self, env_id, algo_name, seed=0, output_dir="./Results", 
+                 max_episode_steps=None, n_envs=1, model_name=None, resume = False, **kwargs):
         """Initialization of stable baselines3 agent class. Creates the environment for the SOFA scene, 
         which will be used for the training and evaluation using RL.
-        
         Parameters
         ----------
         env_id : str
@@ -187,6 +187,7 @@ class SB3Agent(SofaBaseAgent):
         self.algo = eval(self.algo_name)
         self.model_name = model_name
         self.params = kwargs
+        self.resume = resume
         self.init_model()
         
     def init_dirs(self):
@@ -278,6 +279,7 @@ class SB3Agent(SofaBaseAgent):
         # Check if a pre-trained agent is loaded and get loaded timestep
         if self.params.get('model_params'):
             self.model_timestep = self.params['model_params'].get('loaded_timestep')
+            self.create_model_log()
         else:
             self.model_timestep = None
             self.create_model_log()
@@ -343,12 +345,7 @@ class SB3Agent(SofaBaseAgent):
         print("[INFO]  >>    algo: ", self.algo_name)
         print("[INFO]  >>    seed: ", self.seed)
         print("-------------------------------\n")
-        chunk = 300
-        # for _ in range(int(total_timesteps/chunk)):
-        #     self.model.learn(total_timesteps=chunk, reset_num_timesteps=False,
-        #                     progress_bar=True, log_interval=1, tb_log_name="log",
-        #                     callback=[eval_callback, save_callback])
-        #     self.env.hard_reset_workers() 
+
         self.model.learn(total_timesteps=total_timesteps, reset_num_timesteps=False,
                         progress_bar=True, log_interval=1, tb_log_name="log",
                         callback=[eval_callback, save_callback])
@@ -454,7 +451,9 @@ class SB3Agent(SofaBaseAgent):
         max_episode_steps = model_log['fit_kwargs']['max_episode_steps']
         model_name = model_params['model_name']
         model_log['model_params']['loaded_timestep'] = model_timestep
-        agent = cls(env_id, algo_name, seed, output_dir, max_episode_steps, n_envs, model_name, **model_log)
+        resume = True
+        agent = cls(env_id, algo_name, seed, output_dir, 
+                    max_episode_steps, n_envs, model_name, resume, **model_log)
         return agent
     
     def env_wrap(self, n_envs, normalize=True):
@@ -472,6 +471,7 @@ class SB3Agent(SofaBaseAgent):
         self.vec_env : object
             The wrapped training environment.
         """
+        save_freq = max(self.fit_kwargs['save_freq'] // self.n_envs, 1)
         n_envs_test = 5
         ratio_raw_test = int(n_envs/n_envs_test)
         self.vec_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps) for i in range(n_envs)])
@@ -486,6 +486,9 @@ class SB3Agent(SofaBaseAgent):
                                 ent_decay_end = self.ent_decay_end,
                                 cut_off_list = self.cut_off_list,
                                 test_mode=False,
+                                resume=self.resume,
+                                logdir=self.log_dir,
+                                save_freq = save_freq
                                 )
         self.test_env = DesignManager(venv=self.test_env,
                                 design_space=self.design_space,
@@ -497,7 +500,10 @@ class SB3Agent(SofaBaseAgent):
                                 ent_decay_end = self.ent_decay_end,
                                 cut_off_list = self.cut_off_list,
                                 test_mode=True,
-                                shared_distribution=self.vec_env.design_optimizer 
+                                shared_distribution=self.vec_env.design_optimizer,
+                                resume=self.resume,
+                                logdir=self.log_dir,
+                                save_freq = save_freq
                                 )
         if normalize:
             if self.model_timestep is None:
