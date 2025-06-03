@@ -113,16 +113,23 @@ if __name__ == '__main__':
     max_episode_steps = args.max_steps  # Total number of training steps for each sampling time (episode)
     kwargs = {'model_params':
                 {'params_path': parent_dict+"/sofagym/envs/Whisker/whisker_params.yml"}}
-
-    with wandb.init(project='rl_whisker',
-                    id=f"train_{run_id}", group=f"session_{run_id}",
-                    job_type='train', resume='allow'):
-        if model_dir is None:
+    if model_dir is None:
             if train == 'continue' or (train == 'none' and test):
                 parser.error("Valid argument --model_dir must be provided where previous model training files are saved")
         
-        Agent = eval(framework + "Agent")
-        if train == 'new':
+    Agent = eval(framework + "Agent")
+    if not test:
+         job_type = 'train'
+         resume = True
+    else:
+         job_type = 'test'
+         resume = False
+    with wandb.init(project='rl_whisker',
+                id=f"train_{run_id}", group=f"session_{run_id}",
+                job_type=job_type, resume='allow'):
+        
+        if train == 'new' and not test:
+            
             agent = Agent(env_id = env_name,
                             algo_name = algo_name,
                             seed=seed, 
@@ -134,13 +141,13 @@ if __name__ == '__main__':
                             )
             agent.fit(total_steps)
         else:
-            agent = Agent.load(model_dir = model_dir)
+            agent = Agent.load(model_dir = model_dir,resume = resume)
             
             if train == 'continue':
                 agent.fit(total_steps)
 
         if test:
-            agent.eval(n_tests, model_timestep='best_model', render=True, record=True)
+            agent.eval(n_tests, model_timestep='1980000', render=True, record=True)
 
     agent.close()
     print("... End.")

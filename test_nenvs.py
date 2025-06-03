@@ -29,7 +29,7 @@ if __name__ == '__main__':
     logdir = './test_coopt'
     run_id = os.path.basename(logdir)
     total_steps = 1000
-    n_steps = 50  # Total number of training steps for each sampling time
+    n_steps = 30  # Total number of training steps for each sampling time
     batch_size = 5  # Batch size for design updates
     update_period = 2  # Number of designs before each update
     nenv = 1  # Number of parallel environments
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     ins = whiskerdesignspace(body_length,no_chamber,chamber_length,thickness,pressure_range)
     run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    with wandb.init(project='rl_whisker',
+    with wandb.init(project='test_rl_whisker',
                     id=f"train_{run_id}", group=f"session_{run_id}",
                     job_type='train', resume='allow'):
         env_id = "whisker-v0"
@@ -63,15 +63,22 @@ if __name__ == '__main__':
                             update_period = update_period,
                             ent_decay_start = ent_decay_start,
                             ent_decay_end = ent_decay_end,
-                            cut_off_list = body_length) # Wrap the environment in the DesignManager class
+                            cut_off_list = body_length,
+                            test_mode=False,
+                            shared_distribution = None,
+                            resume = False,
+                            logdir = None,
+                            save_freq = 300) # Wrap the environment in the DesignManager class
 
         obs = env.reset()
         timer = 0
         ite = 0
+        sum_rew = 0
         while ite*n_steps<total_steps:
             timer +=1
             actions = [env.action_space.sample() for _ in range(nenv)]
             obs, rewards, dones, info = env.step(actions)
+            sum_rew += 1
             # print(obs)
             # print(rewards)
             # print(dones)

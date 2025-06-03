@@ -40,7 +40,7 @@ class WhiskerEnv:
                       "goal": False,
                       "start_node": None,
                       "scale_factor": 5,  # equivalent to simulation duration = scale_factor * dt - dt
-                      "timer_limit": 150,
+                      "timer_limit": 180,
                       "timeout": 120,
                       "display_size": (800, 600),
                       "render": 1,

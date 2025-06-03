@@ -8,47 +8,42 @@ import wandb
 import gym
 import os
 from dl.ckptr import Checkpointer
-from coopt.discrete_robot_optimizer import DiscreteDesignOptimizer
 from coopt.robot_optimizer import RobotDesignOptimizer
-from itertools import product
-
-from pympler import asizeof
-
-def bytes_to_mb(x):
-    return x / (1024 ** 2)
-
-def dump_self_data_size(data, tag=""):
-    size_b = asizeof.asizeof(data)
-    print(f"[mem]{tag} self.data = {bytes_to_mb(size_b):.2f} MB")
-
-
-
+from itertools import product, islice
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 class DesignLogger:
     """Records and keeps the history of designs and refwards."""
 
-    def __init__(self, maxlen,cut_off_list,discrete_combinations):
+    def __init__(self, maxlen,cut_off_list,discrete_combinations,resume):
         self.maxlen = maxlen
         self.discrete_combinations = discrete_combinations
+        self.resume = resume
         self.designs = {}
         self.rewards = {}
         self.count = {}
         self.data = {}
         self.average_discrete_design = {}
-        for i in cut_off_list:
+        self.count_disc_categories = {}
+        self.body_length = cut_off_list
+        for i in self.body_length :
             self.designs[i] = deque([], maxlen=maxlen)
             self.rewards[i] = deque([], maxlen=maxlen)
             self.count[i] = 0
             self.data[i] = []
             self.average_discrete_design[i] = {}
+            self.count_disc_categories[i] = {}
             for j in range(len(self.discrete_combinations)):
                 self.average_discrete_design[i][j] = 0
+                self.count_disc_categories[i][j] = 0
             wandb.define_metric(f"designs_{i}", step_metric="train/design_count")
 
         wandb.define_metric("train/design_count", step_metric="train/step")
         self.columns = ['count', 'design', 'reward']
         
 
-    def log(self, design, reward):
+    def log(self, design, reward,no_design: int = 20):
         body_length = design['body_length']
         if body_length in self.designs:
             self.designs[body_length].append(design)
@@ -59,42 +54,100 @@ class DesignLogger:
         
         d_val = (design['no_chamber'], design['chamber_length'], design['thickness'])
         idx = self.discrete_combinations.index(d_val)
+        self.count_disc_categories[body_length][idx] += 1
         if self.average_discrete_design[body_length][idx] != 0:
-            if self.average_discrete_design[body_length][idx] < reward:
-                self.average_discrete_design[body_length][idx] = reward
+            # if self.average_discrete_design[body_length][idx] < reward:
+            self.average_discrete_design[body_length][idx] = (self.average_discrete_design[body_length][idx]+reward)/2
         else:
             self.average_discrete_design[body_length][idx] = reward
         
-        if self.count[body_length] % 10 == 0:  
-            # Check the type of design.
-            if isinstance(design, dict):
-                # Convert dictionary into a string: "key1=value1, key2=value2, ..."
-                design_str = ", ".join(str(value) for value in design.values())
-            elif isinstance(design, (list, tuple)):
-                design_str = str([int(x) for x in design])
-            else:
-                design_str = str(int(design))
-            self.data[body_length].append([self.count[body_length], design_str, float(reward)])
-        if self.count[body_length] % 20 == 0:
-            # dump_self_data_size(self.data, tag=f" #{self.count[body_length]}")
-            table = wandb.Table(data=self.data[body_length], columns=self.columns)
-            wandb.log({f"designs_{body_length}": table, "train/design_count": self.count[body_length]})
+        if self.count[body_length] % no_design == 0:
+            design_list, reward_list = self.get_designs_and_rewards(no_design,body_length)  
+            # 1. Zip them together into (reward, design) pairs
+            paired = list(enumerate(zip(reward_list, design_list)))
+            # 2. Sort the pairs by reward in descending order
+            paired_sorted = sorted(paired, key=lambda x: x[1][0], reverse=True)
+            top3 = list(islice(paired_sorted, 3))  
+            columns = ["Design_count", "Reward", "Design"]
+            for i, (orig_idx,(r, design)) in enumerate(top3):
+                # Check the type of design.
+                if isinstance(design, dict):
+                    # Convert dictionary into a string: "key1=value1, key2=value2, ..."
+                    design_str = ", ".join(str(value) for value in design.values())
+                elif isinstance(design, (list, tuple)):
+                    design_str = str([int(x) for x in design])
+                else:
+                    design_str = str(int(design))
+                self.data[body_length].append([(self.count[body_length] - no_design) + orig_idx+1, r, design_str])     
+            tbl= wandb.Table(data=self.data[body_length], columns=columns)
+            # wandb.log({f"designs_{body_length}": tbl, "train/design_count": self.count[body_length]})
+            plot = wandb.plot_table(
+                    vega_spec_name = "wandb/line/v0",  # use wandb's default line plot template
+                    data_table = tbl,
+                    fields = {"x": "Design_count", "y": "Reward", "name": "Design"},  # this sets "Design" as legend/label
+                    string_fields={"title": "Reward tracking"},
+                    )
+            wandb.log({f"designs_{body_length}": plot, "train/design_count": self.count[body_length]})
+            self.log_count_bar()
+            # self.data[body_length].append([self.count[body_length], design_str, float(reward)])
+        # if self.count[body_length] % 20 == 0:
+        #     # dump_self_data_size(self.data, tag=f" #{self.count[body_length]}")
+        #     table = wandb.Table(data=self.data[body_length], columns=self.columns)
+        #     wandb.log({f"designs_{body_length}": table, "train/design_count": self.count[body_length]})
+    def log_class_rank(self,extra_rewards, t):
+        extra_rewards_list = [extra_rewards[i] for i in sorted(extra_rewards)]
+        x_vals = np.arange(len(extra_rewards_list)).tolist()
+        y_vals = [extra_rewards_list] 
+        plot = wandb.plot.line_series(
+                    xs=x_vals,
+                    ys=y_vals,
+                    keys=[f"Extra reward rate"],
+                    title=f"Disc_var_rank",
+                    xname="design idx")
 
+        wandb.log({f"Disc_var_rank/Disc_var_rank_plot": plot,
+                "train/step": t})
+        
+    def log_count_bar(self, section="Design_count_bar"):
+        xs   = list(range(len(self.discrete_combinations)))
+        for body_length in self.body_length:
+            ys   = self.count_disc_categories[body_length].values()
 
-    def state_dict(self):
+            fig, ax = plt.subplots(figsize=(11, 4))
+            ax.plot(xs, ys, linestyle='None', marker='o', color='steelblue')
+            # cosmetic: remove background, spines, etc.
+            ax.set_facecolor("none")          # axes bg transparent
+            fig.patch.set_alpha(0)            # figure bg transparent
+            for spine in ("top", "right"):
+                ax.spines[spine].set_visible(False)
+
+            ax.set_xlabel("design idx")
+            ax.set_ylabel("count")
+            ax.set_title(f"Count per idx  (body_length={body_length})")
+            # 2 ── log to W&B as an image ─────────────────────────────────────────
+            wandb.log({f"{section}/count_bar_{body_length}": wandb.Image(fig),
+                    "train/design_count": self.count[body_length]})
+            plt.close('all')   # free the memory
+
+    def state_dict(self,top_k: int = 5):
         # convert each deque to a list so it can be pickled
         designs_serialised = {k: list(v) for k, v in self.designs.items()}
         rewards_serialised = {k: list(v) for k, v in self.rewards.items()}
-
         sums = {}
         for body_length, inner in self.average_discrete_design.items():
             for key, value in inner.items():
                 # Here, key is the "second item" (e.g., '1', '2', '3').
                 sums[key] = sums.get(key, 0) + value
-        max_sum = max(sums.values())
-        min_sum = min(sums.values())
-        range = max_sum - min_sum
-        extra_rewards = {k: (v - min_sum) / range for k, v in sums.items()}
+        # -- pick “good” categories (top-K here) -------------------------------
+        good_keys = sorted(sums, key=sums.get, reverse=True)[:top_k]
+        good_vals = [sums[k] for k in good_keys]
+        hi, lo = max(good_vals), min(good_vals)
+        denom = hi - lo or 1.0           # avoid ÷0  (all equal → set to 0)
+        extra_rewards = {k: (sums[k] - lo) / denom if k in good_keys else 0.0 for k in sums}
+        # max_sum = max(sums.values())
+        # min_sum = min(sums.values())
+        # range = max_sum - min_sum
+        # extra_rewards = {k: (v - min_sum) / range for k, v in sums.items()}
         return {
             'designs': self.designs,
             'rewards': self.rewards,
@@ -143,7 +196,7 @@ class DesignManager(VecEnvWrapper):
                  update_period = 10,
                  ent_decay_start = 1,
                  ent_decay_end = 10,
-                 cut_off_list = [5,10,15,20],
+                 cut_off_list = [60,70,80,90],
                  test_mode=False,
                  shared_distribution = None,
                  resume = False,
@@ -151,7 +204,7 @@ class DesignManager(VecEnvWrapper):
                  save_freq = 300):
         super().__init__(venv)
         self.test_mode = test_mode
-        # self.steps_per_EP= n_steps
+        self.resume = resume
         self.n_env = n_env
         self.steps_per_design = n_steps # Number of evironment steps each design takes
         self.design_count = 0
@@ -169,23 +222,23 @@ class DesignManager(VecEnvWrapper):
         self.save_freq = save_freq
         self.design_optimizer = {}
         self.last_design_update = {}
-        self.design_avg_extra_reward = LinearSchedule(0, 1, ent_decay_start, ent_decay_end)
+        self.design_avg_extra_reward = LinearSchedule(0, 2, ent_decay_end - 500000, ent_decay_end) # -> only give 500k step before training ends
         self.discrete_combinations = list(product(self.design_space[100]['no_chamber'], 
                                                   self.design_space[100]['chamber_length'],
                                                   self.design_space[100]['thickness']))
         if not self.test_mode:
             for i in self.cut_off_list:
                 self.last_design_update[i] = 0
-                # space_idx = list(self.design_space.keys())[i]
                 self.design_optimizer[i] = RobotDesignOptimizer(i,
                                                                 self.design_space[i],
                                                                 self.ent_decay_start, 
                                                                 self.ent_decay_end)
         else:
             self.design_optimizer = shared_distribution
-        self.ckptr = Checkpointer(os.path.join(self.logdir, 'ckpts_design_params'))
+        if self.logdir:
+            self.ckptr = Checkpointer(os.path.join(self.logdir, 'ckpts_design_params'))
         self.configure_design_manager(self.batch_size)
-        if resume:
+        if self.resume:
             # try to load immediately (when env is created outside SB3)
             self.load()
     def distribution_state_reference(self):
@@ -203,7 +256,8 @@ class DesignManager(VecEnvWrapper):
     def configure_design_manager(self, maxlen):
         self.logger = DesignLogger(maxlen = maxlen,
                                    cut_off_list=self.cut_off_list,
-                                   discrete_combinations = self.discrete_combinations)
+                                   discrete_combinations = self.discrete_combinations,
+                                   resume=self.resume)
 
     def get_designs_and_rewards(self, n,cut_off_length):
         return self.logger.get_designs_and_rewards(n,cut_off_length)
@@ -219,7 +273,7 @@ class DesignManager(VecEnvWrapper):
     def _sample_design(self,optimizer):
         with torch.no_grad():
             return self._unnorm(nest.map_structure(
-                            lambda x: x.numpy().item(), optimizer.sample()))
+                            lambda x: x.numpy().item(), optimizer.sample(self.t)))
 
     def _sample_mode(self,optimizer):
         with torch.no_grad():
@@ -259,7 +313,6 @@ class DesignManager(VecEnvWrapper):
         # Update the design distribution
         design_count = self.get_design_count()
         print("Design Count =", design_count)
-        extra_reward_rate = np.zeros(len(self.discrete_combinations))
         state_dict = self.state_dict()
         extra_rewards = state_dict['extra_rewards']
         # print(extra_rewards)
@@ -273,12 +326,12 @@ class DesignManager(VecEnvWrapper):
                     d_val = (sample['no_chamber'], sample['chamber_length'], sample['thickness'])
                     idx = self.discrete_combinations.index(d_val)
                     rewards[j] += base_extra_reward * extra_rewards[idx]
-                    # print(f'extra_rewards[{idx}] = {base_extra_reward * extra_rewards[idx]}')
                 self.design_optimizer[i].update(designs, rewards,
                                             self.t)
                 self.design_optimizer[i].log(self.t)
                 self.last_design_update[i] = design_count[i]
-        
+        if designs_since_update >= self.update_period:
+            self.logger.log_class_rank(extra_rewards,self.t)
     def step_async(self, actions):
         self.venv.step_async(actions)
 
@@ -319,7 +372,8 @@ class DesignManager(VecEnvWrapper):
             "logger_state": self.logger.state_dict(),
             "step": self.t
         }
-        self.ckptr.save(payload, self.t)
+        if self.logdir:
+            self.ckptr.save(payload, self.t)
 
     # def load(self, t=None):
     #     state_dict = self.ckptr.load(t)

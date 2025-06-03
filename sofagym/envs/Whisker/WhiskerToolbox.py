@@ -132,7 +132,7 @@ class rewardShaper(Sofa.Core.Controller):
         if kwargs["rootNode"]:
             self.rootNode = kwargs["rootNode"]
         self.scale_factor = kwargs["scale_factor"]
-        self.cost = None
+        self.done = False
         self.force_thres = kwargs["force_threshold"]
         self.dt = self.rootNode.findData("dt").value
 
@@ -166,6 +166,7 @@ class rewardShaper(Sofa.Core.Controller):
         self.angleIn_prev = 0
         self.angleIn_after = 0
         self.force_by_initiated_pressure = 0
+        self.angleIn_diff = 0
     # def onKeypressedEvent(self, e):
     #     c = e['key']
     def tetrahedron_volume(self,n1,n2,n3,n4):
@@ -324,32 +325,61 @@ class rewardShaper(Sofa.Core.Controller):
             self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
         # self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
         self.angleIn_after = self.arti_sys.angleIn.value[1]
-        self.angleIn_diff = self.angleIn_after - self.angleIn_prev
-        # print(f'Force = {self.force_value}')
-    def getReward(self):
+        # self.angleIn_diff = self.angleIn_after - self.angleIn_prev
+        # print(f'Force = {self.angleIn_diff}')
+    # def getReward(self):
             
-        alpha = 0.1
-        beta = 0.05
-        # print(f'check getReward = {self.rootNode.applyAction.new_angleIn}')
-        # print(f'check force_value = {self.force_value[1]}')
+    #     alpha = 0.1
+    #     beta = 0.05
+    #     # print(f'check getReward = {self.rootNode.applyAction.new_angleIn}')
+    #     # print(f'check force_value = {self.force_value[1]}')
+    #     if abs(self.force_value[1]) <= 0.001 or self.rootNode.applyAction.new_angleIn > 0.6:
+    #         self.reward = 0
+    #     else:
+    #         force_penalty = np.maximum(0, (abs(self.force_value[1]) - self.force_thres)/self.force_thres)
+    #         # print(f'check force_pen = {force_penalty}')
+    #         base_reward_force = alpha - alpha*force_penalty
+
+    #         # print(f"force_penalty = {force_penalty} => base_reward_force = {base_reward_force}")
+    #         rot_angle_penalty = abs(self.angleIn_diff)*self.scale_factor/self.rootNode.applyAction.max_incr
+    #         # print(f'check rot_angle_penalty = {rot_angle_penalty}')
+    #         # print(f"self.rootNode.applyAction.max_incr = {self.rootNode.applyAction.max_incr}")
+    #         base_reward_angle = beta * rot_angle_penalty
+    #         # print(f"rot_angle_penalty = {rot_angle_penalty} => base_reward_force = {base_reward_angle}")
+    #         self.reward = np.maximum(0,base_reward_force + base_reward_angle)
+
+    #     # print("reward = ", self.reward)
+    #     return self.reward, self.cost
+    def getReward(self):
+        weight_f=1.0
+        weight_smooth=0.1
+        weight_flip=0.05
         if abs(self.force_value[1]) <= 0.001 or self.rootNode.applyAction.new_angleIn > 0.6:
             self.reward = 0
+            self.done = True
         else:
-            force_penalty = np.maximum(0, (abs(self.force_value[1]) - self.force_thres)/self.force_thres)
-            # print(f'check force_pen = {force_penalty}')
-            base_reward_force = alpha - alpha*force_penalty
-
-            # print(f"force_penalty = {force_penalty} => base_reward_force = {base_reward_force}")
-            rot_angle_penalty = abs(self.angleIn_diff)*self.scale_factor/self.rootNode.applyAction.max_incr
-            # print(f'check rot_angle_penalty = {rot_angle_penalty}')
-            # print(f"self.rootNode.applyAction.max_incr = {self.rootNode.applyAction.max_incr}")
-            base_reward_angle = beta * rot_angle_penalty
-            # print(f"rot_angle_penalty = {rot_angle_penalty} => base_reward_force = {base_reward_angle}")
-            self.reward = np.maximum(0,base_reward_force + base_reward_angle)
-
+            # --- force term ------------------------------------------------------
+            band = 0.05 * self.force_thres           # ±5 % tolerance
+            force_pen = max(0.0, abs(self.force_value[1] - self.force_thres) - band)
+            # print(f"force_pen = {force_pen}")
+            r_force   = np.exp(-weight_f * force_pen)        # 1.0 when perfect
+            # print(f"r_force = {r_force}")
+            # --- smoothness ------------------------------------------------------
+            dtheta      = self.angleIn_after - self.angleIn_prev
+            # print(f"dtheta = {dtheta}")
+            dtheta_prev = self.angleIn_diff 
+            # print(f"dtheta_prev = {dtheta_prev}")
+            # smooth_pen  = weight_smooth * (dtheta ** 2)
+            rot_angle_penalty = abs(dtheta)*self.scale_factor/self.rootNode.applyAction.max_incr
+            smooth_pen = weight_smooth * rot_angle_penalty
+            # print(f"smooth_pen = {smooth_pen}")
+            flip_pen    = weight_flip * (np.sign(dtheta)*np.sign(dtheta_prev) < 0)
+            # print(f"flip_pen = {flip_pen}")
+            # --- final reward ----------------------------------------------------
+            self.reward = r_force - smooth_pen - flip_pen
+            self.angleIn_diff = dtheta
         # print("reward = ", self.reward)
-        return self.reward, self.cost
-
+        return self.done, self.reward
     def update(self,goal=None):
         pass
 
@@ -367,7 +397,7 @@ def getReward(root):
         done, reward
 
     """
-    reward, cost = root.Reward.getReward()
+    done, reward = root.Reward.getReward()
 
     return False, reward
                
@@ -377,7 +407,7 @@ class applyAction(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = kwargs["root"]
         self.whisker_node = self.root.Whisker_node
-        self.max_incr = 30*m.pi/180
+        self.max_incr = 20*m.pi/180
         self.arti_sys = self.root.Whisker_node.getChild("Articulation_system")
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value

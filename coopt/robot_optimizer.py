@@ -146,7 +146,7 @@ class RobotDesignOptimizer(nn.Module):
         self.std_target = LinearSchedule(0.1, 0.005, ent_decay_start, ent_decay_end)
         self.beta = 0.0
         self.beta_min = 0.0
-        self.beta_max = 3.0
+        self.beta_max = 5.0
         self.init_list_sample = 0
         wandb.define_metric(f"design_{self.cut_off_length}/*", step_metric="train/step")
 
@@ -203,11 +203,16 @@ class RobotDesignOptimizer(nn.Module):
         self.beta = beta
         # print("UPDATED ENTROPY = ", ent)
 
-    def sample(self):
+    def sample(self,t):
+        target = self.target(t)
         # Get the current design distribution (an instance of RobotDesignDist).
         design_dist = self.get_design_dist()  # RobotDesignDist instance
-        if self.init_list_sample < len(self.discrete_combinations):
-            discrete_values = self.discrete_combinations[int(self.init_list_sample)]
+        if abs(target - np.log(self.N)) <= 0.0001: 
+            if self.init_list_sample < len(self.discrete_combinations):
+                discrete_values = self.discrete_combinations[int(self.init_list_sample)]
+            else:
+                self.init_list_sample = 0
+                discrete_values = self.discrete_combinations[int(self.init_list_sample)]
             self.init_list_sample += 1
         else:
             # ent = torch.distributions.Categorical(logits=design_dist.discrete_logits).entropy()
@@ -306,10 +311,13 @@ class RobotDesignOptimizer(nn.Module):
         wandb.log({f'design_{self.cut_off_length}/beta': self.beta,
                    f'design_{self.cut_off_length}/ent': ent.item(),
                    f'design_{self.cut_off_length}/ent_target': target,
+                #    f'design_{self.cut_off_length}/continuous_means': self.continuous_means,
+                #    f'design_{self.cut_off_length}/continuous_stds': self.continuous_stds,
+                #    f"design_{self.cut_off_length}/hist_gauss": wandb.Histogram(bins=xs, counts=counts),
                    f'design_{self.cut_off_length}/perplexity': np.exp(ent.item()),
                    f'design_{self.cut_off_length}/perplexity_target': np.exp(target),
                    f'train/step': t})
-
+    
     def forward(self):
         return self.sample()
 

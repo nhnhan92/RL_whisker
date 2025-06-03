@@ -412,7 +412,7 @@ class SB3Agent(SofaBaseAgent):
         print(">>   End.")
 
     @classmethod
-    def load(cls, model_dir, model_timestep='latest_model'):
+    def load(cls, model_dir, model_timestep='latest_model',resume = False):
         """Load a pre-trained model.
         
         Parameters
@@ -451,7 +451,7 @@ class SB3Agent(SofaBaseAgent):
         max_episode_steps = model_log['fit_kwargs']['max_episode_steps']
         model_name = model_params['model_name']
         model_log['model_params']['loaded_timestep'] = model_timestep
-        resume = True
+        resume = resume
         agent = cls(env_id, algo_name, seed, output_dir, 
                     max_episode_steps, n_envs, model_name, resume, **model_log)
         return agent

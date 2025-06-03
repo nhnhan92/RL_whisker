@@ -59,7 +59,7 @@ class Checkpointer():
         if t not in steps:
             raise FileNotFoundError(f"no checkpoint at step {t}")
 
-        obj = torch.load(self._ckpt_path(t), map_location="cpu")
+        obj = torch.load(self._ckpt_path(t), map_location="cpu",weights_only=False)
         rng.set_state(obj.pop("_rng"))
         return obj
 
