@@ -24,7 +24,7 @@ class DesignLogger:
         self.rewards = {}
         self.count = {}
         self.data = {}
-        self.average_discrete_design = {}
+        self.design_idx_top_score = {}
         self.count_disc_categories = {}
         self.body_length = cut_off_list
         for i in self.body_length :
@@ -32,10 +32,10 @@ class DesignLogger:
             self.rewards[i] = deque([], maxlen=maxlen)
             self.count[i] = 0
             self.data[i] = []
-            self.average_discrete_design[i] = {}
+            self.design_idx_top_score[i] = {}
             self.count_disc_categories[i] = {}
             for j in range(len(self.discrete_combinations)):
-                self.average_discrete_design[i][j] = 0
+                self.design_idx_top_score[i][j] = 0
                 self.count_disc_categories[i][j] = 0
             wandb.define_metric(f"designs_{i}", step_metric="train/design_count")
 
@@ -43,23 +43,18 @@ class DesignLogger:
         self.columns = ['count', 'design', 'reward']
         
 
-    def log(self, design, reward,no_design: int = 20):
+    def log(self, design, reward,no_design: int = 10):
         body_length = design['body_length']
-        if body_length in self.designs:
-            self.designs[body_length].append(design)
-            self.rewards[body_length].append(reward)
-            self.count[body_length] += 1
-        else:
-            raise ValueError(f"body_length value {body_length} not found in {self.designs}")
+        reward = 0 if reward < 0 else reward
+        self.designs[body_length].append(design)
+        self.rewards[body_length].append(reward)
+        self.count[body_length] += 1
         
         d_val = (design['no_chamber'], design['chamber_length'], design['thickness'])
         idx = self.discrete_combinations.index(d_val)
         self.count_disc_categories[body_length][idx] += 1
-        if self.average_discrete_design[body_length][idx] != 0:
-            # if self.average_discrete_design[body_length][idx] < reward:
-            self.average_discrete_design[body_length][idx] = (self.average_discrete_design[body_length][idx]+reward)/2
-        else:
-            self.average_discrete_design[body_length][idx] = reward
+        if self.design_idx_top_score[body_length][idx] < reward:
+            self.design_idx_top_score[body_length][idx] = reward
         
         if self.count[body_length] % no_design == 0:
             design_list, reward_list = self.get_designs_and_rewards(no_design,body_length)  
@@ -71,7 +66,7 @@ class DesignLogger:
             columns = ["Design_count", "Reward", "Design"]
             for i, (orig_idx,(r, design)) in enumerate(top3):
                 # Check the type of design.
-                if isinstance(design, dict):
+                if isinstance(design, dict):    
                     # Convert dictionary into a string: "key1=value1, key2=value2, ..."
                     design_str = ", ".join(str(value) for value in design.values())
                 elif isinstance(design, (list, tuple)):
@@ -80,14 +75,14 @@ class DesignLogger:
                     design_str = str(int(design))
                 self.data[body_length].append([(self.count[body_length] - no_design) + orig_idx+1, r, design_str])     
             tbl= wandb.Table(data=self.data[body_length], columns=columns)
-            # wandb.log({f"designs_{body_length}": tbl, "train/design_count": self.count[body_length]})
-            plot = wandb.plot_table(
-                    vega_spec_name = "wandb/line/v0",  # use wandb's default line plot template
-                    data_table = tbl,
-                    fields = {"x": "Design_count", "y": "Reward", "name": "Design"},  # this sets "Design" as legend/label
-                    string_fields={"title": "Reward tracking"},
-                    )
-            wandb.log({f"designs_{body_length}": plot, "train/design_count": self.count[body_length]})
+            wandb.log({f"reward_tracking_{body_length}": tbl, "train/design_count": self.count[body_length]})
+            # plot = wandb.plot_table(
+            #         vega_spec_name = "wandb/line/v0",  # use wandb's default line plot template
+            #         data_table = tbl,
+            #         fields = {"x": "Design_count", "y": "Reward", "name": "Design"},  # this sets "Design" as legend/label
+            #         string_fields={"title": "Reward tracking"},
+            #         )
+            # wandb.log({f"designs_{body_length}": plot, "train/design_count": self.count[body_length]})
             self.log_count_bar()
             # self.data[body_length].append([self.count[body_length], design_str, float(reward)])
         # if self.count[body_length] % 20 == 0:
@@ -134,7 +129,7 @@ class DesignLogger:
         designs_serialised = {k: list(v) for k, v in self.designs.items()}
         rewards_serialised = {k: list(v) for k, v in self.rewards.items()}
         sums = {}
-        for body_length, inner in self.average_discrete_design.items():
+        for body_length, inner in self.design_idx_top_score.items():
             for key, value in inner.items():
                 # Here, key is the "second item" (e.g., '1', '2', '3').
                 sums[key] = sums.get(key, 0) + value
@@ -223,9 +218,9 @@ class DesignManager(VecEnvWrapper):
         self.design_optimizer = {}
         self.last_design_update = {}
         self.design_avg_extra_reward = LinearSchedule(0, 2, ent_decay_end - 500000, ent_decay_end) # -> only give 500k step before training ends
-        self.discrete_combinations = list(product(self.design_space[100]['no_chamber'], 
-                                                  self.design_space[100]['chamber_length'],
-                                                  self.design_space[100]['thickness']))
+        self.discrete_combinations = list(product(self.design_space[self.cut_off_list[0]]['no_chamber'], 
+                                                  self.design_space[self.cut_off_list[0]]['chamber_length'],
+                                                  self.design_space[self.cut_off_list[0]]['thickness']))
         if not self.test_mode:
             for i in self.cut_off_list:
                 self.last_design_update[i] = 0
@@ -322,10 +317,11 @@ class DesignManager(VecEnvWrapper):
             designs_since_update = design_count[i] - self.last_design_update[i]
             if designs_since_update >= self.update_period:
                 designs, rewards = self.get_designs_and_rewards(self.batch_size,i)
-                for j, (sample,reward) in enumerate(zip(designs, rewards)):
-                    d_val = (sample['no_chamber'], sample['chamber_length'], sample['thickness'])
-                    idx = self.discrete_combinations.index(d_val)
-                    rewards[j] += base_extra_reward * extra_rewards[idx]
+                if len(self.cut_off_list) > 1:
+                    for j, (sample,reward) in enumerate(zip(designs, rewards)):
+                        d_val = (sample['no_chamber'], sample['chamber_length'], sample['thickness'])
+                        idx = self.discrete_combinations.index(d_val)
+                        rewards[j] += base_extra_reward * extra_rewards[idx]
                 self.design_optimizer[i].update(designs, rewards,
                                             self.t)
                 self.design_optimizer[i].log(self.t)

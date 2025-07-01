@@ -118,12 +118,13 @@ def step_simulation(root, config, action, _startCmd, _getPos, viewer=None):
     # Realise scale_factor simulation steps of 0.01 s
     for i in range(config["scale_factor"]):
         Sofa.Simulation.animate(root, config["dt"])
+        # print(f"Check SIMULATEEEEEE ANIMATEEEEEEEEEEEEEEEEEEEEEEEEE")
         if render == 2:
             pos.append(_getPos(root))
             if viewer is not None:
                 viewer.render_simulation(root)
 
-    if render == 1:
-        pos.append(_getPos(root))
+        if render == 1: 
+            pos.append(_getPos(root))
 
     return pos

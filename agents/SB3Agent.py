@@ -472,7 +472,7 @@ class SB3Agent(SofaBaseAgent):
             The wrapped training environment.
         """
         save_freq = max(self.fit_kwargs['save_freq'] // self.n_envs, 1)
-        n_envs_test = 5
+        n_envs_test = 1
         ratio_raw_test = int(n_envs/n_envs_test)
         self.vec_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps) for i in range(n_envs)])
         self.test_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps, config={"render": 1})for i in range(n_envs_test)])

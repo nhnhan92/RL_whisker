@@ -151,6 +151,7 @@ class Viewer:
                     if self.env.config["use_server"]:
                         self._setPos(self.root, p)
                         Sofa.Simulation.animate(self.root, self.root.getDt())
+                        # print(f"Check VIEWER ANIMATEEEEEEEEEEEEEEEEEEEEEEEEE")
 
                     glViewport(0, 0, self.surface_size[0], self.surface_size[1])
 

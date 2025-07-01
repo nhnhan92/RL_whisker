@@ -158,6 +158,7 @@ class rewardShaper(Sofa.Core.Controller):
         self.fem.strainmeasuringelements.value = self.measured_elemennt
         # print(f"self.measured_elemennt = {len(self.measured_elemennt)}")
         self.ele_indices = [self.tetrahedra_list[i] for i in self.measured_elemennt]
+        # print(self.ele_indices)
         self.volume = np.array([1])
         ### Articulation system node
         self.arti_sys = self.rootNode.Whisker_node.getChild("Articulation_system")
@@ -167,6 +168,12 @@ class rewardShaper(Sofa.Core.Controller):
         self.angleIn_after = 0
         self.force_by_initiated_pressure = 0
         self.angleIn_diff = 0
+        self.angleIn_diff_prev = 0
+        self.count = 0
+
+        self.plane = self.rootNode.getChild("plane")
+        self.plane_dof = self.plane.oscilated_dof
+
     # def onKeypressedEvent(self, e):
     #     c = e['key']
     def tetrahedron_volume(self,n1,n2,n3,n4):
@@ -251,8 +258,6 @@ class rewardShaper(Sofa.Core.Controller):
         self.vonMises_stress = self.fem.vonMisesPerElement.value        
         self.time += 1
         if self.time <= 1:
-            
-                
             self.original_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
             # self.arti_sys.angleIn[1] = -10*m.pi/180
             # self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value[0] = 0.05
@@ -260,7 +265,7 @@ class rewardShaper(Sofa.Core.Controller):
         self.strain_zz = np.array([])
         self.volume = np.array([])
         for idx,(i,j) in enumerate(zip(self.measured_elemennt,self.ele_indices)):
-            strain_converted = self.compute_strain(0,self.mecawhisker.position.value[j[0]],
+            strain_converted = self.compute_strain(50,self.mecawhisker.position.value[j[0]],
                                                         self.mecawhisker.position.value[j[1]],
                                                         self.mecawhisker.position.value[j[2]],
                                                         self.mecawhisker.position.value[j[3]],self.fem.totalstrain.value[idx])
@@ -325,8 +330,9 @@ class rewardShaper(Sofa.Core.Controller):
             self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
         # self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
         self.angleIn_after = self.arti_sys.angleIn.value[1]
-        # self.angleIn_diff = self.angleIn_after - self.angleIn_prev
+        self.angleIn_diff = self.angleIn_after - self.angleIn_prev
         # print(f'Force = {self.angleIn_diff}')
+        # print(f"plane dof = {self.plane_dof.position.value[0][1] }")
     # def getReward(self):
             
     #     alpha = 0.1
@@ -351,23 +357,27 @@ class rewardShaper(Sofa.Core.Controller):
     #     # print("reward = ", self.reward)
     #     return self.reward, self.cost
     def getReward(self):
-        weight_f=1.0
-        weight_smooth=0.1
-        weight_flip=0.05
+        weight_smooth=0.05
+        weight_flip=0.1
+        weight_force = 0.5
+        alpha = 1.5
+        # --- force term ------------------------------------------------------
+        tol = 0.2 * self.force_thres           # ±10 % tolerance
+        low, high = self.force_thres - tol, self.force_thres + tol
+        # print(f'Force = {self.force_value[1]}')
         if abs(self.force_value[1]) <= 0.001 or self.rootNode.applyAction.new_angleIn > 0.6:
-            self.reward = 0
+            self.reward = -0.5
             self.done = True
+        elif self.force_value[1] < low or self.force_value[1] > high:
+            self.reward = 0
         else:
-            # --- force term ------------------------------------------------------
-            band = 0.05 * self.force_thres           # ±5 % tolerance
-            force_pen = max(0.0, abs(self.force_value[1] - self.force_thres) - band)
-            # print(f"force_pen = {force_pen}")
-            r_force   = np.exp(-weight_f * force_pen)        # 1.0 when perfect
-            # print(f"r_force = {r_force}")
+            delta = abs(abs(self.force_value[1]) - self.force_thres) / tol           # 0 .. 1
+            r_force = (0.5 * (1 + np.cos(np.pi * delta))) ** alpha
+            
             # --- smoothness ------------------------------------------------------
-            dtheta      = self.angleIn_after - self.angleIn_prev
+            dtheta      = self.angleIn_diff * self.scale_factor
             # print(f"dtheta = {dtheta}")
-            dtheta_prev = self.angleIn_diff 
+            dtheta_prev = self.angleIn_diff_prev * self.scale_factor
             # print(f"dtheta_prev = {dtheta_prev}")
             # smooth_pen  = weight_smooth * (dtheta ** 2)
             rot_angle_penalty = abs(dtheta)*self.scale_factor/self.rootNode.applyAction.max_incr
@@ -377,8 +387,10 @@ class rewardShaper(Sofa.Core.Controller):
             # print(f"flip_pen = {flip_pen}")
             # --- final reward ----------------------------------------------------
             self.reward = r_force - smooth_pen - flip_pen
-            self.angleIn_diff = dtheta
+            self.angleIn_diff_prev = self.angleIn_diff 
         # print("reward = ", self.reward)
+        self.count += 1
+        # print(f"COUNTING = {self.count}")
         return self.done, self.reward
     def update(self,goal=None):
         pass
@@ -407,7 +419,7 @@ class applyAction(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = kwargs["root"]
         self.whisker_node = self.root.Whisker_node
-        self.max_incr = 20*m.pi/180
+        self.max_incr = 10*m.pi/180
         self.arti_sys = self.root.Whisker_node.getChild("Articulation_system")
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value
@@ -442,7 +454,7 @@ def startCmd(root, action, duration):
         None.
 
     """
-    incr = action_to_command(root,action[0],duration/root.dt.value + 1)
+    incr = action_to_command(root,action[0],duration/root.dt.value)
     # print(f'action = {action[0]*100}')
     startCmd_Whisker(root, root.Whisker_node,incr, duration)
 
@@ -468,7 +480,7 @@ def startCmd_Whisker(rootNode, whisker,incr, duration):
     """
 
     # Definition of the elements of the animation
-    def executeAnimation(whisker,incr, factor):
+    def executeAnimation(rootNode,incr, factor):
         rootNode.applyAction.apply_action(incr)
     
 
@@ -476,7 +488,7 @@ def startCmd_Whisker(rootNode, whisker,incr, duration):
     rootNode.AnimationManager.addAnimation(
         Animation(
             onUpdate=executeAnimation,
-            params={"whisker": whisker,
+            params={"rootNode": rootNode,
                     "incr": incr},
             duration=duration, mode="once"))
 
@@ -510,7 +522,7 @@ def getPos(root):
     rigid_pos = root.Whisker_node.RigidifiedBase.RigidParts.dofs.position.value.tolist()
     arti_pos = root.Whisker_node.Articulation_system.ServoMotor.Articulation.dofs.rest_position.value.tolist()
     body_pos = root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value.tolist()
-    
+    plane_pos = root.plane.oscilated_dof.position.value.tolist()
     if no_chamber == 1:
         chamber1_fiber1 = root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber1.dofs.position.value.tolist()
         chamber1_fiber2 = root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber2.dofs.position.value.tolist()     
@@ -522,7 +534,8 @@ def getPos(root):
                 chamber1_fiber1,
                 chamber1_fiber2,
                 arti_pos,
-                body_pos
+                body_pos,
+                plane_pos
                 ]
     else:
         chamber1_fiber1 = root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber1.dofs.position.value.tolist()
@@ -538,7 +551,8 @@ def getPos(root):
                 chamber2_fiber1,
                 chamber2_fiber2,
                 arti_pos,
-                body_pos 
+                body_pos,
+                plane_pos 
                 ]
 def setPos(root, pos):
     no_chamber = root.Whisker_node.Whisker.no_chamber.value
@@ -550,7 +564,8 @@ def setPos(root, pos):
         chamber1_fiber1,
         chamber1_fiber2,
         arti_pos,
-        body_pos
+        body_pos,
+        plane_pos
         ] = pos
         root.Whisker_node.Whisker.MechanicalModel.dofs.position.value = np.array(whisker_pos)
         root.Whisker_node.RigidifiedBase.DeformableParts.dofs.position.value = np.array(deformable_pos)
@@ -559,6 +574,7 @@ def setPos(root, pos):
         root.Whisker_node.Articulation_system.ServoMotor.ServoBody.dofs.position.value = np.array(body_pos)
         root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber1.dofs.position.value = np.array(chamber1_fiber1)
         root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber2.dofs.position.value = np.array(chamber1_fiber2)
+        root.plane.oscilated_dof.position.value = np.array(plane_pos)
 
     else:
         [
@@ -570,7 +586,8 @@ def setPos(root, pos):
         chamber2_fiber1,
         chamber2_fiber2,
         arti_pos,
-        body_pos
+        body_pos,
+        plane_pos
         ] = pos
         root.Whisker_node.Whisker.MechanicalModel.dofs.position.value = np.array(whisker_pos)
         root.Whisker_node.RigidifiedBase.DeformableParts.dofs.position.value = np.array(deformable_pos)
@@ -581,3 +598,4 @@ def setPos(root, pos):
         root.Whisker_node.Whisker.MechanicalModel.fiber.chamber1_fiber2.dofs.position.value = np.array(chamber1_fiber2)
         root.Whisker_node.Whisker.MechanicalModel.fiber.chamber2_fiber1.dofs.position.value = np.array(chamber2_fiber1)
         root.Whisker_node.Whisker.MechanicalModel.fiber.chamber2_fiber2.dofs.position.value = np.array(chamber2_fiber2)
+        root.plane.oscilated_dof.position.value = np.array(plane_pos)

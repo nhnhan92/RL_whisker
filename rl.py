@@ -27,6 +27,7 @@ import numpy as np
 import yaml
 from pathlib import Path
 import datetime
+import shutil
 torch.cuda.empty_cache() 
 envs = {
         1: 'bubblemotion-v0',
@@ -105,6 +106,8 @@ if __name__ == '__main__':
     model_dir = args.model_dir
     parent_dict = os.path.dirname(os.path.abspath(__file__))
     model_dir = parent_dict + "/Results/whisker-v0/PPO/whisker_rl/"
+    if os.path.exists(model_dir) and os.path.isdir(model_dir):
+        shutil.rmtree(model_dir)
     model_name = 'whisker_rl'
     logdir = './test_coopt'
     results_dir = "./Results"

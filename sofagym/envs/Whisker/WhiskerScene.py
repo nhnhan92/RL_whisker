@@ -42,18 +42,27 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
             scale=scale,
             drawBoxes=1,
         )
+        
+        eulerRotation_strain = [0,0,0]
+        for i in range(len(eulerRotation)):
+            if i != 0:
+                eulerRotation_strain[i] = eulerRotation[i]
+            else:
+                eulerRotation_strain[i] = eulerRotation[i]-4.5
         cross_section_radius = 12-strain_gauge[0]/m.tan(85.5*m.pi/180)
         nominal_offset = m.sqrt(cross_section_radius**2 + strain_gauge[0]**2)
-        alpha = rotation[0]*m.pi/180 - m.atan(cross_section_radius/strain_gauge[0])
+        # alpha = eulerRotation_strain[0]*m.pi/180 - m.atan(cross_section_radius/strain_gauge[0])
+        alpha = 0
         gauge_y_offset = -nominal_offset*m.cos(alpha)
-        gauge_z_offset = -nominal_offset*m.sin(alpha)-1.25
+        gauge_z_offset = -nominal_offset*m.sin(alpha)
+        
         strain_measuring_box = addOrientedBoxRoi(
             self,
             position=[j for j in deformableObject.dofs.rest_position.value],
             name="strain_measuring_Box",
             translation=[0,gauge_y_offset,gauge_z_offset],
-            eulerRotation=eulerRotation,
-            scale=[10, 2, 10],
+            eulerRotation=eulerRotation_strain,
+            scale=[24.5, 11.5, design_params['chamber_length']],
             drawBoxes=1,
         )
         strain_measuring_box.tetrahedra.value = self.Whisker.MechanicalModel.container.tetrahedra.value
@@ -110,7 +119,7 @@ def createScene(root, config={"source": [0, 0, 160],
                               "goalPos": [0, 0, 100],
                                 "init_states": [1,0,0,0],
                                 "zFar":4000,
-                                "design_params": [100, 2,30,2,0.1,0.1],
+                                "design_params": [100, 2,40,2,0.1,0.1],
                                 "scale_factor": 10
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)
@@ -149,7 +158,7 @@ def createScene(root, config={"source": [0, 0, 160],
                        computeConstraintForces=1)
     root.addObject('LocalMinDistance', contactDistance=5, alarmDistance=8, name='localmindistance',
                     angleCone=0.1)
-    # root.addObject(AnimationManagerController(root))
+    
     root.gravity.value = [0.0, -9810, 0.0]
     
     root.dt.value = 0.01
@@ -169,19 +178,19 @@ def createScene(root, config={"source": [0, 0, 160],
     a = Whisker_node(design_params=design_params,
                     translation=[0,0,0],
                     rotation=whisker_rot,
-                    strain_gauge = [10,2]) # 10: strain gauge pos; 2: gauge length
+                    strain_gauge = [0,2]) # 10: strain gauge pos; 2: gauge length
     whisker_model = root.addChild(a)
 
     ##  PLANE node
-    contactDistance = root.localmindistance.contactDistance.value
-    amp = [0,5,0,0,0,0]
+    contactDistance = root.localmindistance.contactDistance.value  # contactDistance = 5
+    amp = [0,10,0,0,0,0]
     plane_offset = m.cos(init_whisker_angle*m.pi/180)*(12-design_params['body_length']/m.tan(85.5*m.pi/180))
     oscilater_plane_trans = [0,
-                             -m.sin(init_whisker_angle*m.pi/180)*design_params['body_length'] - plane_offset,
+                             -m.sin(init_whisker_angle*m.pi/180)*design_params['body_length'] - plane_offset + (amp[1]-contactDistance),
                              0]
     
     oscilater_plane_rot = [90,90,0]
-    plane = oscilate_plane(root,visu=visu,amp= amp,pulse=5,phase=-90,
+    plane = oscilate_plane(root,visu=visu,amp= amp,pulse=5,phase=-89.3,
                            translation=oscilater_plane_trans, rotation=oscilater_plane_rot, sphere_r=None)
 
     # Add Controller and reward + goal for RL
@@ -189,13 +198,13 @@ def createScene(root, config={"source": [0, 0, 160],
 
     # SofaGym Env Components
     root.addObject(StateInitializer(name="StateInitializer", rootNode=root, init_states=config['init_states']))
-    root.addObject(rewardShaper(name="Reward", rootNode=root, scale_factor=config['scale_factor'], force_threshold = 0.5))
+    root.addObject(rewardShaper(name="Reward", rootNode=root, scale_factor=config['scale_factor'], force_threshold = 0.2))
     root.addObject(applyAction(name="applyAction", root=root,config = config))
     # setData(whisker_model.Articulation_system.ServoMotor.Articulation.ServoWheel.dofs, showObject=1, showObjectScale=20,
     # drawMode=2, showColor=[1., 1., 0., 1.])
-    root.addObject(AnimationManagerController(root, name="AnimationManager"))
+    # root.addObject(AnimationManagerController(root, name="AnimationManager"))
     # root.addObject(AnimationManager(root))
-    
+    root.addObject(AnimationManagerController(root))
     def animation(target, factor):
         rot_angle = 90
         invalue = [factor*rot_angle*m.pi/180, 0]

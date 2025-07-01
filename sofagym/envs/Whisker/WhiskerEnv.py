@@ -32,10 +32,10 @@ class WhiskerEnv:
     dim_state = 8
     DEFAULT_CONFIG = {"scene": "Whisker",
                       "deterministic": True,
-                    #   "source": [-220, -20, 30],
-                    #   "target": [100, -100, -50],
-                      "source": [-220, 160, 30],
-                      "target": [50, -100, -50],
+                      "source": [-220, -20, 30],
+                      "target": [100, -100, -50],
+                    #   "source": [-220, 160, 30],
+                    #   "target": [50, -100, -50],
                       "goalList": [[0, 0, 0]],
                       "goal": False,
                       "start_node": None,
@@ -58,7 +58,7 @@ class WhiskerEnv:
                       "nb_actions": 1,
                       "dim_state": dim_state,
                       "init_states": [0,0,100,1,20,2,0.1,0.1],
-                      "randomize_states": True,
+                      "randomize_states": False,
                       "use_server": True,
                       "zFar":4000
                       }
@@ -129,7 +129,7 @@ class WhiskerEnv:
     def reset(self):
         """Reset simulation.
         """
-        # self.initialize_states()
+        self.initialize_states()
 
         if self.env.config["goal"]:
             self.init_goal()

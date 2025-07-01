@@ -148,6 +148,8 @@ class RobotDesignOptimizer(nn.Module):
         self.beta_min = 0.0
         self.beta_max = 5.0
         self.init_list_sample = 0
+        self.baseline = 0.0               # moving average of rewards
+        self.beta_b   = 0.05              # smoothing factor for baseline
         wandb.define_metric(f"design_{self.cut_off_length}/*", step_metric="train/step")
 
     def get_design_dist(self):
@@ -235,11 +237,36 @@ class RobotDesignOptimizer(nn.Module):
                 'thickness': discrete_values[2],
                 'pressure1': torch.clamp(inversed_pressure_list[0], min=self.pressure_range[0],max=self.pressure_range[1]),
                 'pressure2': torch.clamp(inversed_pressure_list[1], min=self.pressure_range[0],max=self.pressure_range[1])} ### pressure_list is 'list' type then there is no .numpy()
+    
+    def update_normal_dist(self, idx, sample, reward,t,max_std=0.15,alpha = 0.2):
+        """
+        sample : tensor shape (2,)          # [p1, p2] sampled pressures
+        reward : float
+        """
+        mu     = self.continuous_means[idx]     # (2,)
+        sigma  = self.continuous_stds[idx]      # (2,)
+        sigma = sigma.clamp(min=1e-4)          # avoid divide-by-zero
+        sample = torch.as_tensor(sample, dtype=mu.dtype, device=mu.device)
 
-    def update(self, designs, rewards, t,max_std=0.15):
+        # 1. Advantage: reward minus baseline
+        adv = reward - self.baseline
+
+        # 2. Parameter deltas (element-wise)
+        delta_mu    =  alpha * adv * (sample - mu)
+        delta_sigma =  alpha * adv * ((sample - mu)**2 - sigma**2) / (sigma+ 1e-8)
+
+        # 3. Apply
+        self.continuous_means.data[idx] += delta_mu
+        self.continuous_stds.data[idx]  += delta_sigma
+        scheduled_std = self.std_target(t)
+        # new_std = torch.clamp(self.continuous_stds.data[idx], min=scheduled_std,max=max_std)
+        self.continuous_stds.data[idx].clamp_(min=scheduled_std, max=max_std)
+
+    def update(self, designs, rewards, t):
         batch_reward_sums = {}
         batch_counts = {}
         batch_cont_samples = {}
+        batch_disc_rewards_top = {}
         
         # Process each sample in the batch.
         for sample, reward in zip(designs, rewards):
@@ -251,56 +278,34 @@ class RobotDesignOptimizer(nn.Module):
                 raise ValueError(f"Design value {d_val} not found in {self.discrete_combinations}")
             
             # Initialize if not already.
-            if idx not in batch_reward_sums:
+            if idx not in batch_reward_sums and idx not in batch_disc_rewards_top:
                 batch_reward_sums[idx] = 0.0
                 batch_counts[idx] = 0.0
                 batch_cont_samples[idx] = []
-            
-            # Accumulate reward and count for this index.
-            batch_reward_sums[idx] += reward
-            batch_counts[idx] += 1
-            
+                batch_disc_rewards_top[idx] = 0.0
             # Collect continuous samples (pressures) for this index.
             cont_value = torch.tensor([
                 sample['pressure1'],
                 sample['pressure2']
             ], dtype=torch.float)
             batch_cont_samples[idx].append(cont_value)
-        
-        # Compute the batch average reward for each discrete index observed.
-        batch_avg_rewards = {}
-        for idx in batch_reward_sums:
-            batch_avg = batch_reward_sums[idx] / batch_counts[idx]
-            batch_avg_rewards[idx] = batch_avg
-        # Apply [0, 1] min–max normalization on the observed average rewards.
-        observed_indices = list(batch_avg_rewards.keys())
-        avg_tensor = torch.tensor([batch_avg_rewards[idx] for idx in observed_indices], dtype=torch.float)
-        mean_val = avg_tensor.mean()
-        std_val = avg_tensor.std(unbiased=False)
-        # Update self.scores only for indices seen in this batch using z-score normalization.
-        for idx, avg in batch_avg_rewards.items():
-            # if std_val < 1e-8:
-            #     normalized_score = avg  # or you could choose 0.0 as a fallback.
-            # else:
-            #     normalized_score = (avg - mean_val) / std_val
-            normalized_score = avg
-            self.scores.data[idx] = normalized_score
-        # Update continuous parameters for each discrete index observed in this batch.
-        for idx in batch_cont_samples:
-            
-            samples_i = batch_cont_samples[idx]
-            if len(samples_i)>1:
-                samples_tensor = torch.stack(samples_i)  # shape: (num_samples_for_idx, 3)
-                new_mean = samples_tensor.mean(dim=0)
-                new_std = samples_tensor.std(dim=0, unbiased=False)
-                print(f"NEW STD = {new_std}")
-                scheduled_std = self.std_target(t)
-                new_std = torch.clamp(new_std, min=scheduled_std,max=max_std)
-                self.continuous_means.data[idx] = new_mean
-                self.continuous_stds.data[idx] = new_std
+            # Accumulate reward and count for this index.
+            batch_reward_sums[idx] += reward
+            batch_counts[idx] += 1
+
+            if reward > batch_disc_rewards_top[idx]:
+                batch_disc_rewards_top[idx] = reward  
+            self.update_normal_dist(idx, cont_value, reward,t)
+
+        for idx, top_score in batch_disc_rewards_top.items():
+            self.scores.data[idx] = top_score
+        # --- update moving baseline -----------------------------------------
+        batch_mean_reward = torch.as_tensor(rewards, dtype=torch.float).mean().item()
+        self.baseline = (1-self.beta_b)*self.baseline + self.beta_b*batch_mean_reward
 
         # Adjust the temperature parameter beta based on the updated scores.
         self.set_beta(t)
+
 
     def log(self, t):
 

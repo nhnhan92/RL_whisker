@@ -547,7 +547,7 @@ class AbstractEnv(gym.Env):
             #    if self.viewer is not None:
             #        self.viewer.render_simulation(self.root)
 
-        if render == 1:
-            pos.append(self._getPos(self.root))
+            if render == 1:
+                pos.append(self._getPos(self.root))
 
         return pos

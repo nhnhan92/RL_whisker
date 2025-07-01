@@ -29,7 +29,7 @@ if __name__ == '__main__':
     logdir = './test_coopt'
     run_id = os.path.basename(logdir)
     total_steps = 1000
-    n_steps = 30  # Total number of training steps for each sampling time
+    n_steps = 120  # Total number of training steps for each sampling time
     batch_size = 5  # Batch size for design updates
     update_period = 2  # Number of designs before each update
     nenv = 1  # Number of parallel environments
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     ent_decay_end = 1000
     no_chamber = torch.tensor([1,2])
     pressure_range = torch.tensor([0.00001,0.2])
-    body_length = np.linspace(60,100,5,dtype=int).tolist()
+    body_length = np.linspace(100,100,1,dtype=int).tolist()
     thickness = torch.tensor(np.linspace(2,4,5,dtype=float))
     chamber_length = torch.tensor(np.linspace(20,40,11,dtype=int))
     ins = whiskerdesignspace(body_length,no_chamber,chamber_length,thickness,pressure_range)
@@ -79,6 +79,7 @@ if __name__ == '__main__':
             actions = [env.action_space.sample() for _ in range(nenv)]
             obs, rewards, dones, info = env.step(actions)
             sum_rew += 1
+            # print(sum_rew)
             # print(obs)
             # print(rewards)
             # print(dones)
