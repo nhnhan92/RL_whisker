@@ -510,7 +510,9 @@ def getState(root):
     rot_angle = root.Whisker_node.Articulation_system.angleIn.value[1].tolist()
     strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.ave_strain.value
     
-    state = [rot_angle] + [strain_zz] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
+    state = [rot_angle] + [strain_zz] + [no_chamber]+ [chamber_length]+[thickness]+pressure
+    # state = [rot_angle] + [strain_zz] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
+
     # print("State = ", state)
     return state
 

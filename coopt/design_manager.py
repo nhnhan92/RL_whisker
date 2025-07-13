@@ -43,7 +43,7 @@ class DesignLogger:
         self.columns = ['count', 'design', 'reward']
         
 
-    def log(self, design, reward,no_design: int = 10):
+    def log(self, design, reward,no_design: int = 100):
         body_length = design['body_length']
         reward = 0 if reward < 0 else reward
         self.designs[body_length].append(design)
@@ -62,7 +62,7 @@ class DesignLogger:
             paired = list(enumerate(zip(reward_list, design_list)))
             # 2. Sort the pairs by reward in descending order
             paired_sorted = sorted(paired, key=lambda x: x[1][0], reverse=True)
-            top3 = list(islice(paired_sorted, 3))  
+            top3 = list(islice(paired_sorted, 2))  
             columns = ["Design_count", "Reward", "Design"]
             for i, (orig_idx,(r, design)) in enumerate(top3):
                 # Check the type of design.
@@ -326,8 +326,8 @@ class DesignManager(VecEnvWrapper):
                                             self.t)
                 self.design_optimizer[i].log(self.t)
                 self.last_design_update[i] = design_count[i]
-        if designs_since_update >= self.update_period:
-            self.logger.log_class_rank(extra_rewards,self.t)
+        # if designs_since_update >= self.update_period:
+        #     self.logger.log_class_rank(extra_rewards,self.t)
     def step_async(self, actions):
         self.venv.step_async(actions)
 

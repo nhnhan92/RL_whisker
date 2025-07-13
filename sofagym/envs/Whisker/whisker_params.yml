@@ -23,13 +23,13 @@ PPO:
     clip_range: 0.2
     clip_range_vf: null
     normalize_advantage: True
-    ent_coef: 0.0
+    ent_coef: 0.005
     vf_coef: 0.5
     max_grad_norm: 0.5
     use_sde: False
     sde_sample_freq: -1
     target_kl: null
-    policy_kwargs: "dict(net_arch=dict(pi=[512, 512, 512], vf=[512, 512, 512]), optimizer_class=th.optim.Adam, ortho_init=True, activation_fn=nn.Tanh)"
+    policy_kwargs: "dict(net_arch=dict(pi=[256,256,256], vf=[256,256,256]), optimizer_class=th.optim.Adam, ortho_init=True, activation_fn=nn.Tanh)"
     device: "auto"
   fit_kwargs:
     total_timesteps: 1000000
@@ -41,7 +41,7 @@ PPO:
   model_params:
     batch_size_for_distupdate: 40  # Batch size for design updates
     dist_update_period: 40  # Number of designs before each update
-    ent_decay_start: 400000
+    ent_decay_start: 200000
     ent_decay_end: 800000
     no_chamber: [1,2]
     pressure_range: [0.0,0.2]
