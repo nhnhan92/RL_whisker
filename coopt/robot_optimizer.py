@@ -183,7 +183,7 @@ class RobotDesignOptimizer(nn.Module):
         transformed_pressure_list = component_dist.sample()[discrete_idx]
         inversed_pressure_list = transformed_pressure_list
         
-        for transform in reversed(self.transformed_cont_dist.transforms):
+        for transform in reversed(robot_dist.transformed_cont_dist.transforms):
             inversed_pressure_list = transform.inv(inversed_pressure_list)
 
         return {'no_chamber': discrete_values[0],
