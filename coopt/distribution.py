@@ -1,6 +1,9 @@
 import torch
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
-
+from torch.distributions import MultivariateNormal, Categorical, MixtureSameFamily
 
 class RobotDesignDist(nn.Module):
     """
@@ -84,3 +87,65 @@ class RobotDesignDist(nn.Module):
                    tensors['continuous_means'],
                    tensors['continuous_stds'],
                    tensors['discrete_values'])
+
+class RobotDesignDistMixtureMVN(RobotDesignDist):
+    def __init__(self, *args, K=3, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.K = K
+        # Inner mixture logits: shape (N, K)
+        self.inner_logits = nn.Parameter(torch.zeros(self.N, K))
+        # Means per design per component: shape (N, K, 2)
+        self.inner_means  = nn.Parameter(torch.randn(self.N, K, 2) * 0.05 + 0.15)
+        # Raw lower-triangular L for each design/component: (N, K, 2, 2)
+        self.inner_rawL   = nn.Parameter(torch.stack(
+                                [torch.eye(2) for _ in range(self.N * K)],
+                                dim=0
+                             ).view(self.N, K, 2, 2))
+
+    def get_distribution(self):
+        # Outer design mix (unchanged)
+        cat_design = Categorical(logits=self.beta * self.scores)
+
+        # Build one mixture‐of‐Gaussians per design index
+        inner_mixtures = []
+        for d in range(self.N):
+            # build covariances Σ_{d,k} = L L^T
+            Ld = torch.tril(self.inner_rawL[d])           # (K,2,2)
+            diag = torch.clamp(torch.diagonal(Ld, -2, -1), min=1e-3)
+            Ld = Ld - torch.diag_embed(torch.diagonal(Ld, -2, -1)) \
+                   + torch.diag_embed(diag)
+            covs = Ld @ Ld.transpose(-2, -1)              # (K,2,2)
+
+            mvn_comp = MultivariateNormal(
+                loc=self.inner_means[d],                  # (K,2)
+                covariance_matrix=covs                    # (K,2,2)
+            )
+            cat_comp = Categorical(logits=self.inner_logits[d])  # (K,)
+            inner_mixtures.append(MixtureSameFamily(cat_comp, mvn_comp))
+
+        # Return a wrapper that first samples a design d then inner_mixtures[d]
+        return cat_design, inner_mixtures
+    
+class RobotDesignDistCorrelated(RobotDesignDist):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Now for each discrete class i we’ll learn a 2×2 covariance
+        self.raw_L = torch.nn.Parameter(
+            torch.stack([
+                torch.eye(2) for _ in range(self.N)
+            ], dim=0)           # shape (N,2,2)
+        )
+
+    def get_distribution(self):
+        # 1) compute lower-triangular L with positive diag
+        L = torch.tril(self.raw_L)                     # shape (N,2,2)
+        diag = torch.diagonal(L, dim1=-2, dim2=-1)
+        diag = diag.clamp(min=1e-3)                    # enforce pos-def
+        L = L - torch.diag_embed(torch.diagonal(L, -2, -1)) + torch.diag_embed(diag)
+
+        cov = L @ L.transpose(-1, -2)                  # Σ = L Lᵀ, shape (N,2,2)
+        mean = self.continuous_means                   # (N,2)
+
+        mvn = MultivariateNormal(loc=mean, covariance_matrix=cov)
+        cat = Categorical(logits=self.beta * self.scores)
+        return MixtureSameFamily(cat, mvn)

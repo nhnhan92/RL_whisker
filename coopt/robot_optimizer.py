@@ -6,7 +6,8 @@ from itertools import product
 import gym
 import wandb
 import math as m
-from coopt.distribution import RobotDesignDist
+from coopt.distribution import RobotDesignDist,RobotDesignDistMixtureMVN
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class RunningMeanStd:
@@ -105,13 +106,20 @@ class RobotDesignOptimizer(nn.Module):
         pressure2_range = np.linspace(p_min, p_max, n_grid_steps)
         self.pressure_grid = [(p1, p2) for p1 in pressure1_range for p2 in pressure2_range]  # size n_grid_steps^2
 
-    def get_design_dist(self):
+    def get_design_dist(self,type = 'single_variance'):
         # The discrete logits are computed as beta * scores.
-        return RobotDesignDist(discrete_logits=self.beta * self.scores,
-                               pressure_range = self.pressure_range,
-                               continuous_means=self.continuous_means,
-                               continuous_stds=self.continuous_stds,
-                               discrete_values=self.discrete_combinations)
+        if type == 'single_variance':
+            return RobotDesignDist(discrete_logits=self.beta * self.scores,
+                                pressure_range = self.pressure_range,
+                                continuous_means=self.continuous_means,
+                                continuous_stds=self.continuous_stds,
+                                discrete_values=self.discrete_combinations)
+        elif type == 'covariance':
+            return RobotDesignDistMixtureMVN(discrete_logits=self.beta * self.scores,
+                                pressure_range = self.pressure_range,
+                                continuous_means=self.continuous_means,
+                                continuous_stds=self.continuous_stds,
+                                discrete_values=self.discrete_combinations)
 
     def set_beta(self, t):
         high = self.beta_max
@@ -161,24 +169,21 @@ class RobotDesignOptimizer(nn.Module):
     def sample(self,t):
         target = self.target(t)
         robot_dist = self.get_design_dist()
-        joint = robot_dist.get_distribution()
+        joint      = robot_dist.get_distribution()  
 
-        if abs(target - np.log(self.N)) <= 0.0001: 
-            if self.init_list_sample < len(self.discrete_combinations):
-                discrete_values = self.discrete_combinations[int(self.init_list_sample)]
-            else:
-                self.init_list_sample = 0
-                discrete_values = self.discrete_combinations[int(self.init_list_sample)]
-            self.init_list_sample += 1
+        if abs(target - np.log(self.N)) <= 1e-4: 
+            discrete_idx = self.init_list_sample
+            self.init_list_sample = (discrete_idx + 1) % len(self.discrete_combinations)
         else:
-            cat_dist = joint.mixture_distribution                 # Categorical(logits)
-            discrete_idx = int(cat_dist.sample().item())   
-            # Look up the discrete value (tuple) from your discrete_values list.
-            discrete_values = self.discrete_combinations[discrete_idx]
-
-        transformed_pressure_list = joint.sample() 
+            discrete_idx = int(joint.mixture_distribution.sample().item())
+        # Discrete values
+        discrete_values = self.discrete_combinations[discrete_idx]
+        # Continuous values
+        component_dist = joint.component_distribution
+        transformed_pressure_list = component_dist.sample()[discrete_idx]
         inversed_pressure_list = transformed_pressure_list
-        for transform in reversed(robot_dist.transformed_cont_dist.transforms):
+        
+        for transform in reversed(self.transformed_cont_dist.transforms):
             inversed_pressure_list = transform.inv(inversed_pressure_list)
 
         return {'no_chamber': discrete_values[0],
