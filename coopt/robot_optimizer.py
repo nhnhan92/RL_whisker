@@ -6,7 +6,7 @@ from itertools import product
 import gym
 import wandb
 import math as m
-from coopt.distribution import RobotDesignDist,RobotDesignDistMixtureMVN
+from coopt.distribution import RobotDesignDist,RobotDesignDistMixtureMVN,RobotDesignDistCorrelated
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -74,7 +74,8 @@ class RobotDesignOptimizer(nn.Module):
         self.chamber_length = design_space['chamber_length']
         self.thickness = design_space['thickness']
         self.pressure_range= design_space['pressure_range']
-        self.exploration_end_t = ent_decay_end
+        self.ent_decay_end = ent_decay_end
+        self.ent_decay_start = ent_decay_start
         #number of possible combination of body parameters
         self.discrete_combinations = list(product(self.no_chamber, self.chamber_length,self.thickness))
         self.N = len(self.discrete_combinations)
@@ -83,30 +84,27 @@ class RobotDesignOptimizer(nn.Module):
         # Initialize discrete scores (which, when multiplied by beta, form logits).
         self.scores = torch.nn.Parameter(torch.zeros((self.N,), dtype=torch.float32), requires_grad=False)
         # Continuous parameters (not updated by gradients but via update() method).
-        continuous_means_np = np.random.uniform(low=self.pressure_range[0], high=self.pressure_range[1], size=(self.N, self.D))
-        self.continuous_means = torch.tensor(continuous_means_np, dtype=torch.float32)
+        # continuous_means_np = torch.rand(self.N, self.D) * (self.pressure_range[1] - self.pressure_range[0]) + self.pressure_range[0]
+        continuous_means_np = np.random.uniform(self.pressure_range[0], self.pressure_range[1], size=(self.N, self.D))
+        # self.continuous_means = torch.tensor(continuous_means_np, dtype=torch.float32)
+        self.continuous_means = torch.zeros(self.N, 2) + 0.01
         self.continuous_stds = torch.full((self.N , self.D), self.pressure_range.mean().item()/4) 
+        l0 = torch.eye(2) * 2.0
+        self.rawL = nn.Parameter(torch.stack([l0 for _ in range(self.N)], dim=0)) 
         self.target = LinearSchedule(np.log(self.N), 0, ent_decay_start, ent_decay_end)
-        self.std_target = LinearSchedule(self.pressure_range.mean().item()/4, 0.01, ent_decay_start, ent_decay_end)
+        self.std_target = LinearSchedule(self.pressure_range.mean().item()/4, 0.0001, ent_decay_start, ent_decay_end)
         self.beta = 0.0
         self.beta_min = 0.0
         self.beta_max = 5.0
         self.init_list_sample = 0
         self.pressure_grid_idx = 0
         self.baseline = torch.zeros(len(self.discrete_combinations), dtype=torch.float)
-        self.beta_b   = 0.2            # smoothing factor for baseline
+        self.beta_b   = 0.15           # smoothing factor for baseline
         self.beta_b_target = LinearSchedule(0.15, 0.05, ent_decay_start, ent_decay_end)
-        self.alpha_target = LinearSchedule(0.2, 0.01, ent_decay_start, ent_decay_end)
+        self.alpha_target = LinearSchedule(0.05, 0, ent_decay_start, ent_decay_end)
         wandb.define_metric(f"design_{self.cut_off_length}/*", step_metric="train/step")
 
-        # --- Grid phase setup ---
-        p_min, p_max = float(self.pressure_range[0]), float(self.pressure_range[1])
-        n_grid_steps=8
-        pressure1_range = np.linspace(p_min, p_max, n_grid_steps)
-        pressure2_range = np.linspace(p_min, p_max, n_grid_steps)
-        self.pressure_grid = [(p1, p2) for p1 in pressure1_range for p2 in pressure2_range]  # size n_grid_steps^2
-
-    def get_design_dist(self,type = 'single_variance'):
+    def get_design_dist(self,type = 'covariance'):
         # The discrete logits are computed as beta * scores.
         if type == 'single_variance':
             return RobotDesignDist(discrete_logits=self.beta * self.scores,
@@ -115,11 +113,10 @@ class RobotDesignOptimizer(nn.Module):
                                 continuous_stds=self.continuous_stds,
                                 discrete_values=self.discrete_combinations)
         elif type == 'covariance':
-            return RobotDesignDistMixtureMVN(discrete_logits=self.beta * self.scores,
+            return RobotDesignDistCorrelated(discrete_logits=self.beta * self.scores,
                                 pressure_range = self.pressure_range,
                                 continuous_means=self.continuous_means,
-                                continuous_stds=self.continuous_stds,
-                                discrete_values=self.discrete_combinations)
+                                rawL=self.rawL)
 
     def set_beta(self, t):
         high = self.beta_max
@@ -181,17 +178,54 @@ class RobotDesignOptimizer(nn.Module):
         # Continuous values
         component_dist = joint.component_distribution
         transformed_pressure_list = component_dist.sample()[discrete_idx]
-        inversed_pressure_list = transformed_pressure_list
-        
-        for transform in reversed(robot_dist.transformed_cont_dist.transforms):
-            inversed_pressure_list = transform.inv(inversed_pressure_list)
+        p1 = transformed_pressure_list[0].item()
+        p2 = transformed_pressure_list[1].item()
 
         return {'no_chamber': discrete_values[0],
                 'chamber_length': discrete_values[1],
                 'thickness': discrete_values[2],
-                'pressure1': torch.clamp(inversed_pressure_list[0], min=self.pressure_range[0],max=self.pressure_range[1]),
-                'pressure2': torch.clamp(inversed_pressure_list[1], min=self.pressure_range[0],max=self.pressure_range[1])} ### pressure_list is 'list' type then there is no .numpy()
-    
+                'pressure1': torch.clamp(torch.tensor(p1), min=self.pressure_range[0],max=self.pressure_range[1]),
+                'pressure2': torch.clamp(torch.tensor(p2), min=self.pressure_range[0],max=self.pressure_range[1])} ### pressure_list is 'list' type then there is no .numpy()
+
+    def robust_cholesky_2x2(self,Sigma, 
+                            min_eig=1e-3,   # floor each eigenvalue
+                            jitter_start=1e-6,  # initial diag bump
+                            jitter_mult=10,     # ramp factor
+                            max_tries=5):
+        """
+        Clamp eigenvalues, then try Cholesky with increasing jitter until it succeeds.
+        Sigma: torch.Tensor shape (2,2), assumed symmetric.
+        Returns L so that L @ L.T ~= Sigma_pd.
+        """
+        # 1) Symmetrize & floor eigenvalues
+        Sigma = 0.5 * (Sigma + Sigma.T)
+        vals, vecs = torch.linalg.eigh(Sigma)
+        vals = torch.clamp(vals, min=min_eig)
+        Sigma_pd = vecs @ torch.diag(vals) @ vecs.T
+
+        # 2) Try Cholesky, adding jitter on failure
+        jitter = jitter_start
+        for _ in range(max_tries):
+            try:
+                return torch.linalg.cholesky(Sigma_pd)
+            except RuntimeError:
+                # Bump the diagonal by jitter
+                Sigma_pd = Sigma_pd + torch.eye(2, device=Sigma_pd.device) * jitter
+                jitter *= jitter_mult
+
+        # 3) As a last‐ditch fallback, enforce positive det
+        a, b = Sigma_pd[0,0], Sigma_pd[1,1]
+        c    = Sigma_pd[0,1]
+        # ensure a>0, b>0 already by min_eig; now force a*b - c^2 > 0
+        det = a*b - c*c
+        if det <= min_eig:
+            # reduce off-diagonal
+            max_off = torch.sqrt(a*b) * 0.999
+            c = torch.clamp(c, -max_off, max_off)
+            Sigma_pd[0,1] = Sigma_pd[1,0] = c
+        # final Cholesky
+        return torch.linalg.cholesky(0.5 * (Sigma_pd + Sigma_pd.T))
+
     def update_normal_dist(self, idx, sample, reward,t,max_std=0.15):
         """
         sample : tensor shape (2,)          # [p1, p2] sampled pressures
@@ -204,21 +238,42 @@ class RobotDesignOptimizer(nn.Module):
         raw_adv = reward - self.baseline[idx]
         denom = max(self.reward_rms[idx].std, 1e-3)   # or 1e-2
         adv   = raw_adv/ denom
-
+        
         alpha = self.alpha_target(t)
         mu     = self.continuous_means[idx]     # (2,)
-        sigma  = self.continuous_stds[idx]      # (2,)
-        sigma = sigma.clamp(min=1e-3,max=max_std)          # avoid divide-by-zero
+
+        # reconstruct Σ = L Lᵀ
+        Ld    = torch.tril(self.rawL[idx])  
+        diag = torch.clamp(torch.diag(Ld), min=1e-3)   # → shape (N,2)
+        L_no_diag = torch.tril(Ld, diagonal=-1)              # strictly lower triangle
+        Ld = L_no_diag + torch.diag_embed(diag) 
+        sigma = Ld @ Ld.transpose(-1, -2)    # (2,2) 
+
         sample = torch.as_tensor(sample, dtype=mu.dtype, device=mu.device)
 
-        delta_mu    =  alpha * adv * (sample - mu)
-        delta_sigma =  alpha * adv * ((sample - mu)**2 - sigma**2) / (sigma+ 1e-8)
+        delta = sample - mu
+        delta_mu    =  alpha * adv * delta
 
+        # 5) ΔΣ = α A [ (p-μ)(p-μ)ᵀ - Σ ]
+        # outer = delta.unsqueeze(1) @ delta.unsqueeze(0)  # (2,2)
+        # Sigma_new = Sigma + alpha * A * (outer - Sigma)
+        outer = delta.unsqueeze(1) @ delta.unsqueeze(0)  # (2,2)
         self.continuous_means.data[idx] += delta_mu
-        self.continuous_stds.data[idx]  += delta_sigma
+        self.continuous_means.data[idx] = torch.clamp(self.continuous_means.data[idx],min=self.pressure_range[0],
+                                                                                    max = self.pressure_range[1])
+        sigma_new = sigma + alpha * adv * (outer - sigma)
 
-        scheduled_std = self.std_target(t)
-        self.continuous_stds.data[idx].clamp_(min=scheduled_std, max=max_std)
+        #Symmetrize + clamp eigenvalues
+        sigma_new = 0.5 * (sigma_new + sigma_new.T)
+        eigvals, eigvecs = torch.linalg.eigh(sigma_new)
+        eigvals = torch.clamp(eigvals, min=1e-3)
+        sigma_clamped = eigvecs @ torch.diag(eigvals) @ eigvecs.T
+
+        # 6) recompute L so that Sigma_clamped = L L^T
+        L_new = self.robust_cholesky_2x2(sigma_clamped)
+
+        self.rawL.data[idx] = L_new
+
         # Moving baseline per design class
         beta_b = self.beta_b_target(t)
         self.baseline[idx] = (1 - beta_b) * self.baseline[idx] + beta_b * reward
@@ -263,6 +318,7 @@ class RobotDesignOptimizer(nn.Module):
             # Update discrete score (mean of top-k rewards)
             self.scores.data[idx] = float(top_rewards.mean())
             # Update continuous distribution for this idx using top-k only
+            # if t <= self.ent_decay_end:
             for c_sample, r in zip(top_cont, top_rewards):
                 self.update_normal_dist(idx, c_sample, r, t)
             

@@ -125,27 +125,34 @@ class RobotDesignDistMixtureMVN(RobotDesignDist):
 
         # Return a wrapper that first samples a design d then inner_mixtures[d]
         return cat_design, inner_mixtures
-    
-class RobotDesignDistCorrelated(RobotDesignDist):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Now for each discrete class i we’ll learn a 2×2 covariance
-        self.raw_L = torch.nn.Parameter(
-            torch.stack([
-                torch.eye(2) for _ in range(self.N)
-            ], dim=0)           # shape (N,2,2)
-        )
+
+class RobotDesignDistCorrelated(nn.Module):
+    def __init__(self, discrete_logits,pressure_range, continuous_means, rawL):
+        super().__init__()
+        self.discrete_logits = discrete_logits
+        self.continuous_means = continuous_means
+        self.raw_L = rawL
+        self.pressure_range = pressure_range
 
     def get_distribution(self):
         # 1) compute lower-triangular L with positive diag
         L = torch.tril(self.raw_L)                     # shape (N,2,2)
-        diag = torch.diagonal(L, dim1=-2, dim2=-1)
-        diag = diag.clamp(min=1e-3)                    # enforce pos-def
-        L = L - torch.diag_embed(torch.diagonal(L, -2, -1)) + torch.diag_embed(diag)
+        # diag = torch.clamp(torch.diag(L), min=1e-3)        # shape (2,)
+        diag = torch.clamp(torch.diagonal(L, dim1=1, dim2=2), min=1e-3)
+        L_no_diag = torch.tril(L, diagonal=-1)  # shape (N,2,2)
+        L = L_no_diag + torch.diag_embed(diag) 
 
         cov = L @ L.transpose(-1, -2)                  # Σ = L Lᵀ, shape (N,2,2)
         mean = self.continuous_means                   # (N,2)
 
-        mvn = MultivariateNormal(loc=mean, covariance_matrix=cov)
-        cat = Categorical(logits=self.beta * self.scores)
-        return MixtureSameFamily(cat, mvn)
+        self.mvn = MultivariateNormal(loc=mean, covariance_matrix=cov)
+
+        self.transforms = [torch.distributions.SigmoidTransform(), 
+                      torch.distributions.AffineTransform(
+                          loc=0, scale=(self.pressure_range[1]-self.pressure_range[0]))]
+        # 4) wrap with our transforms so final support is [pmin,pmax]^2
+        self.transformed_cont_dist = torch.distributions.TransformedDistribution(self.mvn, self.transforms)
+        self.cat = Categorical(logits=self.discrete_logits)
+        return MixtureSameFamily(mixture_distribution=self.cat,
+            component_distribution=self.transformed_cont_dist)
+
