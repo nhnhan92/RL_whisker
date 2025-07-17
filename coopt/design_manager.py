@@ -294,7 +294,7 @@ class DesignManager(VecEnvWrapper):
                 sample = {'body_length': cut_off_length, **sample}
                 self.designs.append(sample)
         # self.designs = [self._sample_design() for _ in range(self.num_envs)]
-        print("designs: ", self.designs)
+        # print("designs: ", self.designs)
         self.venv.set_designs(self.designs)
         self.rewards = np.zeros(self.n_env)
     

@@ -92,7 +92,8 @@ class RobotDesignOptimizer(nn.Module):
         l0 = torch.eye(2) * 2.0
         self.rawL = nn.Parameter(torch.stack([l0 for _ in range(self.N)], dim=0)) 
         self.target = LinearSchedule(np.log(self.N), 0, ent_decay_start, ent_decay_end)
-        self.std_target = LinearSchedule(self.pressure_range.mean().item()/4, 0.0001, ent_decay_start, ent_decay_end)
+        self.std_target_min = LinearSchedule(1, 0.01, ent_decay_start, ent_decay_end)
+        self.std_target_max = LinearSchedule(2, 0.02, ent_decay_start, ent_decay_end)
         self.beta = 0.0
         self.beta_min = 0.0
         self.beta_max = 5.0
@@ -262,11 +263,12 @@ class RobotDesignOptimizer(nn.Module):
         self.continuous_means.data[idx] = torch.clamp(self.continuous_means.data[idx],min=self.pressure_range[0],
                                                                                     max = self.pressure_range[1])
         sigma_new = sigma + alpha * adv * (outer - sigma)
-
+        σ_min = self.std_target_min(t)   # e.g. decays from 0.5 → 0.01
+        σ_max = self.std_target_max(t)   # e.g. decays from 2.0 → 0.02
         #Symmetrize + clamp eigenvalues
         sigma_new = 0.5 * (sigma_new + sigma_new.T)
         eigvals, eigvecs = torch.linalg.eigh(sigma_new)
-        eigvals = torch.clamp(eigvals, min=1e-3)
+        eigvals = torch.clamp(eigvals, min=σ_min**2, max=σ_max**2)
         sigma_clamped = eigvecs @ torch.diag(eigvals) @ eigvecs.T
 
         # 6) recompute L so that Sigma_clamped = L L^T
