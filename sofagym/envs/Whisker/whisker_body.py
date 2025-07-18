@@ -71,6 +71,8 @@ def Whisker(visu, simu, name="Whisker",rotation=[0.0, 0.0, 0.0],
                              value=design_params["chamber_length"])
     parent.addData(name='thickness', type='float', help='thickness',
                              value=design_params["thickness"])
+    parent.addData(name='force', type='vector<float>', help='Reaction Force',
+                             value=[0.0,0.0,0.0])
     body_mesh_path = mesh_path + f'mesh_body/body_{design_params["no_chamber"]}chamber_{design_params["body_length"]}_{design_params["chamber_length"]}_{design_params["thickness"]}.vtk'
     # if os.path.exists(body_mesh_path):
     #     pass

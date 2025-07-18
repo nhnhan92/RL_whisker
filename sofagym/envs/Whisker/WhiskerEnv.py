@@ -29,7 +29,7 @@ class WhiskerEnv:
     # Setting a default configuration
     path = os.path.dirname(os.path.abspath(__file__))
     metadata = {'render.modes': ['human', 'rgb_array']}
-    dim_state = 7
+    dim_state = 8
     DEFAULT_CONFIG = {"scene": "Whisker",
                       "deterministic": True,
                       "source": [-220, -20, 30],
@@ -57,7 +57,7 @@ class WhiskerEnv:
                       "design_params": [100,1,20,2.0,0.1,0.0],
                       "nb_actions": 1,
                       "dim_state": dim_state,
-                      "init_states": [0,0,1,20,2,0.1,0.1],
+                      "init_states": [0,0,1,20,2,0.1,0.1,0],
                       "randomize_states": False,
                       "use_server": True,
                       "zFar":4000
@@ -107,7 +107,7 @@ class WhiskerEnv:
             This method should be implemented according to needed random initialization.
         """
         init_body_angle = self.env.np_random.uniform(low=-2*m.pi/180, high=2*m.pi/180, size=None)
-        init_states = [init_body_angle,0,1,20,2,0,0]
+        init_states = [init_body_angle,0,1,20,2,0,0,0]
         return init_states
     
     

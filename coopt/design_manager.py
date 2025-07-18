@@ -62,7 +62,7 @@ class DesignLogger:
             paired = list(enumerate(zip(reward_list, design_list)))
             # 2. Sort the pairs by reward in descending order
             paired_sorted = sorted(paired, key=lambda x: x[1][0], reverse=True)
-            top3 = list(islice(paired_sorted, 2))  
+            top3 = list(islice(paired_sorted, 3))  
             columns = ["Design_count", "Reward", "Design"]
             for i, (orig_idx,(r, design)) in enumerate(top3):
                 # Check the type of design.

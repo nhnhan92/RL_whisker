@@ -119,7 +119,7 @@ def createScene(root, config={"source": [0, 0, 160],
                               "goalPos": [0, 0, 100],
                                 "init_states": [1,0,0,0],
                                 "zFar":4000,
-                                "design_params": [100, 2,40,2,0.1,0.1],
+                                "design_params": [100, 2,20,2,0.1,0.1],
                                 "scale_factor": 10
                               }, mode='simu_and_visu'):
     # Chose the mode: visualization or computations (or both)

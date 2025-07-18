@@ -29,7 +29,7 @@ PPO:
     use_sde: False
     sde_sample_freq: -1
     target_kl: null
-    policy_kwargs: "dict(net_arch=dict(pi=[256,256,256], vf=[256,256,256]), optimizer_class=th.optim.Adam, ortho_init=True, activation_fn=nn.Tanh)"
+    policy_kwargs: "dict(net_arch=dict(pi=[512, 512, 512], vf=[512, 512, 512]), optimizer_class=th.optim.Adam, ortho_init=True, activation_fn=nn.Tanh)"
     device: "auto"
   fit_kwargs:
     total_timesteps: 1000000

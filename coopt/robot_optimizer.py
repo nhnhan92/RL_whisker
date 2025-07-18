@@ -81,6 +81,7 @@ class RobotDesignOptimizer(nn.Module):
         self.N = len(self.discrete_combinations)
         self.reward_rms = [RunningMeanStd() for _ in range(self.N)]
         self.D = len(self.no_chamber)
+        K = 3 ## Number of inner normal distribution
         # Initialize discrete scores (which, when multiplied by beta, form logits).
         self.scores = torch.nn.Parameter(torch.zeros((self.N,), dtype=torch.float32), requires_grad=False)
         # Continuous parameters (not updated by gradients but via update() method).
@@ -102,7 +103,7 @@ class RobotDesignOptimizer(nn.Module):
         self.baseline = torch.zeros(len(self.discrete_combinations), dtype=torch.float)
         self.beta_b   = 0.15           # smoothing factor for baseline
         self.beta_b_target = LinearSchedule(0.15, 0.05, ent_decay_start, ent_decay_end)
-        self.alpha_target = LinearSchedule(0.05, 0, ent_decay_start, ent_decay_end)
+        self.alpha_target = LinearSchedule(0.2, 0, ent_decay_start, ent_decay_end)
         wandb.define_metric(f"design_{self.cut_off_length}/*", step_metric="train/step")
 
     def get_design_dist(self,type = 'covariance'):

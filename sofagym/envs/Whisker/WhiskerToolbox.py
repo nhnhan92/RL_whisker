@@ -142,10 +142,9 @@ class rewardShaper(Sofa.Core.Controller):
         self.whisker_container = self.whisker.getObject("container")
         self.current_strain = []
         self.time = 0
-        self.rootNode.Whisker_node.Whisker.addData(name='force', type='vector<float>', help='Reaction Force',
-                             value=[0.0,0.0,0.0])
-        self.force_value = self.rootNode.Whisker_node.Whisker.force.value
-        
+        # self.rootNode.Whisker_node.Whisker.addData(name='force', type='vector<float>', help='Reaction Force',
+        #                      value=[0.0,0.0,0.0])
+        # self.force_value = self.rootNode.Whisker_node.Whisker.MechanicalModel.force.value
         ### Strain BOXROI
         self.strain_box = self.rootNode.Whisker_node.strain_measuring_Box
         self.indices_in_box = self.strain_box.indices.value
@@ -285,10 +284,10 @@ class rewardShaper(Sofa.Core.Controller):
         else:
             average_strain = 0
         self.fem.ave_strain.value = average_strain
-        # print(f"Strain max = {max(self.strain_zz)}")
+        # print(f"Strain max = {self.fem.ave_strain.value}")
         # print(f"Strain ave = {average_strain:.5f}")
     def onAnimateEndEvent(self, event):
-        # self.arti_sys.angleIn[1] = -0.65
+        # self.arti_sys.angleIn[1] = 0.65
         self.initiated_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
         if self.time <= 1:
             self.arti_sys.angleIn[0] = self.original_min_pos - self.initiated_min_pos               
@@ -321,6 +320,9 @@ class rewardShaper(Sofa.Core.Controller):
             contactforce_y += constraintDirections[i][1] * forcesNorm[constraintId[i]]/self.dt*10**(-3)  #Unit mN *10**(-3) => N
             contactforce_z += constraintDirections[i][2] * forcesNorm[constraintId[i]]/self.dt *10**(-3) #Unit mN *10**(-3) => N
         force_value = [float(contactforce_x),float(contactforce_y),float(contactforce_z)]
+        self.rootNode.Whisker_node.Whisker.force.value = force_value
+
+        self.force_value = force_value
         number_of_valid_constraint = sum(1 for x in forcesNorm if x != 0)
         if self.time <=1:
             self.force_by_initiated_pressure = force_value
@@ -492,25 +494,56 @@ def startCmd_Whisker(rootNode, whisker,incr, duration):
                     "incr": incr},
             duration=duration, mode="once"))
 
+def normalize_observation(obs, mins, maxs):
+
+    # Convert to 1-D float arrays
+    obs_arr  = np.atleast_1d(obs).astype(np.float32)
+    mins_arr = np.atleast_1d(mins).astype(np.float32)
+    maxs_arr = np.atleast_1d(maxs).astype(np.float32)
+
+    # Prevent division-by-zero
+    denom = maxs_arr - mins_arr
+    denom[denom == 0] = 1.0
+
+    # Scale to [0,1], then to [-1,1]
+    scaled = (obs_arr - mins_arr) / denom
+    normalized = 2.0 * scaled - 1.0
+
+    # If user passed scalars, return scalar
+    if normalized.size == 1:
+        return normalized.item()
+    return normalized
 
 def getState(root):
+    pressure_range= [0.0,0.2]
+    thickness_range= [2,4]
+    chamber_length_range= [20,40]
 
     chamber_node = root.Whisker_node.Whisker.MechanicalModel.Chamber
     body_length = root.Whisker_node.Whisker.body_length.value
     no_chamber = root.Whisker_node.Whisker.no_chamber.value
+    no_chamber = normalize_observation(no_chamber,1,2)
     chamber_length = root.Whisker_node.Whisker.chamber_length.value
+    chamber_length = normalize_observation(chamber_length,chamber_length_range[0],chamber_length_range[1])
     thickness = root.Whisker_node.Whisker.thickness.value
+    thickness = normalize_observation(thickness,thickness_range[0],thickness_range[0])
     pressure = []
     for i in range(2):
         if i <= no_chamber-1:
-            pressure.append(chamber_node.getChild(f'cavity{i}').pressure_input.getData('value').value[0].tolist())
+            val = chamber_node.getChild(f'cavity{i}').pressure_input.getData('value').value[0].tolist()
+            val = normalize_observation(val,pressure_range[0],pressure_range[1])
+            pressure.append(val)
         else:
-            pressure.append(0.0)
+            val = normalize_observation(0.0,pressure_range[0],pressure_range[1])
+            pressure.append(val)
 
     rot_angle = root.Whisker_node.Articulation_system.angleIn.value[1].tolist()
     strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.ave_strain.value
+    strain_zz = normalize_observation(strain_zz,0.01,0.03)
+    contact_force = root.Whisker_node.Whisker.force.value
+    contact_force = normalize_observation(contact_force[1],-1.85,-1.59) #Force range = [-1.85,-1.59] tuong duong ko xoay 
     
-    state = [rot_angle] + [strain_zz] + [no_chamber]+ [chamber_length]+[thickness]+pressure
+    state = [rot_angle] + [strain_zz] + [no_chamber]+ [chamber_length]+[thickness]+pressure+[contact_force]
     # state = [rot_angle] + [strain_zz] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
 
     # print("State = ", state)

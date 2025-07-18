@@ -89,38 +89,45 @@ class RobotDesignDist(nn.Module):
                    tensors['discrete_values'])
 
 class RobotDesignDistMixtureMVN(RobotDesignDist):
-    def __init__(self, *args, K=3, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.K = K
-        # Inner mixture logits: shape (N, K)
-        self.inner_logits = nn.Parameter(torch.zeros(self.N, K))
-        # Means per design per component: shape (N, K, 2)
-        self.inner_means  = nn.Parameter(torch.randn(self.N, K, 2) * 0.05 + 0.15)
-        # Raw lower-triangular L for each design/component: (N, K, 2, 2)
-        self.inner_rawL   = nn.Parameter(torch.stack(
-                                [torch.eye(2) for _ in range(self.N * K)],
-                                dim=0
-                             ).view(self.N, K, 2, 2))
-
+    # def __init__(self, outer_discrete_logits, N,K=3, **kwargs):
+    #     super().__init__()
+    #     self.K = K
+    #     # Inner mixture logits: shape (N, K)
+    #     self.outer_discrete_logits = outer_discrete_logits
+    #     # Means per design per component: shape (N, K, 2)
+    #     self.inner_means  = nn.Parameter(torch.randn(N, K, 2) * 0.05 + 0.15)
+    #     # Raw lower-triangular L for each design/component: (N, K, 2, 2)
+    #     self.inner_rawL   = nn.Parameter(torch.stack(
+    #                             [torch.eye(2) for _ in range(N * K)],
+    #                             dim=0
+    #                          ).view(N, K, 2, 2))
+    def __init__(self, outer_discrete_logits,
+                 inner_discrete_logits,
+                 pressure_range, inner_continuous_means, inner_raw_L, K=3):
+        super().__init__()
+        self.outer_discrete_logits = outer_discrete_logits
+        self.inner_discrete_logits = inner_discrete_logits
+        self.inner_continuous_means = inner_continuous_means
+        self.inner_raw_L = inner_raw_L
     def get_distribution(self):
         # Outer design mix (unchanged)
-        cat_design = Categorical(logits=self.beta * self.scores)
+        cat_design = Categorical(logits=self.outer_discrete_logits)
 
         # Build one mixture‐of‐Gaussians per design index
         inner_mixtures = []
         for d in range(self.N):
             # build covariances Σ_{d,k} = L L^T
-            Ld = torch.tril(self.inner_rawL[d])           # (K,2,2)
+            Ld = torch.tril(self.inner_raw_L[d])           # (K,2,2)
             diag = torch.clamp(torch.diagonal(Ld, -2, -1), min=1e-3)
             Ld = Ld - torch.diag_embed(torch.diagonal(Ld, -2, -1)) \
                    + torch.diag_embed(diag)
             covs = Ld @ Ld.transpose(-2, -1)              # (K,2,2)
 
             mvn_comp = MultivariateNormal(
-                loc=self.inner_means[d],                  # (K,2)
+                loc=self.inner_continuous_means[d],                  # (K,2)
                 covariance_matrix=covs                    # (K,2,2)
             )
-            cat_comp = Categorical(logits=self.inner_logits[d])  # (K,)
+            cat_comp = Categorical(logits=self.inner_discrete_logits[d])  # (K,)
             inner_mixtures.append(MixtureSameFamily(cat_comp, mvn_comp))
 
         # Return a wrapper that first samples a design d then inner_mixtures[d]
