@@ -320,7 +320,6 @@ class rewardShaper(Sofa.Core.Controller):
             contactforce_y += constraintDirections[i][1] * forcesNorm[constraintId[i]]/self.dt*10**(-3)  #Unit mN *10**(-3) => N
             contactforce_z += constraintDirections[i][2] * forcesNorm[constraintId[i]]/self.dt *10**(-3) #Unit mN *10**(-3) => N
         force_value = [float(contactforce_x),float(contactforce_y),float(contactforce_z)]
-        self.rootNode.Whisker_node.Whisker.force.value = force_value
 
         self.force_value = force_value
         number_of_valid_constraint = sum(1 for x in forcesNorm if x != 0)
@@ -331,6 +330,7 @@ class rewardShaper(Sofa.Core.Controller):
         else:
             self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
         # self.force_value = [force_value[i] - self.force_by_initiated_pressure[i] for i in range(len(force_value))]
+        self.rootNode.Whisker_node.Whisker.force.value = self.force_value
         self.angleIn_after = self.arti_sys.angleIn.value[1]
         self.angleIn_diff = self.angleIn_after - self.angleIn_prev
         # print(f'Force = {self.angleIn_diff}')
