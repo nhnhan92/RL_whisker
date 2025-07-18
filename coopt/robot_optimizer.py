@@ -103,7 +103,7 @@ class RobotDesignOptimizer(nn.Module):
         self.baseline = torch.zeros(len(self.discrete_combinations), dtype=torch.float)
         self.beta_b   = 0.15           # smoothing factor for baseline
         self.beta_b_target = LinearSchedule(0.15, 0.05, ent_decay_start, ent_decay_end)
-        self.alpha_target = LinearSchedule(0.2, 0, ent_decay_start, ent_decay_end)
+        self.alpha_target = LinearSchedule(0.1, 0, ent_decay_start, ent_decay_end)
         wandb.define_metric(f"design_{self.cut_off_length}/*", step_metric="train/step")
 
     def get_design_dist(self,type = 'covariance'):
@@ -242,6 +242,7 @@ class RobotDesignOptimizer(nn.Module):
         adv   = raw_adv/ denom
         
         alpha = self.alpha_target(t)
+        alpha = 0.1
         mu     = self.continuous_means[idx]     # (2,)
 
         # reconstruct Σ = L Lᵀ
@@ -279,6 +280,7 @@ class RobotDesignOptimizer(nn.Module):
 
         # Moving baseline per design class
         beta_b = self.beta_b_target(t)
+        beta_b = 0.2
         self.baseline[idx] = (1 - beta_b) * self.baseline[idx] + beta_b * reward
 
     def update(self, designs, rewards, t, k_top = 1):
@@ -321,9 +323,9 @@ class RobotDesignOptimizer(nn.Module):
             # Update discrete score (mean of top-k rewards)
             self.scores.data[idx] = float(top_rewards.mean())
             # Update continuous distribution for this idx using top-k only
-            # if t <= self.ent_decay_end:
-            for c_sample, r in zip(top_cont, top_rewards):
-                self.update_normal_dist(idx, c_sample, r, t)
+            if t <= self.ent_decay_start:
+                for c_sample, r in zip(top_cont, top_rewards):
+                    self.update_normal_dist(idx, c_sample, r, t)
             
         # Adjust the temperature parameter beta based on the updated scores.
         self.set_beta(t)
