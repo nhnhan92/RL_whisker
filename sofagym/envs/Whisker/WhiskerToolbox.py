@@ -541,7 +541,7 @@ def getState(root):
     strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.ave_strain.value
     strain_zz = normalize_observation(strain_zz,0.01,0.03)
     contact_force = root.Whisker_node.Whisker.force.value
-    contact_force = normalize_observation(contact_force[1],-1.85,-1.59) #Force range = [-1.85,-1.59] tuong duong ko xoay 
+    contact_force = normalize_observation(contact_force[1],0,0.5) #Force range = tuong duong ko xoay 
     
     state = [rot_angle] + [strain_zz] + [no_chamber]+ [chamber_length]+[thickness]+pressure+[contact_force]
     # state = [rot_angle] + [strain_zz] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
