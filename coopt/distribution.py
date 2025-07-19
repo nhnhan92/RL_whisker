@@ -158,8 +158,42 @@ class RobotDesignDistCorrelated(nn.Module):
                       torch.distributions.AffineTransform(
                           loc=0, scale=(self.pressure_range[1]-self.pressure_range[0]))]
         # 4) wrap with our transforms so final support is [pmin,pmax]^2
-        self.transformed_cont_dist = torch.distributions.TransformedDistribution(self.mvn, self.transforms)
+        self.transformed_cov_cont_dist = torch.distributions.TransformedDistribution(self.mvn, self.transforms)
         self.cat = Categorical(logits=self.discrete_logits)
-        return MixtureSameFamily(mixture_distribution=self.cat,
-            component_distribution=self.transformed_cont_dist)
+
+        self.cov_joint_dist = MixtureSameFamily(mixture_distribution=self.cat,
+            component_distribution=self.transformed_cov_cont_dist)
+        
+        #########Normal Distribution for 1 chamber IDX###########
+        # Create the base continuous distribution (Normal).
+        self.base_normal = torch.distributions.Normal(self.continuous_means, self.continuous_stds)
+        self.transformed_normal_cont_dist = torch.distributions.TransformedDistribution(self.base_normal, self.transforms)
+        # Wrap in an Independent to treat the last dimension as the event dimension.
+        self.component_dist = torch.distributions.Independent(self.transformed_normal_cont_dist, 1)
+        self.normal_joint_dist = MixtureSameFamily(mixture_distribution=self.cat,
+            component_distribution=self.transformed_cov_cont_dist)
+        return self.cov_joint_dist, self.normal_joint_dist
+    
+    def get_distribution(self):
+        # Build the discrete distribution.
+        self.mixture_dist = torch.distributions.Categorical(logits=self.discrete_logits)
+        # Create the base continuous distribution (Normal).
+        self.base_normal = torch.distributions.Normal(self.continuous_means, self.continuous_stds)
+        
+        # Apply transforms:
+        # 1. Sigmoid maps R -> (0, 1)
+        # 2. AffineTransform with scale=0.1 maps (0,1) -> (0, 0.1)
+        self.transforms = [torch.distributions.SigmoidTransform(), 
+                      torch.distributions.AffineTransform(
+                          loc=0, scale=self.pressure_range[1])]
+        self.transformed_cont_dist = torch.distributions.TransformedDistribution(self.base_normal, self.transforms)
+        
+        # Wrap in an Independent to treat the last dimension as the event dimension.
+        self.component_dist = torch.distributions.Independent(self.transformed_cont_dist, 1)
+        # Create the joint mixture distribution.
+        self.joint_dist = torch.distributions.MixtureSameFamily(
+            mixture_distribution=self.mixture_dist,
+            component_distribution=self.component_dist
+        )
+        return self.joint_dist
 

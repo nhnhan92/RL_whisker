@@ -227,8 +227,40 @@ class RobotDesignOptimizer(nn.Module):
             Sigma_pd[0,1] = Sigma_pd[1,0] = c
         # final Cholesky
         return torch.linalg.cholesky(0.5 * (Sigma_pd + Sigma_pd.T))
-
     def update_normal_dist(self, idx, sample, reward,t,max_std=0.15):
+        """
+        sample : tensor shape (2,)          # [p1, p2] sampled pressures
+        reward : float
+        """
+        # Update running mean/std with the new reward
+        self.reward_rms[idx].update([reward])
+
+        # Compute normalized advantage
+        raw_adv = reward - self.baseline[idx]
+        denom = max(self.reward_rms[idx].std, 1e-3)   # or 1e-2
+        adv   = raw_adv/ denom
+        if t <= self.ent_decay_start and t > self.ent_decay_end:
+            alpha = self.alpha_target(t)
+            alpha = 0.1
+            mu     = self.continuous_means[idx]     # (2,)
+            sigma  = self.continuous_stds[idx]      # (2,)
+            sigma = sigma.clamp(min=1e-3,max=max_std)          # avoid divide-by-zero
+            sample = torch.as_tensor(sample, dtype=mu.dtype, device=mu.device)
+
+            delta_mu    =  alpha * adv * (sample - mu)
+            delta_sigma =  alpha * adv * ((sample - mu)**2 - sigma**2) / (sigma+ 1e-8)
+
+            self.continuous_means.data[idx] += delta_mu
+            self.continuous_stds.data[idx]  += delta_sigma
+
+            scheduled_std = self.std_target(t)
+            self.continuous_stds.data[idx].clamp_(min=scheduled_std, max=max_std)
+            # Moving baseline per design class
+        beta_b = self.beta_b_target(t)
+        beta_b = 0.2
+        self.baseline[idx] = (1 - beta_b) * self.baseline[idx] + beta_b * reward
+
+    def update_cov_dist(self, idx, sample, reward,t,max_std=0.15):
         """
         sample : tensor shape (2,)          # [p1, p2] sampled pressures
         reward : float
