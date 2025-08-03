@@ -15,34 +15,35 @@ PPO:
   init_kwargs:
     policy: 'MlpPolicy'
     learning_rate: 0.0003
-    n_steps: 25
-    batch_size: 50
+    n_steps: 100
+    batch_size: 512
     n_epochs: 10
     gamma: 0.99
-    gae_lambda: 0.95
+    gae_lambda: 0.9
     clip_range: 0.2
-    clip_range_vf: null
+    clip_range_vf: 0.4
     normalize_advantage: True
-    ent_coef: 0.005
-    vf_coef: 0.5
+    ent_coef: 0.01
+    vf_coef: 0.6
     max_grad_norm: 0.5
     use_sde: False
     sde_sample_freq: -1
-    target_kl: null
+    target_kl: 0.02
     policy_kwargs: "dict(net_arch=dict(pi=[512, 512, 512], vf=[512, 512, 512]), optimizer_class=th.optim.Adam, ortho_init=True, activation_fn=nn.Tanh)"
     device: "auto"
   fit_kwargs:
     total_timesteps: 1000000
-    max_episode_steps: 25
-    eval_freq: 10000
+    max_episode_steps: 100
+    eval_freq: 20000
     n_eval_episodes: 5
     save_freq: 20000
-    video_length: 25
+    video_length: 50
   model_params:
     batch_size_for_distupdate: 40  # Batch size for design updates
     dist_update_period: 40  # Number of designs before each update
-    ent_decay_start: 200000
+    ent_decay_start: 220000
     ent_decay_end: 600000
+    n_steps_input: 100  ### For input into DesignManager
     no_chamber: [1,2]
     pressure_range: [0.0,0.2]
     cut_off_list: [100,100,1]
@@ -109,33 +110,44 @@ SAC:
   init_kwargs:
     policy: 'MlpPolicy'
     learning_rate: 0.0003
-    buffer_size: 1000000
-    learning_starts: 100
-    batch_size: 256
+    buffer_size: 500000
+    learning_starts: 1000
+    batch_size: 512
     tau: 0.005
     gamma: 0.99
     train_freq: (1, 'step')
-    gradient_steps: 1
+    gradient_steps: 4
     action_noise: null
     replay_buffer_class: null
     replay_buffer_kwargs: null
     optimize_memory_usage: False
     ent_coef: 'auto'
     target_update_interval: 1
-    target_entropy: 'auto'
+    target_entropy: -1
     use_sde: False
     sde_sample_freq: -1
     use_sde_at_warmup: False
     policy_kwargs: "dict(net_arch=dict(pi=[512, 512, 512], qf=[512, 512, 512]), optimizer_class=th.optim.Adam)"
     device: "auto"
   fit_kwargs:
-    total_timesteps: 1000
-    max_episode_steps: 200
-    eval_freq: 100
+    total_timesteps: 1000000
+    max_episode_steps: 50
+    eval_freq: 10000
     n_eval_episodes: 5
-    save_freq: 100
-    video_length: 200
-
+    save_freq: 20000
+    video_length: 50
+  model_params:
+    batch_size_for_distupdate: 40  # Batch size for design updates
+    dist_update_period: 40  # Number of designs before each update
+    ent_decay_start: 200000
+    ent_decay_end: 600000
+    n_steps_input: 50  ### For input into DesignManager
+    no_chamber: [1,2]
+    pressure_range: [0.0,0.2]
+    cut_off_list: [100,100,1]
+    thickness: [2,4,5]
+    chamber_length: [20,40,11]
+    params_path: "/home/nhnhan/Desktop/sofa/SofaGym/sofagym/envs/Whisker/whisker_params.yml"
 TD3:
   init_kwargs:
     policy: 'MlpPolicy'

@@ -158,42 +158,45 @@ class RobotDesignDistCorrelated(nn.Module):
                       torch.distributions.AffineTransform(
                           loc=0, scale=(self.pressure_range[1]-self.pressure_range[0]))]
         # 4) wrap with our transforms so final support is [pmin,pmax]^2
-        self.transformed_cov_cont_dist = torch.distributions.TransformedDistribution(self.mvn, self.transforms)
+        self.transformed_cont_dist = torch.distributions.TransformedDistribution(self.mvn, self.transforms)
         self.cat = Categorical(logits=self.discrete_logits)
-
-        self.cov_joint_dist = MixtureSameFamily(mixture_distribution=self.cat,
-            component_distribution=self.transformed_cov_cont_dist)
-        
-        #########Normal Distribution for 1 chamber IDX###########
-        # Create the base continuous distribution (Normal).
-        self.base_normal = torch.distributions.Normal(self.continuous_means, self.continuous_stds)
-        self.transformed_normal_cont_dist = torch.distributions.TransformedDistribution(self.base_normal, self.transforms)
-        # Wrap in an Independent to treat the last dimension as the event dimension.
-        self.component_dist = torch.distributions.Independent(self.transformed_normal_cont_dist, 1)
-        self.normal_joint_dist = MixtureSameFamily(mixture_distribution=self.cat,
-            component_distribution=self.transformed_cov_cont_dist)
-        return self.cov_joint_dist, self.normal_joint_dist
+        return MixtureSameFamily(mixture_distribution=self.cat,
+            component_distribution=self.transformed_cont_dist)
     
+class HybridCorrelatedRobotDesignDist(nn.Module):
+    def __init__(self, discrete_logits,pressure_range, continuous_means, rawL,active_mask):
+        super().__init__()
+        self.discrete_logits = discrete_logits
+        self.continuous_means = continuous_means
+        self.raw_L = rawL
+        self.pressure_range = pressure_range
+        self.active_mask = active_mask
+        self.eps_std = 1e-4
     def get_distribution(self):
-        # Build the discrete distribution.
-        self.mixture_dist = torch.distributions.Categorical(logits=self.discrete_logits)
-        # Create the base continuous distribution (Normal).
-        self.base_normal = torch.distributions.Normal(self.continuous_means, self.continuous_stds)
-        
-        # Apply transforms:
-        # 1. Sigmoid maps R -> (0, 1)
-        # 2. AffineTransform with scale=0.1 maps (0,1) -> (0, 0.1)
-        self.transforms = [torch.distributions.SigmoidTransform(), 
-                      torch.distributions.AffineTransform(
-                          loc=0, scale=self.pressure_range[1])]
-        self.transformed_cont_dist = torch.distributions.TransformedDistribution(self.base_normal, self.transforms)
-        
-        # Wrap in an Independent to treat the last dimension as the event dimension.
-        self.component_dist = torch.distributions.Independent(self.transformed_cont_dist, 1)
-        # Create the joint mixture distribution.
-        self.joint_dist = torch.distributions.MixtureSameFamily(
-            mixture_distribution=self.mixture_dist,
-            component_distribution=self.component_dist
-        )
-        return self.joint_dist
+        cat = torch.distributions.Categorical(logits=self.discrete_logits)
+        # 1) compute lower-triangular L with positive diag
+        L = torch.tril(self.raw_L)                     # shape (N,2,2)
+        # diag = torch.clamp(torch.diag(L), min=1e-3)        # shape (2,)
+        diag = torch.clamp(torch.diagonal(L, dim1=1, dim2=2), min=1e-3)
+        L_no_diag = torch.tril(L, diagonal=-1)  # shape (N,2,2)
+        L = L_no_diag + torch.diag_embed(diag) 
+
+        inactive = (self.active_mask == 0)
+        # Zero cross covariances touching inactive dims
+        # Build covariance first
+        Sigma = L @ L.transpose(-1, -2)  # (N,2,2)
+        eps_var = self.eps_std ** 2
+        for i in range(len(self.discrete_logits)):
+            if inactive[i,0] or inactive[i,1]:
+                # if second dim inactive (typical), kill off cross terms and set tiny variance
+                for d in range(2):
+                    if inactive[i,d]:
+                        Sigma[i, :, d] = 0.0
+                        Sigma[i, d, :] = 0.0
+                        Sigma[i, d, d] = eps_var
+
+        mean = self.continuous_means  
+        mvn = torch.distributions.MultivariateNormal(mean, Sigma)
+        return cat, mvn
+    
 

@@ -106,7 +106,7 @@ if __name__ == '__main__':
     model_dir = args.model_dir
     parent_dict = os.path.dirname(os.path.abspath(__file__))
     model_dir = parent_dict + "/Results/whisker-v0/PPO/whisker_rl/"
-    if os.path.exists(model_dir) and os.path.isdir(model_dir):
+    if os.path.exists(model_dir) and os.path.isdir(model_dir) and train != 'continue':
         shutil.rmtree(model_dir)
     model_name = 'whisker_rl'
     logdir = './test_coopt'
@@ -117,8 +117,8 @@ if __name__ == '__main__':
     kwargs = {'model_params':
                 {'params_path': parent_dict+"/sofagym/envs/Whisker/whisker_params.yml"}}
     if model_dir is None:
-            if train == 'continue' or (train == 'none' and test):
-                parser.error("Valid argument --model_dir must be provided where previous model training files are saved")
+        if train == 'continue' or (train == 'none' and test):
+            parser.error("Valid argument --model_dir must be provided where previous model training files are saved")
         
     Agent = eval(framework + "Agent")
     if not test:
@@ -144,13 +144,13 @@ if __name__ == '__main__':
                             )
             agent.fit(total_steps)
         else:
-            agent = Agent.load(model_dir = model_dir,resume = resume)
+            agent = Agent.load(model_dir = model_dir,resume = resume,model_timestep = 'latest_model')
             
             if train == 'continue':
                 agent.fit(total_steps)
 
         if test:
-            agent.eval(n_tests, model_timestep='1980000', render=True, record=True)
+            agent.eval(n_tests, model_timestep='latest_model', render=True, record=True)
 
     agent.close()
     print("... End.")

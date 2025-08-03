@@ -79,7 +79,7 @@ if __name__ == '__main__':
             actions = [env.action_space.sample() for _ in range(nenv)]
             obs, rewards, dones, info = env.step(actions)
             sum_rew += 1
-            # print(sum_rew)
+            print(sum_rew)
             # print(obs)
             # print(rewards)
             # print(dones)

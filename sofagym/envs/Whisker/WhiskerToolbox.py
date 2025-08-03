@@ -421,7 +421,7 @@ class applyAction(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = kwargs["root"]
         self.whisker_node = self.root.Whisker_node
-        self.max_incr = 10*m.pi/180
+        self.max_incr = 5*m.pi/180
         self.arti_sys = self.root.Whisker_node.getChild("Articulation_system")
     def _rotate(self, incr):
         current_angleIn = self.whisker_node.Articulation_system.angleIn.value
@@ -543,9 +543,10 @@ def getState(root):
     contact_force = root.Whisker_node.Whisker.force.value
     contact_force = normalize_observation(contact_force[1],0,0.5) #Force range = tuong duong ko xoay 
     
-    state = [rot_angle] + [strain_zz] + [no_chamber]+ [chamber_length]+[thickness]+pressure+[contact_force]
-    # state = [rot_angle] + [strain_zz] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
-
+    raw_sensor = [rot_angle,strain_zz,contact_force]
+    design_params = [no_chamber+ chamber_length+thickness]+pressure
+    state = [rot_angle] + [strain_zz] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
+    # state = np.concatenate([raw_sensor, design_params], axis=0)
     # print("State = ", state)
     return state
 

@@ -10,6 +10,7 @@ import os
 from dl.ckptr import Checkpointer
 from coopt.robot_optimizer import RobotDesignOptimizer
 from itertools import product, islice
+import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
@@ -24,6 +25,7 @@ class DesignLogger:
         self.rewards = {}
         self.count = {}
         self.data = {}
+        self.data_post_processed = {}
         self.design_idx_top_score = {}
         self.count_disc_categories = {}
         self.body_length = cut_off_list
@@ -32,6 +34,7 @@ class DesignLogger:
             self.rewards[i] = deque([], maxlen=maxlen)
             self.count[i] = 0
             self.data[i] = []
+            self.data_post_processed[i] = []
             self.design_idx_top_score[i] = {}
             self.count_disc_categories[i] = {}
             for j in range(len(self.discrete_combinations)):
@@ -49,6 +52,11 @@ class DesignLogger:
         self.designs[body_length].append(design)
         self.rewards[body_length].append(reward)
         self.count[body_length] += 1
+        self.data_post_processed[body_length].append({'count':self.count[body_length],
+                                                       'no_chamber': design['no_chamber'],
+                                                       'chamber_length':design['chamber_length'],
+                                                       'thickness':design['thickness'],
+                                                       'reward':reward})
         
         d_val = (design['no_chamber'], design['chamber_length'], design['thickness'])
         idx = self.discrete_combinations.index(d_val)
@@ -62,7 +70,7 @@ class DesignLogger:
             paired = list(enumerate(zip(reward_list, design_list)))
             # 2. Sort the pairs by reward in descending order
             paired_sorted = sorted(paired, key=lambda x: x[1][0], reverse=True)
-            top3 = list(islice(paired_sorted, 3))  
+            top3 = list(islice(paired_sorted, 5))  
             columns = ["Design_count", "Reward", "Design"]
             for i, (orig_idx,(r, design)) in enumerate(top3):
                 # Check the type of design.
@@ -143,6 +151,7 @@ class DesignLogger:
         # min_sum = min(sums.values())
         # range = max_sum - min_sum
         # extra_rewards = {k: (v - min_sum) / range for k, v in sums.items()}
+        
         return {
             'designs': self.designs,
             'rewards': self.rewards,
@@ -194,10 +203,12 @@ class DesignManager(VecEnvWrapper):
                  cut_off_list = [60,70,80,90],
                  test_mode=False,
                  shared_distribution = None,
+                 shared_logger = None,
                  resume = False,
                  logdir = None,
                  save_freq = 300):
         super().__init__(venv)
+        self.shared_logger = shared_logger
         self.test_mode = test_mode
         self.resume = resume
         self.n_env = n_env
@@ -249,10 +260,13 @@ class DesignManager(VecEnvWrapper):
         return self.logger.get_design_count()
 
     def configure_design_manager(self, maxlen):
-        self.logger = DesignLogger(maxlen = maxlen,
-                                   cut_off_list=self.cut_off_list,
-                                   discrete_combinations = self.discrete_combinations,
-                                   resume=self.resume)
+        if not self.test_mode:
+            self.logger = DesignLogger(maxlen = maxlen,
+                                        cut_off_list=self.cut_off_list,
+                                        discrete_combinations = self.discrete_combinations,
+                                        resume=self.resume)
+        else:
+            self.logger = self.shared_logger
 
     def get_designs_and_rewards(self, n,cut_off_length):
         return self.logger.get_designs_and_rewards(n,cut_off_length)
@@ -283,18 +297,28 @@ class DesignManager(VecEnvWrapper):
     def init_scene(self):
         self.designs = []
         n_design_per_length = self.n_env // len(self.cut_off_list)
-        for cut_off_length, optimizer in self.design_optimizer.items():
-            for _ in range(n_design_per_length):
-                sample = self._sample_design(optimizer = optimizer)  # sample is expected to be a dict.
-                sample = {'body_length': cut_off_length, **sample}
-                self.designs.append(sample)
-        for cut_off_length, optimizer in self.design_optimizer.items():
-            if len(self.designs) < self.n_env:
-                sample = self._sample_design(optimizer = optimizer)  # sample is expected to be a dict.
-                sample = {'body_length': cut_off_length, **sample}
-                self.designs.append(sample)
+        if not self.test_mode:
+            for cut_off_length, optimizer in self.design_optimizer.items():
+                for _ in range(n_design_per_length):
+                    sample = self._sample_design(optimizer = optimizer)  # sample is expected to be a dict.
+                    sample = {'body_length': cut_off_length, **sample}
+                    self.designs.append(sample)
+            for cut_off_length, optimizer in self.design_optimizer.items():
+                if len(self.designs) < self.n_env:
+                    sample = self._sample_design(optimizer = optimizer)  # sample is expected to be a dict.
+                    sample = {'body_length': cut_off_length, **sample}
+                    self.designs.append(sample)
         # self.designs = [self._sample_design() for _ in range(self.num_envs)]
-        # print("designs: ", self.designs)
+        # print("designs: ", self.designs
+        else:
+            for i in self.cut_off_list:
+                designs, rewards = self.get_designs_and_rewards(self.batch_size,i)
+                paired = list(enumerate(zip(rewards, designs)))
+                # 2. Sort the pairs by reward in descending order
+                paired_sorted = sorted(paired, key=lambda x: x[1][0], reverse=True)
+                top_design_tested= list(islice(paired_sorted, self.n_env))  
+                for _, (orig_idx,(r, design)) in enumerate(top_design_tested):
+                    self.designs.append(design)
         self.venv.set_designs(self.designs)
         self.rewards = np.zeros(self.n_env)
     
@@ -356,7 +380,7 @@ class DesignManager(VecEnvWrapper):
         return self.logger.state_dict()
 
     def load_state_dict(self, state_dict):
-        self.logger.load_state_dict(state_dict['designs'])
+        return self.logger.load_state_dict(state_dict['designs'])
 
     def save(self):
         # state = self.design_optimizer.state_dict()
@@ -366,6 +390,7 @@ class DesignManager(VecEnvWrapper):
         payload = {
             "dist_state": dist_state,
             "logger_state": self.logger.state_dict(),
+            "design_data":self.logger.data_post_processed,
             "step": self.t
         }
         if self.logdir:

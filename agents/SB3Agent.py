@@ -472,13 +472,13 @@ class SB3Agent(SofaBaseAgent):
             The wrapped training environment.
         """
         save_freq = max(self.fit_kwargs['save_freq'] // self.n_envs, 1)
-        n_envs_test = 1
+        n_envs_test = 5
         ratio_raw_test = int(n_envs/n_envs_test)
         self.vec_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps) for i in range(n_envs)])
         self.test_env = SubprocVecEnv([make_env(self.env_id, i, self.seed, self.max_episode_steps, config={"render": 1})for i in range(n_envs_test)])
         self.vec_env = DesignManager(venv=self.vec_env,
                                 design_space=self.design_space,
-                                n_steps = self.init_kwargs['n_steps'],
+                                n_steps = self.model_kwargs['n_steps_input'],
                                 n_env = n_envs,
                                 batch_size = self.batch_size_for_distupdate,
                                 update_period = self.dist_update_period,
@@ -492,7 +492,7 @@ class SB3Agent(SofaBaseAgent):
                                 )
         self.test_env = DesignManager(venv=self.test_env,
                                 design_space=self.design_space,
-                                n_steps = self.init_kwargs['n_steps'],
+                                n_steps = self.model_kwargs['n_steps_input'],
                                 n_env = n_envs_test,
                                 batch_size = self.batch_size_for_distupdate,
                                 update_period = self.dist_update_period,
@@ -501,6 +501,7 @@ class SB3Agent(SofaBaseAgent):
                                 cut_off_list = self.cut_off_list,
                                 test_mode=True,
                                 shared_distribution=self.vec_env.design_optimizer,
+                                shared_logger = self.vec_env.logger,
                                 resume=self.resume,
                                 logdir=self.log_dir,
                                 save_freq = save_freq
