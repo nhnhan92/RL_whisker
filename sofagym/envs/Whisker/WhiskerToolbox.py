@@ -545,7 +545,8 @@ def getState(root):
     
     raw_sensor = [rot_angle,strain_zz,contact_force]
     design_params = [no_chamber+ chamber_length+thickness]+pressure
-    state = [rot_angle] + [strain_zz] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
+    # state = [rot_angle] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
+    state = [rot_angle] 
     # state = np.concatenate([raw_sensor, design_params], axis=0)
     # print("State = ", state)
     return state

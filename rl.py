@@ -104,14 +104,15 @@ if __name__ == '__main__':
     test = args.test
     n_tests = args.num_test
     model_dir = args.model_dir
-    parent_dict = os.path.dirname(os.path.abspath(__file__))
-    model_dir = parent_dict + "/Results/whisker-v0/PPO/whisker_rl/"
-    if os.path.exists(model_dir) and os.path.isdir(model_dir) and train != 'continue':
-        shutil.rmtree(model_dir)
     model_name = 'whisker_rl'
     logdir = './test_coopt'
     results_dir = "./Results"
     run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    parent_dict = os.path.dirname(os.path.abspath(__file__))
+    model_dir = parent_dict + f"/Results/whisker-v0/{algo_name}/whisker_rl/"
+    if os.path.exists(model_dir) and os.path.isdir(model_dir) and train != 'continue':
+        shutil.rmtree(model_dir)
+    
     total_steps = args.total_timesteps
     max_episode_steps = args.max_steps  # Total number of training steps for each sampling time (episode)
     kwargs = {'model_params':

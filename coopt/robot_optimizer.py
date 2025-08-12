@@ -233,7 +233,7 @@ class RobotDesignOptimizer(nn.Module):
         if t <= self.ent_decay_start and reward > self.scores.data[idx]:
             self.scores.data[idx] = reward
         elif self.ent_decay_start < t < self.ent_decay_end:
-            self.tracking_scores[idx].set_window_size(5)
+            self.tracking_scores[idx].set_window_size(10)
             raw_score = reward - self.tracking_scores[idx].mean
             denom = max(self.tracking_scores[idx].std,0.1) 
             self.scores.data[idx] = self.tracking_scores[idx].mean
