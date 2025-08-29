@@ -69,7 +69,7 @@ def oscilate_plane(rootNode, visu, name="plane", amp = [0,0,0,0,0,0], pulse = 1,
     plane = rootNode.addChild(name)   
     plane.addObject('MechanicalObject', name = "oscilated_dof", template = "Rigid3d", 
                     translation = translation, rotation = rotation,
-                    showObject = 1,showObjectScale = 5)
+                    showObject = 0,showObjectScale = 5)
     dof_pos = euler2quarter(pos=translation,euler=rotation)
     oscillators = [0]+dof_pos + amp+[pulse]+[phase]
     plane.addObject('UniformMass', totalMass = 0.000001)

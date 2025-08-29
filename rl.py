@@ -106,11 +106,15 @@ if __name__ == '__main__':
     model_dir = args.model_dir
     model_name = 'whisker_rl'
     logdir = './test_coopt'
-    results_dir = "./Results"
+    
     run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     parent_dict = os.path.dirname(os.path.abspath(__file__))
-    model_dir = parent_dict + f"/Results/whisker-v0/{algo_name}/whisker_rl/"
-    if os.path.exists(model_dir) and os.path.isdir(model_dir) and train != 'continue':
+    results_dir = parent_dict + "/Results"
+    if model_dir != 'whisker-v0':
+        model_dir = parent_dict + f"/Results/{model_dir}/{algo_name}/whisker_rl/"
+    else:
+        model_dir = parent_dict + f"/Results/whisker-v0/{algo_name}/whisker_rl/"
+    if os.path.exists(model_dir) and os.path.isdir(model_dir) and train != 'continue' and not test:
         shutil.rmtree(model_dir)
     
     total_steps = args.total_timesteps
@@ -145,6 +149,7 @@ if __name__ == '__main__':
                             )
             agent.fit(total_steps)
         else:
+            print(model_dir)
             agent = Agent.load(model_dir = model_dir,resume = resume,model_timestep = 'latest_model')
             
             if train == 'continue':

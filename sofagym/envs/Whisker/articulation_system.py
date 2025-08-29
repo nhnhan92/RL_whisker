@@ -1,7 +1,7 @@
 import os
 import Sofa
 from stlib3.scene import Scene
-
+from stlib3.visuals import VisualModel
 dirPath = os.path.dirname(os.path.abspath(__file__)) + '/'
 
 
@@ -64,11 +64,12 @@ class ServoMotor(Sofa.Prefab):
         servoBody.addObject('FixedConstraint', indices=0)
         servoBody.addObject('UniformMass', totalMass=0.00001)
 
-        # visual = servoBody.addChild('VisualModel')
-        # visual.addObject('MeshSTLLoader', name='loader', filename='mesh/SG90_servomotor.stl',rotation = [0,90,0])
-        # visual.addObject('MeshTopology', src='@loader')
-        # visual.addObject('OglModel', color=[0.15, 0.45, 0.75, 0.7], writeZTransparent=True)
-        # visual.addObject('RigidMapping', index=0)
+        visual = servoBody.addChild('VisualModel')
+        visual.addObject('MeshSTLLoader', name='loader', filename='/home/holab/nhnhan/RL_whisker/sofagym/envs/Whisker/mesh/SG90_servomotor.stl',
+                         rotation = [50,0,0], translation = [25,5,0])
+        visual.addObject('MeshTopology', src='@loader')
+        visual.addObject('OglModel', color=[0.15, 0.45, 0.75, 0.7], writeZTransparent=False)
+        visual.addObject('RigidMapping', index=0)
 
         # Servo wheel
         angle = self.addChild('Articulation')
@@ -137,10 +138,11 @@ class ServoArm(Sofa.Prefab):
     def setRigidMapping(self, path):
         self.addObject('RigidRigidMapping', name='mapping', input=path, index=self.indexInput.value)
 
-        # visual = self.addChild(VisualModel(visualMeshPath='data/mesh/SG90_servoarm.stl', translation=[0., -25., 0.],
-        #                                    color=[1., 1., 1., 0.75]))
-        # visual.OglModel.writeZTransparent = True
-        # visual.addObject('RigidMapping', name='mapping')
+        visual = self.addChild(VisualModel(visualMeshPath='/home/holab/nhnhan/RL_whisker/sofagym/envs/Whisker/mesh/SG90_servoarm.stl', 
+                                           translation=[0., -25., 0.],
+                                           color=[1., 1., 1., 0.75]))
+        visual.OglModel.writeZTransparent = True
+        visual.addObject('RigidMapping', name='mapping')
 
 class ActuatedArm(Sofa.Prefab):
     """ActuatedArm is a reusable sofa model of a S90 servo motor and the tripod actuation arm.

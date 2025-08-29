@@ -41,8 +41,8 @@ PPO:
   model_params:
     batch_size_for_distupdate: 40  # Batch size for design updates
     dist_update_period: 40  # Number of designs before each update
-    ent_decay_start: 110000
-    ent_decay_end: 600000
+    ent_decay_start: 330000
+    ent_decay_end: 900000
     n_steps_input: 50  ### For input into DesignManager
     no_chamber: [1,2]
     pressure_range: [0.0,0.2]

@@ -56,6 +56,8 @@ class DesignLogger:
                                                        'no_chamber': design['no_chamber'],
                                                        'chamber_length':design['chamber_length'],
                                                        'thickness':design['thickness'],
+                                                       'pressure1':design['pressure1'],
+                                                       'pressure2':design['pressure2'],
                                                        'reward':reward})
         
         d_val = (design['no_chamber'], design['chamber_length'], design['thickness'])

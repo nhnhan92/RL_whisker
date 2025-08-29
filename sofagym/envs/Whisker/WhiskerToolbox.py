@@ -259,7 +259,7 @@ class rewardShaper(Sofa.Core.Controller):
         if self.time <= 1:
             self.original_min_pos = min(sublist[1] for sublist in self.mecawhisker.position.value)
             # self.arti_sys.angleIn[1] = -10*m.pi/180
-            # self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value[0] = 0.05
+            # self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity0.pressure_input.value[0] = 1
             # self.rootNode.Whisker_node.Whisker.MechanicalModel.Chamber.cavity1.pressure_input.value[0] = 0.05 # real pressure is input_value / dt [kPa]
         self.strain_zz = np.array([])
         self.volume = np.array([])
@@ -522,11 +522,11 @@ def getState(root):
     chamber_node = root.Whisker_node.Whisker.MechanicalModel.Chamber
     body_length = root.Whisker_node.Whisker.body_length.value
     no_chamber = root.Whisker_node.Whisker.no_chamber.value
-    no_chamber = normalize_observation(no_chamber,1,2)
+    # no_chamber = normalize_observation(no_chamber,1,2)
     chamber_length = root.Whisker_node.Whisker.chamber_length.value
-    chamber_length = normalize_observation(chamber_length,chamber_length_range[0],chamber_length_range[1])
+    # chamber_length = normalize_observation(chamber_length,chamber_length_range[0],chamber_length_range[1])
     thickness = root.Whisker_node.Whisker.thickness.value
-    thickness = normalize_observation(thickness,thickness_range[0],thickness_range[0])
+    # thickness = normalize_observation(thickness,thickness_range[0],thickness_range[0])
     pressure = []
     for i in range(2):
         if i <= no_chamber-1:
@@ -539,14 +539,14 @@ def getState(root):
 
     rot_angle = root.Whisker_node.Articulation_system.angleIn.value[1].tolist()
     strain_zz = root.Whisker_node.Whisker.MechanicalModel.FEM.ave_strain.value
-    strain_zz = normalize_observation(strain_zz,0.01,0.03)
+    # strain_zz = normalize_observation(strain_zz,0.01,0.03)
     contact_force = root.Whisker_node.Whisker.force.value
-    contact_force = normalize_observation(contact_force[1],0,0.5) #Force range = tuong duong ko xoay 
+    # contact_force = normalize_observation(contact_force[1],0,0.5) #Force range = tuong duong ko xoay 
     
     raw_sensor = [rot_angle,strain_zz,contact_force]
     design_params = [no_chamber+ chamber_length+thickness]+pressure
-    # state = [rot_angle] + [body_length] + [no_chamber]+ [chamber_length]+[thickness]+pressure
-    state = [rot_angle] 
+    state = [rot_angle] +[strain_zz]+ [no_chamber]+ [chamber_length]+[thickness]+pressure
+    # state = [rot_angle] 
     # state = np.concatenate([raw_sensor, design_params], axis=0)
     # print("State = ", state)
     return state

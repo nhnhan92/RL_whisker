@@ -40,7 +40,7 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
             translation=vec3.vadd(translation, [0.0, 0, 0.0]),
             eulerRotation=eulerRotation,
             scale=scale,
-            drawBoxes=1,
+            drawBoxes=0,
         )
         
         eulerRotation_strain = [0,0,0]
@@ -63,10 +63,10 @@ def Whisker_node(name="Whisker_node", design_params = None,design_index = None,
             translation=[0,gauge_y_offset,gauge_z_offset],
             eulerRotation=eulerRotation_strain,
             scale=[24.5, 11.5, design_params['chamber_length']],
-            drawBoxes=1,
+            drawBoxes=0,
         )
         strain_measuring_box.tetrahedra.value = self.Whisker.MechanicalModel.container.tetrahedra.value
-        strain_measuring_box.drawTetrahedra.value = True
+        strain_measuring_box.drawTetrahedra.value = False
         strain_measuring_box.init()
         rot_box.init()
         groupIndices = []
